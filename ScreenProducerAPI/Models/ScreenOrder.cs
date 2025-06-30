@@ -11,7 +11,7 @@ public class ScreenOrder
     public int Id { get; set; }
 
     [Column("order_UUID")]
-    public Guid OrderId { get; set; }
+    public string OrderId { get; set; }
 
     [Column("quantity")]
     public int Quantity { get; set; }

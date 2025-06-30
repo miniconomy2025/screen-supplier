@@ -11,7 +11,7 @@ public class PurchaseOrder
     public int Id { get; set; }
 
     [Column("order_UUID")]
-    public Guid OrderID { get; set; }
+    public string OrderID { get; set; }
 
     [Column("quantity")]
     public int Quantity { get; set; }

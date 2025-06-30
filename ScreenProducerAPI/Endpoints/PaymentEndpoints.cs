@@ -21,7 +21,7 @@ public static class PaymentEndpoints
         //TODO: Handle payment
         var request = await context.Request.ReadFromJsonAsync<PaymentMadeRequest>();
 
-        if (request == null || request.reference == Guid.Empty || request.amount <= 0)
+        if (request == null || string.IsNullOrWhiteSpace(request.reference) || request.amount <= 0)
         {
             return Results.BadRequest("Invalid payment request.");
         }
