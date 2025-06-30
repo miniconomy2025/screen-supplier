@@ -10,8 +10,11 @@ public class PurchaseOrder
     [Column("id")]
     public int Id { get; set; }
 
-    [Column("order_UUID")]
-    public string OrderID { get; set; }
+    [Column("order_id")]
+    public int OrderID { get; set; }
+
+    [Column("shipment_id")]
+    public int ShipmentID { get; set; }
 
     [Column("quantity")]
     public int Quantity { get; set; }

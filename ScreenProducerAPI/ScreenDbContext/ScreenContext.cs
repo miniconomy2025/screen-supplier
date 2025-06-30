@@ -9,6 +9,7 @@ public class ScreenContext : DbContext
     public DbSet<Product> Products { get; set; }
     public DbSet<ScreenOrder> ScreenOrders { get; set; }
     public DbSet<Equipment> Equipment { get; set; }
+    public DbSet<EquipmentParameters> EquipmentParameters { get; set; }
     public DbSet<Material> Materials { get; set; }
     public DbSet<PurchaseOrder> PurchaseOrders { get; set; }
     public DbSet<OrderStatus> OrderStatuses { get; set; }

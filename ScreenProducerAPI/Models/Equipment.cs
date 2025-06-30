@@ -28,4 +28,8 @@ public class Equipment
     [Column("purchase_orders_id")]
     public int? PurchaseOrderId { get; set; }
     public PurchaseOrder? PurchaseOrder { get; set; }
+
+    [Column("parameters_id")]
+    public int? ParametersID { get; set; }
+    public EquipmentParameters? EquipmentParameters { get; set; }
 }
