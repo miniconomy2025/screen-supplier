@@ -11,10 +11,13 @@ public static class ResponseMappers
         {
             return null;
         }
-        return new ProductResponse
+        return new ProductResponse()
         {
-            Quantity = product.Quantity,
-            Price = product.Price
+            Screens = new Screens()
+            {
+                Quantity = product.Quantity,
+                Price = product.Price
+            }
         };
     }
 }

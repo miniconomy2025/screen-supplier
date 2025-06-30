@@ -7,7 +7,9 @@ public static class ApiConfiguration
 {
     public static void AddEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.AddProductEndpoints();
+        endpoints.AddProductEndpoints()
+            .AddSimulationEndpoints();
+
     }
 
     public static void AddApiServices(this IServiceCollection services)
