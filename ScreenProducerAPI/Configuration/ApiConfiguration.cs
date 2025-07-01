@@ -9,7 +9,8 @@ public static class ApiConfiguration
     {
         endpoints.AddProductEndpoints()
             .AddSimulationEndpoints()
-            .AddLogisticsEndpoints();
+            .AddLogisticsEndpoints()
+            .AddPaymentEndpoints();
 
     }
 

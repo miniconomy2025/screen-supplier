@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ScreenProducerAPI.Models;
+using ScreenProducerAPI.Models.Requests;
+using ScreenProducerAPI.Models.Responses;
 using ScreenProducerAPI.ScreenDbContext;
 
 namespace ScreenProducerAPI.Services;
@@ -15,6 +17,101 @@ public class ScreenOrderService
         _context = context;
         _logger = logger;
         _productService = productService;
+    }
+
+    public async Task<PaymentConfirmationResponse?> ProcessPaymentConfirmationAsync(PaymentConfirmationRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Processing payment confirmation for reference {ReferenceId}: {AmountPaid} from account {AccountNumber}",
+                request.ReferenceId, request.AmountPaid, request.AccountNumber);
+
+            // Parse the reference ID to get order ID
+            if (!int.TryParse(request.ReferenceId, out int orderId))
+            {
+                _logger.LogWarning("Invalid reference ID format: {ReferenceId}", request.ReferenceId);
+                return new PaymentConfirmationResponse
+                {
+                    Success = false,
+                    OrderId = request.ReferenceId,
+                    Message = "Invalid reference ID format",
+                    ProcessedAt = DateTime.UtcNow
+                };
+            }
+
+            // Find the screen order
+            var screenOrder = await _context.ScreenOrders
+                .Include(so => so.OrderStatus)
+                .Include(so => so.Product)
+                .FirstOrDefaultAsync(so => so.Id == orderId && so.OrderStatus.Status == "waiting_payment");
+
+            if (screenOrder == null)
+            {
+                _logger.LogWarning("Screen order in state waiting_payment not found for reference ID: {ReferenceId}", request.ReferenceId);
+                return new PaymentConfirmationResponse
+                {
+                    Success = false,
+                    OrderId = request.ReferenceId,
+                    Message = "Order not found",
+                    ProcessedAt = DateTime.UtcNow
+                };
+            }
+
+            // Calculate order totals
+            var orderTotal = screenOrder.Quantity * screenOrder.UnitPrice;
+            var previouslyPaid = screenOrder.AmountPaid ?? 0;
+            var newTotalPaid = previouslyPaid + (int)request.AmountPaid;
+            var remainingBalance = Math.Max(0, orderTotal - newTotalPaid);
+            var isFullyPaid = newTotalPaid >= orderTotal;
+
+            // Update the payment amount
+            screenOrder.AmountPaid = newTotalPaid;
+
+            // Update status if fully paid
+            string newStatus = screenOrder.OrderStatus?.Status ?? "unknown";
+            if (isFullyPaid && screenOrder.OrderStatus?.Status == "waiting_payment")
+            {
+                var waitingCollectionStatus = await _context.OrderStatuses
+                    .FirstOrDefaultAsync(os => os.Status == "waiting_collection");
+
+                if (waitingCollectionStatus != null)
+                {
+                    screenOrder.OrderStatusId = waitingCollectionStatus.Id;
+                    newStatus = "waiting_collection";
+                    _logger.LogInformation("Order {OrderId} status updated to waiting_collection - fully paid", orderId);
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Payment processed for order {OrderId}: +{AmountPaid}, total paid: {TotalPaid}/{OrderTotal}, balance: {RemainingBalance}, status: {Status}",
+                orderId, request.AmountPaid, newTotalPaid, orderTotal, remainingBalance, newStatus);
+
+            return new PaymentConfirmationResponse
+            {
+                Success = true,
+                OrderId = orderId.ToString(),
+                AmountReceived = request.AmountPaid,
+                TotalPaid = newTotalPaid,
+                OrderTotal = orderTotal,
+                RemainingBalance = remainingBalance,
+                Status = newStatus,
+                Message = isFullyPaid ? "Order fully paid and ready for collection" : $"Partial payment received. Remaining balance: {remainingBalance}",
+                IsFullyPaid = isFullyPaid,
+                ProcessedAt = DateTime.UtcNow
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing payment confirmation for reference {ReferenceId}", request.ReferenceId);
+            return new PaymentConfirmationResponse
+            {
+                Success = false,
+                OrderId = request.ReferenceId,
+                Message = "Internal error processing payment",
+                ProcessedAt = DateTime.UtcNow
+            };
+        }
     }
 
     public async Task<ScreenOrder?> CreateOrderAsync(int quantity, string? customerInfo = null)
@@ -33,7 +130,7 @@ public class ScreenOrderService
             var availableStock = await _productService.GetAvailableStockAsync();
             if (availableStock < quantity)
             {
-                _logger.LogWarning("Insufficient screens available. Requested: {Requested}, Available: {Available}", 
+                _logger.LogWarning("Insufficient screens available. Requested: {Requested}, Available: {Available}",
                     quantity, availableStock);
                 return null;
             }

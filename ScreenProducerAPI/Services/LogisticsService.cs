@@ -190,7 +190,7 @@ public class LogisticsService
         }
     }
 
-    public async Task<int> RequestPickupAsync(int orderId, int quantity, string type, string fromCompany, string toCompany)
+    public async Task<(int ShippingID, int BankAccount)> RequestPickupAsync(int orderId, int quantity, string type, string fromCompany, string toCompany)
     {
         _logger.LogInformation("Requesting pickup for order {OrderId}: {Quantity} {Type} from {FromCompany} to {ToCompany}", 
             orderId, quantity, type, fromCompany, toCompany);
@@ -237,7 +237,7 @@ public class LogisticsService
 
             _logger.LogInformation("Pickup requested successfully. Shipment ID: {ShipmentId}", pickupResponse.ShipmentId);
             
-            return pickupResponse.ShipmentId;
+            return (pickupResponse.ShipmentId, pickupResponse.BankAccountNumber);
         }
         catch (HttpRequestException ex)
         {
