@@ -19,9 +19,10 @@ public static class ProductEndpoints
 
     private static async Task<IResult> GetProductsHandler(HttpContext context, [FromServices] ProductService productService)
     {
-        var products = await productService.GetProductsAsync();
+        var quantity  = await productService.GetAvailableStockAsync();
 
-        var response = products.Select(product => product.MapToResponse());
+        var products = await productService.GetProductsAsync();
+        var response = products.Select(product => product.MapToResponse(quantity));
 
         return Results.Ok(response);
     }

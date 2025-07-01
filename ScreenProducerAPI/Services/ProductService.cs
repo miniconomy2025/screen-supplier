@@ -37,7 +37,7 @@ public class ProductService
             else
             {
                 product.Quantity += quantity;
-                _logger.LogInformation("Added {Quantity} screens to inventory. New total: {NewTotal}",
+                _logger.LogInformation("Added {Quantity} screens to inventory. New total: {NewTotal}", 
                     quantity, product.Quantity);
             }
 
@@ -67,7 +67,7 @@ public class ProductService
             product.Quantity -= quantity;
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Consumed {Quantity} screens. Remaining: {Remaining}",
+            _logger.LogInformation("Consumed {Quantity} screens. Remaining: {Remaining}", 
                 quantity, product.Quantity);
             return true;
         }
@@ -75,6 +75,36 @@ public class ProductService
         {
             _logger.LogError(ex, "Error consuming {Quantity} screens", quantity);
             return false;
+        }
+    }
+
+    public async Task<int> GetAvailableStockAsync()
+    {
+        try
+        {
+            // Get total produced screens
+            var product = await _context.Products.FirstOrDefaultAsync();
+            var totalProduced = product?.Quantity ?? 0;
+
+            // Get sum of screens in orders that are waiting_payment or waiting_collection
+            // These are considered "reserved" and unavailable for new orders
+            var reservedScreens = await _context.ScreenOrders
+                .Include(so => so.OrderStatus)
+                .Where(so => so.OrderStatus.Status == "waiting_payment" || 
+                           so.OrderStatus.Status == "waiting_collection")
+                .SumAsync(so => so.Quantity);
+
+            var availableStock = totalProduced - reservedScreens;
+
+            _logger.LogInformation("Stock calculation: {TotalProduced} produced - {ReservedScreens} reserved = {AvailableStock} available",
+                totalProduced, reservedScreens, availableStock);
+
+            return Math.Max(0, availableStock); // Don't return negative stock
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error calculating available stock");
+            return 0;
         }
     }
 
@@ -104,9 +134,9 @@ public class ProductService
             // Calculate cost per screen based on material requirements
             var sandCostPerScreen = (sandCostPerKg * equipmentParams.InputSandKg) / equipmentParams.OutputScreens;
             var copperCostPerScreen = (copperCostPerKg * equipmentParams.InputCopperKg) / equipmentParams.OutputScreens;
-
+            
             var materialCostPerScreen = sandCostPerScreen + copperCostPerScreen;
-
+            
             // Add margin (e.g., 25% markup)
             var margin = 0.25m;
             var unitPrice = materialCostPerScreen * (1 + margin);
@@ -134,5 +164,29 @@ public class ProductService
     public async Task<IEnumerable<Product>> GetProductsAsync()
     {
         return await _context.Products.ToListAsync();
+    }
+
+    public async Task<(int totalProduced, int reserved, int available)> GetStockSummaryAsync()
+    {
+        try
+        {
+            var product = await _context.Products.FirstOrDefaultAsync();
+            var totalProduced = product?.Quantity ?? 0;
+
+            var reservedScreens = await _context.ScreenOrders
+                .Include(so => so.OrderStatus)
+                .Where(so => so.OrderStatus.Status == "waiting_payment" || 
+                           so.OrderStatus.Status == "waiting_collection")
+                .SumAsync(so => so.Quantity);
+
+            var available = Math.Max(0, totalProduced - reservedScreens);
+
+            return (totalProduced, reservedScreens, available);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting stock summary");
+            return (0, 0, 0);
+        }
     }
 }

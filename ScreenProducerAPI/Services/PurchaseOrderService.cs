@@ -16,10 +16,10 @@ public class PurchaseOrderService
     }
 
     public async Task<PurchaseOrder?> CreatePurchaseOrderAsync(
-        int orderId,
-        int quantity,
-        int unitPrice,
-        string sellerBankAccount,
+        int orderId, 
+        int quantity, 
+        int unitPrice, 
+        string sellerBankAccount, 
         string origin,
         int? rawMaterialId = null,
         bool isEquipmentOrder = false)
@@ -101,7 +101,7 @@ public class PurchaseOrderService
             purchaseOrder.ShipmentID = shipmentId;
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Updated purchase order {PurchaseOrderId} with shipment ID {ShipmentId}",
+            _logger.LogInformation("Updated purchase order {PurchaseOrderId} with shipment ID {ShipmentId}", 
                 purchaseOrderId, shipmentId);
             return true;
         }
@@ -179,7 +179,7 @@ public class PurchaseOrderService
             purchaseOrder.OrderStatusId = status.Id;
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Updated purchase order {PurchaseOrderId} status to '{StatusName}'",
+            _logger.LogInformation("Updated purchase order {PurchaseOrderId} status to '{StatusName}'", 
                 purchaseOrderId, statusName);
             return true;
         }

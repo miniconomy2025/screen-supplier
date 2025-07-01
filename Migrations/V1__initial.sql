@@ -19,7 +19,7 @@ CREATE TABLE "purchase_orders" (
   "order_id" integer NOT NULL,
   "shipment_id" integer,
   "quantity" integer NOT NULL,
-  "quantity_delivered" integer
+  "quantity_delivered" integer,
   "order_date" date NOT NULL,
   "unit_price" integer NOT NULL,
   "seller_bank_account" varchar(50) NOT NULL,

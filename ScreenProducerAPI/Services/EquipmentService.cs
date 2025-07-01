@@ -10,7 +10,7 @@ public class EquipmentService
     private readonly MaterialService _materialService;
     private readonly ProductService _productService;
 
-    public EquipmentService(ScreenContext context, ILogger<EquipmentService> logger,
+    public EquipmentService(ScreenContext context, ILogger<EquipmentService> logger, 
         MaterialService materialService, ProductService productService)
     {
         _context = context;
@@ -25,7 +25,7 @@ public class EquipmentService
         {
             // Get the equipment parameters (should be set during simulation start)
             var equipmentParams = await _context.EquipmentParameters.FirstOrDefaultAsync();
-
+            
             if (equipmentParams == null)
             {
                 _logger.LogError("No equipment parameters found. Equipment parameters must be initialized on simulation start.");
@@ -60,7 +60,7 @@ public class EquipmentService
     public async Task<int> StartProductionAsync()
     {
         int machinesStarted = 0;
-
+        
         try
         {
             var availableEquipment = await _context.Equipment
@@ -78,24 +78,24 @@ public class EquipmentService
                     continue;
                 }
 
-                var prdouctionParams = equipment.EquipmentParameters;
-
+                var params = equipment.EquipmentParameters;
+                
                 // Check if we have sufficient materials for this machine
-                var hasSand = await _materialService.HasSufficientMaterialsAsync("sand", prdouctionParams.InputSandKg);
-                var hasCopper = await _materialService.HasSufficientMaterialsAsync("copper", prdouctionParams.InputCopperKg);
+                var hasSand = await _materialService.HasSufficientMaterialsAsync("sand", params.InputSandKg);
+                var hasCopper = await _materialService.HasSufficientMaterialsAsync("copper", params.InputCopperKg);
 
                 if (hasSand && hasCopper)
                 {
                     // Consume the materials
-                    var sandConsumed = await _materialService.ConsumeMaterialAsync("sand", prdouctionParams.InputSandKg);
-                    var copperConsumed = await _materialService.ConsumeMaterialAsync("copper", prdouctionParams.InputCopperKg);
+                    var sandConsumed = await _materialService.ConsumeMaterialAsync("sand", params.InputSandKg);
+                    var copperConsumed = await _materialService.ConsumeMaterialAsync("copper", params.InputCopperKg);
 
                     if (sandConsumed && copperConsumed)
                     {
                         equipment.IsProducing = true;
                         machinesStarted++;
                         _logger.LogInformation("Started production on equipment {EquipmentId}. Consumed {SandKg}kg sand + {CopperKg}kg copper",
-                            equipment.Id, prdouctionParams.InputSandKg, prdouctionParams.InputCopperKg);
+                            equipment.Id, params.InputSandKg, params.InputCopperKg);
                     }
                     else
                     {
@@ -149,9 +149,9 @@ public class EquipmentService
 
                 var screensProduced = equipment.EquipmentParameters.OutputScreens;
                 totalScreensProduced += screensProduced;
-
+                
                 equipment.IsProducing = false;
-
+                
                 _logger.LogInformation("Equipment {EquipmentId} produced {ScreensProduced} screens",
                     equipment.Id, screensProduced);
             }
@@ -160,10 +160,10 @@ public class EquipmentService
             {
                 // Add produced screens to inventory
                 await _productService.AddScreensAsync(totalScreensProduced);
-
+                
                 // Update unit price based on current material costs
                 await _productService.UpdateUnitPriceAsync();
-
+                
                 await _context.SaveChangesAsync();
             }
 

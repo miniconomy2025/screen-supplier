@@ -5,7 +5,7 @@ namespace ScreenProducerAPI.Mappers;
 
 public static class ResponseMappers
 {
-    public static ProductResponse MapToResponse(this Product product)
+    public static ProductResponse MapToResponse(this Product product, int stockAvailable)
     {
         if (product == null)
         {
@@ -15,7 +15,7 @@ public static class ResponseMappers
         {
             Screens = new Screens()
             {
-                Quantity = product.Quantity,
+                Quantity = stockAvailable,
                 Price = product.Price
             }
         };

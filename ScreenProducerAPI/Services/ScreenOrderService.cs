@@ -29,11 +29,12 @@ public class ScreenOrderService
                 return null;
             }
 
-            // Check if we have enough screens available
-            if (product.Quantity < quantity)
+            // Check if we have enough screens available (using smart stock calculation)
+            var availableStock = await _productService.GetAvailableStockAsync();
+            if (availableStock < quantity)
             {
-                _logger.LogWarning("Insufficient screens available. Requested: {Requested}, Available: {Available}",
-                    quantity, product.Quantity);
+                _logger.LogWarning("Insufficient screens available. Requested: {Requested}, Available: {Available}", 
+                    quantity, availableStock);
                 return null;
             }
 
