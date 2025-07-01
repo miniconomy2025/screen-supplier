@@ -10,11 +10,17 @@ public class PurchaseOrder
     [Column("id")]
     public int Id { get; set; }
 
-    [Column("order_UUID")]
-    public string OrderID { get; set; }
+    [Column("order_id")]
+    public int OrderID { get; set; }
+
+    [Column("shipment_id")]
+    public int? ShipmentID { get; set; }
 
     [Column("quantity")]
     public int Quantity { get; set; }
+
+    [Column("quantity_delivered")]
+    public int QuantityDelivered { get; set; } = 0;
 
     [Column("order_date")]
     public DateTime OrderDate { get; set; }
@@ -33,8 +39,8 @@ public class PurchaseOrder
     public OrderStatus OrderStatus { get; set; }
 
     [Column("raw_materials_id")]
-    public int RawMaterialId { get; set; }
-    public Material RawMaterial { get; set; }
+    public int? RawMaterialId { get; set; }
+    public Material? RawMaterial { get; set; }
 
     [Column("equipment_order")]
     public bool? EquipmentOrder { get; set; }

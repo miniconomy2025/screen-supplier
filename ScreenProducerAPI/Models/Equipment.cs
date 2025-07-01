@@ -10,14 +10,9 @@ public class Equipment
     [Column("id")]
     public int Id { get; set; }
 
-    [Column("input_sand_kg")]
-    public int InputSandKg { get; set; }
-
-    [Column("input_copper_kg")]
-    public int InputCopperKg { get; set; }
-
-    [Column("output_screens_day")]
-    public int OutputScreens { get; set; }
+    [Column("parameters_id")]
+    public int ParametersID { get; set; }
+    public EquipmentParameters? EquipmentParameters { get; set; }
 
     [Column("is_producing")]
     public bool IsProducing { get; set; }

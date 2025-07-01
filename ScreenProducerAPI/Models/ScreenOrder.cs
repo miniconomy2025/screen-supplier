@@ -10,9 +10,6 @@ public class ScreenOrder
     [Column("id")]
     public int Id { get; set; }
 
-    [Column("order_UUID")]
-    public string OrderId { get; set; }
-
     [Column("quantity")]
     public int Quantity { get; set; }
 
