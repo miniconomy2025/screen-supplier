@@ -78,24 +78,24 @@ public class EquipmentService
                     continue;
                 }
 
-                var params = equipment.EquipmentParameters;
-                
+                var prdouctionParams = equipment.EquipmentParameters;
+
                 // Check if we have sufficient materials for this machine
-                var hasSand = await _materialService.HasSufficientMaterialsAsync("sand", params.InputSandKg);
-                var hasCopper = await _materialService.HasSufficientMaterialsAsync("copper", params.InputCopperKg);
+                var hasSand = await _materialService.HasSufficientMaterialsAsync("sand", prdouctionParams.InputSandKg);
+                var hasCopper = await _materialService.HasSufficientMaterialsAsync("copper", prdouctionParams.InputCopperKg);
 
                 if (hasSand && hasCopper)
                 {
                     // Consume the materials
-                    var sandConsumed = await _materialService.ConsumeMaterialAsync("sand", params.InputSandKg);
-                    var copperConsumed = await _materialService.ConsumeMaterialAsync("copper", params.InputCopperKg);
+                    var sandConsumed = await _materialService.ConsumeMaterialAsync("sand", prdouctionParams.InputSandKg);
+                    var copperConsumed = await _materialService.ConsumeMaterialAsync("copper", prdouctionParams.InputCopperKg);
 
                     if (sandConsumed && copperConsumed)
                     {
                         equipment.IsProducing = true;
                         machinesStarted++;
                         _logger.LogInformation("Started production on equipment {EquipmentId}. Consumed {SandKg}kg sand + {CopperKg}kg copper",
-                            equipment.Id, params.InputSandKg, params.InputCopperKg);
+                            equipment.Id, prdouctionParams.InputSandKg, prdouctionParams.InputCopperKg);
                     }
                     else
                     {
