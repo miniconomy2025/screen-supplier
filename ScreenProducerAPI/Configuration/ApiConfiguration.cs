@@ -17,6 +17,8 @@ public static class ApiConfiguration
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
 
+        services.AddScoped<MaterialService>();
         services.AddScoped<ProductService>();
+        services.AddScoped<EquipmentService>();
     }
 }
