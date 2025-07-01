@@ -11,7 +11,8 @@ public static class ApiConfiguration
         endpoints.AddProductEndpoints()
             .AddSimulationEndpoints()
             .AddLogisticsEndpoints()
-            .AddPaymentEndpoints();
+            .AddPaymentEndpoints()
+            .AddOrderEndpoints();
 
     }
 
@@ -29,11 +30,13 @@ public static class ApiConfiguration
             .BindConfiguration($"ExternalServices:{BankServiceOptions.Section}")
             .ValidateDataAnnotations();
         services.AddHttpClient<BankService>();
+        
         services.AddScoped<MaterialService>();
         services.AddScoped<ProductService>();
         services.AddScoped<EquipmentService>();
         services.AddScoped<PurchaseOrderService>();
         services.AddScoped<ScreenOrderService>();
         services.AddScoped<LogisticsService>();
+        services.AddScoped<BankService>();
     }
 }

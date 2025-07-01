@@ -3,6 +3,7 @@ using ScreenProducerAPI.Models.Responses;
 using ScreenProducerAPI.Services;
 using System.Text.Json;
 using System.Text;
+using ScreenProducerAPI.Util;
 
 namespace ScreenProducerAPI.Services;
 
@@ -139,7 +140,7 @@ public class LogisticsService
             }
 
             // Check if order is ready for collection
-            if (screenOrder.OrderStatus?.Status != "waiting_collection")
+            if (screenOrder.OrderStatus?.Status != Status.WaitingForCollection)
             {
                 throw new InvalidOperationException($"Screen order {orderId} is not ready for collection. Current status: {screenOrder.OrderStatus?.Status}");
             }
@@ -164,7 +165,7 @@ public class LogisticsService
             }
 
             // Update order status to collected
-            var statusUpdated = await _screenOrderService.UpdateStatusAsync(orderId, "collected");
+            var statusUpdated = await _screenOrderService.UpdateStatusAsync(orderId, Status.Collected);
             if (!statusUpdated)
             {
                 throw new InvalidOperationException($"Failed to update order {orderId} status to collected");
@@ -179,7 +180,7 @@ public class LogisticsService
                 OrderId = orderId,
                 QuantityCollected = quantity,
                 ItemType = "screens",
-                Status = "collected",
+                Status = Status.Collected,
                 PreparedAt = DateTime.UtcNow
             };
         }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ScreenProducerAPI.Models;
 using ScreenProducerAPI.ScreenDbContext;
+using ScreenProducerAPI.Util;
 
 namespace ScreenProducerAPI.Services;
 
@@ -90,8 +91,8 @@ public class ProductService
             // These are considered "reserved" and unavailable for new orders
             var reservedScreens = await _context.ScreenOrders
                 .Include(so => so.OrderStatus)
-                .Where(so => so.OrderStatus.Status == "waiting_payment" || 
-                           so.OrderStatus.Status == "waiting_collection")
+                .Where(so => so.OrderStatus.Status == Status.WaitingForPayment || 
+                           so.OrderStatus.Status == Status.WaitingForCollection)
                 .SumAsync(so => so.Quantity);
 
             var availableStock = totalProduced - reservedScreens;
@@ -175,8 +176,8 @@ public class ProductService
 
             var reservedScreens = await _context.ScreenOrders
                 .Include(so => so.OrderStatus)
-                .Where(so => so.OrderStatus.Status == "waiting_payment" || 
-                           so.OrderStatus.Status == "waiting_collection")
+                .Where(so => so.OrderStatus.Status == Status.WaitingForPayment || 
+                           so.OrderStatus.Status == Status.WaitingForCollection)
                 .SumAsync(so => so.Quantity);
 
             var available = Math.Max(0, totalProduced - reservedScreens);
