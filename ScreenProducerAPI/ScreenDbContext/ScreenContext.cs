@@ -18,4 +18,45 @@ public class ScreenContext : DbContext
     {
 
     }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Equipment>()
+            .HasOne(e => e.EquipmentParameters)
+            .WithMany()
+            .HasForeignKey(e => e.ParametersID)
+            .HasPrincipalKey(ep => ep.Id);
+
+        modelBuilder.Entity<PurchaseOrder>()
+            .HasOne(po => po.RawMaterial)
+            .WithMany()
+            .HasForeignKey(po => po.RawMaterialId)
+            .HasPrincipalKey(m => m.Id);
+
+        modelBuilder.Entity<PurchaseOrder>()
+            .HasOne(po => po.OrderStatus)
+            .WithMany()
+            .HasForeignKey(po => po.OrderStatusId)
+            .HasPrincipalKey(os => os.Id);
+
+        modelBuilder.Entity<ScreenOrder>()
+            .HasOne(so => so.OrderStatus)
+            .WithMany()
+            .HasForeignKey(so => so.OrderStatusId)
+            .HasPrincipalKey(os => os.Id);
+
+        modelBuilder.Entity<ScreenOrder>()
+            .HasOne(so => so.Product)
+            .WithMany()
+            .HasForeignKey(so => so.ProductId)
+            .HasPrincipalKey(p => p.Id);
+
+        modelBuilder.Entity<Equipment>()
+            .HasOne(e => e.PurchaseOrder)
+            .WithMany()
+            .HasForeignKey(e => e.PurchaseOrderId)
+            .HasPrincipalKey(po => po.Id);
+    }
 }
