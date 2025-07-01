@@ -1,5 +1,6 @@
 ﻿using ScreenProducerAPI.Endpoints;
 using ScreenProducerAPI.Services;
+using ScreenProducerAPI.Services.BankServices;
 
 namespace ScreenProducerAPI.Configuration;
 
@@ -24,7 +25,10 @@ public static class ApiConfiguration
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
         });
-
+        services.AddOptions<BankServiceOptions>()
+            .BindConfiguration($"ExternalServices:{BankServiceOptions.Section}")
+            .ValidateDataAnnotations();
+        services.AddHttpClient<BankService>();
         services.AddScoped<MaterialService>();
         services.AddScoped<ProductService>();
         services.AddScoped<EquipmentService>();
