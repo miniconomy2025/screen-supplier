@@ -102,6 +102,7 @@ namespace ScreenProducerAPI.Services
                 using var scope = _serviceProvider.CreateScope();
                 var equipmentService = scope.ServiceProvider.GetRequiredService<EquipmentService>();
                 var materialService = scope.ServiceProvider.GetRequiredService<MaterialService>();
+                var reorderService = scope.ServiceProvider.GetRequiredService<ReorderService>();
 
                 var simDate = new DateTime(2050, 1, 1).AddDays(day);
                 _logger.LogInformation("START OF DAY {Day} ({SimDate:yyyy-MM-dd})", day, simDate);
@@ -111,6 +112,7 @@ namespace ScreenProducerAPI.Services
 
                 // Start production if materials are available
                 var machinesStarted = await equipmentService.StartProductionAsync();
+                await reorderService.CheckAndProcessReordersAsync();
 
                 if (machinesStarted > 0)
                 {

@@ -27,13 +27,13 @@ public class PurchaseOrderService
     {
         try
         {
-            // Get waiting_delivery status
+            // Get requires_payement_supplier status
             var requiresPaymentToSupplier = await _context.OrderStatuses
                 .FirstOrDefaultAsync(os => os.Status == Status.RequiresPaymentToSupplier);
 
             if (requiresPaymentToSupplier == null)
             {
-                _logger.LogError("Status 'waiting_delivery' not found");
+                _logger.LogError("Status 'requires_payement_supplier' not found");
                 return null;
             }
 
