@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ScreenProducerAPI.Models;
 using ScreenProducerAPI.ScreenDbContext;
+using ScreenProducerAPI.Util;
 
 namespace ScreenProducerAPI.Services;
 
@@ -28,7 +29,7 @@ public class PurchaseOrderService
         {
             // Get waiting_delivery status
             var waitingDeliveryStatus = await _context.OrderStatuses
-                .FirstOrDefaultAsync(os => os.Status == "waiting_delivery");
+                .FirstOrDefaultAsync(os => os.Status == Status.WaitingForDelivery);
 
             if (waitingDeliveryStatus == null)
             {
@@ -131,7 +132,7 @@ public class PurchaseOrderService
             if (purchaseOrder.QuantityDelivered >= purchaseOrder.Quantity)
             {
                 var deliveredStatus = await _context.OrderStatuses
-                    .FirstOrDefaultAsync(os => os.Status == "delivered");
+                    .FirstOrDefaultAsync(os => os.Status == Status.Delivered);
 
                 if (deliveredStatus != null)
                 {
@@ -203,7 +204,7 @@ public class PurchaseOrderService
         return await _context.PurchaseOrders
             .Include(po => po.OrderStatus)
             .Include(po => po.RawMaterial)
-            .Where(po => po.OrderStatus.Status != "delivered")
+            .Where(po => po.OrderStatus.Status != Status.Delivered)
             .ToListAsync();
     }
 }

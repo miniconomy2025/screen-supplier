@@ -3,6 +3,7 @@ using ScreenProducerAPI.Models.Responses;
 using ScreenProducerAPI.Services;
 using System.Text.Json;
 using System.Text;
+using ScreenProducerAPI.Util;
 
 namespace ScreenProducerAPI.Services;
 
@@ -139,7 +140,7 @@ public class LogisticsService
             }
 
             // Check if order is ready for collection
-            if (screenOrder.OrderStatus?.Status != "waiting_collection")
+            if (screenOrder.OrderStatus?.Status != Status.WaitingForCollection)
             {
                 throw new InvalidOperationException($"Screen order {orderId} is not ready for collection. Current status: {screenOrder.OrderStatus?.Status}");
             }
@@ -164,7 +165,7 @@ public class LogisticsService
             }
 
             // Update order status to collected
-            var statusUpdated = await _screenOrderService.UpdateStatusAsync(orderId, "collected");
+            var statusUpdated = await _screenOrderService.UpdateStatusAsync(orderId, Status.Collected);
             if (!statusUpdated)
             {
                 throw new InvalidOperationException($"Failed to update order {orderId} status to collected");
@@ -179,7 +180,7 @@ public class LogisticsService
                 OrderId = orderId,
                 QuantityCollected = quantity,
                 ItemType = "screens",
-                Status = "collected",
+                Status = Status.Collected,
                 PreparedAt = DateTime.UtcNow
             };
         }
@@ -190,10 +191,14 @@ public class LogisticsService
         }
     }
 
-    public async Task<(int ShippingID, int BankAccount)> RequestPickupAsync(int orderId, int quantity, string type, string fromCompany, string toCompany)
+    public async Task<(string PickupRequestId, string Message)> RequestPickupAsync(
+        string originCompanyId,
+        string destinationCompanyId,
+        string originalExternalOrderId,
+        List<PickupRequestItem> items)
     {
-        _logger.LogInformation("Requesting pickup for order {OrderId}: {Quantity} {Type} from {FromCompany} to {ToCompany}", 
-            orderId, quantity, type, fromCompany, toCompany);
+        _logger.LogInformation("Requesting pickup: From={Origin} To={Destination} OrderId={OrderId} Items={ItemCount}",
+            originCompanyId, destinationCompanyId, originalExternalOrderId, items.Count);
 
         try
         {
@@ -203,20 +208,24 @@ public class LogisticsService
                 throw new InvalidOperationException("Bulk logistics URL not configured");
             }
 
-            var requestData = new
+            var requestData = new PickupRequestBody
             {
-                orderId = orderId,
-                quantity = quantity,
-                type = type,
-                from = fromCompany,
-                to = toCompany,
-                requestedAt = DateTime.UtcNow
+                OriginCompanyId = originCompanyId,
+                DestinationCompanyId = destinationCompanyId,
+                OriginalExternalOrderId = originalExternalOrderId,
+                Items = items
             };
 
-            var json = JsonSerializer.Serialize(requestData);
+            var json = JsonSerializer.Serialize(requestData, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await _httpClient.PostAsync($"{bulkLogisticsUrl}/request-pickup", content);
+            _logger.LogInformation("Sending pickup request to {Url}: {RequestData}",
+                $"{bulkLogisticsUrl}/pickup-request", json);
+
+            var response = await _httpClient.PostAsync($"{bulkLogisticsUrl}/pickup-request", content);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -225,29 +234,53 @@ public class LogisticsService
             }
 
             var responseContent = await response.Content.ReadAsStringAsync();
-            var pickupResponse = JsonSerializer.Deserialize<PickupResponse>(responseContent, new JsonSerializerOptions
+            var pickupResponse = JsonSerializer.Deserialize<PickupRequestResponse>(responseContent, new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true
             });
 
-            if (pickupResponse?.ShipmentId == null)
+            if (pickupResponse?.PickupRequestId == null)
             {
                 throw new InvalidOperationException("Invalid response from bulk logistics service");
             }
 
-            _logger.LogInformation("Pickup requested successfully. Shipment ID: {ShipmentId}", pickupResponse.ShipmentId);
-            
-            return (pickupResponse.ShipmentId, pickupResponse.BankAccountNumber);
+            _logger.LogInformation("Pickup requested successfully. PickupRequestId: {PickupRequestId}",
+                pickupResponse.PickupRequestId);
+
+            return (pickupResponse.PickupRequestId, pickupResponse.Message ?? "Pickup request created successfully");
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "HTTP error requesting pickup for order {OrderId}", orderId);
+            _logger.LogError(ex, "HTTP error requesting pickup for order {OrderId}", originalExternalOrderId);
             throw new InvalidOperationException("Failed to communicate with bulk logistics service", ex);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error requesting pickup for order {OrderId}", orderId);
+            _logger.LogError(ex, "Error requesting pickup for order {OrderId}", originalExternalOrderId);
             throw;
         }
+    }
+
+    public static List<PickupRequestItem> CreatePickupItems(string itemType, double quantity, bool isEquipment = false)
+    {
+        var measurementType = isEquipment ? "UNIT" : "KG";
+        var itemName = itemType.ToLower() switch
+        {
+            "equipment" => "machine",
+            "sand" => "sand",
+            "copper" => "copper",
+            "screens" => "screens",
+            _ => itemType.ToLower()
+        };
+
+        return new List<PickupRequestItem>
+        {
+            new PickupRequestItem
+            {
+                Name = itemName,
+                Quantity = quantity,
+                MeasurementType = measurementType
+            }
+        };
     }
 }

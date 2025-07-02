@@ -9,7 +9,7 @@ public static class PaymentEndpoints
 {
     public static IEndpointRouteBuilder AddPaymentEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapPost("/payment-confirmation", PaymentConfirmationHandler)
+        endpoints.MapPost("/payment", PaymentConfirmationHandler)
             .Accepts<PaymentConfirmationRequest>("application/json")
             .Produces<PaymentConfirmationResponse>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status400BadRequest)

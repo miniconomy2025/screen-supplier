@@ -3,6 +3,7 @@ using ScreenProducerAPI.Models;
 using ScreenProducerAPI.Models.Requests;
 using ScreenProducerAPI.Models.Responses;
 using ScreenProducerAPI.ScreenDbContext;
+using ScreenProducerAPI.Util;
 
 namespace ScreenProducerAPI.Services;
 
@@ -43,7 +44,7 @@ public class ScreenOrderService
             var screenOrder = await _context.ScreenOrders
                 .Include(so => so.OrderStatus)
                 .Include(so => so.Product)
-                .FirstOrDefaultAsync(so => so.Id == orderId && so.OrderStatus.Status == "waiting_payment");
+                .FirstOrDefaultAsync(so => so.Id == orderId && so.OrderStatus.Status == Status.WaitingForPayment);
 
             if (screenOrder == null)
             {
@@ -69,15 +70,15 @@ public class ScreenOrderService
 
             // Update status if fully paid
             string newStatus = screenOrder.OrderStatus?.Status ?? "unknown";
-            if (isFullyPaid && screenOrder.OrderStatus?.Status == "waiting_payment")
+            if (isFullyPaid && screenOrder.OrderStatus?.Status == Status.WaitingForPayment)
             {
                 var waitingCollectionStatus = await _context.OrderStatuses
-                    .FirstOrDefaultAsync(os => os.Status == "waiting_collection");
+                    .FirstOrDefaultAsync(os => os.Status == Status.WaitingForCollection);
 
                 if (waitingCollectionStatus != null)
                 {
                     screenOrder.OrderStatusId = waitingCollectionStatus.Id;
-                    newStatus = "waiting_collection";
+                    newStatus = Status.WaitingForCollection;
                     _logger.LogInformation("Order {OrderId} status updated to waiting_collection - fully paid", orderId);
                 }
             }
@@ -128,7 +129,7 @@ public class ScreenOrderService
 
             // Check if we have enough screens available (using smart stock calculation)
             var availableStock = await _productService.GetAvailableStockAsync();
-            if (availableStock < quantity)
+            if (availableStock <= quantity)
             {
                 _logger.LogWarning("Insufficient screens available. Requested: {Requested}, Available: {Available}",
                     quantity, availableStock);
@@ -137,7 +138,7 @@ public class ScreenOrderService
 
             // Get waiting_payment status
             var waitingPaymentStatus = await _context.OrderStatuses
-                .FirstOrDefaultAsync(os => os.Status == "waiting_payment");
+                .FirstOrDefaultAsync(os => os.Status == Status.WaitingForPayment);
 
             if (waitingPaymentStatus == null)
             {
@@ -153,11 +154,12 @@ public class ScreenOrderService
                 UnitPrice = product.Price,
                 OrderStatusId = waitingPaymentStatus.Id,
                 ProductId = product.Id,
-                AmountPaid = null
+                AmountPaid = 0
             };
 
             _context.ScreenOrders.Add(screenOrder);
             await _context.SaveChangesAsync();
+
 
             _logger.LogInformation("Created screen order {OrderId} for {Quantity} screens at {UnitPrice} each. Total: {Total}",
                 screenOrder.Id, quantity, product.Price, quantity * product.Price);
@@ -255,7 +257,7 @@ public class ScreenOrderService
         return await _context.ScreenOrders
             .Include(so => so.OrderStatus)
             .Include(so => so.Product)
-            .Where(so => so.OrderStatus.Status != "collected")
+            .Where(so => so.OrderStatus.Status != Status.Collected)
             .ToListAsync();
     }
 

@@ -9,10 +9,11 @@ public static class ProductEndpoints
 {
     public static IEndpointRouteBuilder AddProductEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapGet("/available-parts", GetProductsHandler)
+        endpoints.MapGet("/screens", GetProductsHandler)
             .Produces<ProductResponse>(StatusCodes.Status200OK)
-            .WithTags("Parts")
-            .WithName("GetParts");
+            .WithTags("Screen")
+            .WithName("GetScreens")
+            .WithSummary("Get screens on offer, and current price based on our average costs...");
 
         return endpoints;
     }
