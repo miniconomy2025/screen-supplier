@@ -9,76 +9,97 @@ public static class LogisticsEndpoints
 {
     public static IEndpointRouteBuilder AddLogisticsEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapPost("/dropoff", HandleDropoff)
-            .Accepts<DropoffRequest>("application/json")
-            .Produces<DropoffResponse>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status400BadRequest)
-            .WithTags("Logistics")
-            .WithName("HandleDropoff")
-            .WithSummary("Handle materials/equipment delivery from logistics company");
-
-        endpoints.MapPost("/collect", HandleCollect)
-            .Accepts<CollectRequest>("application/json")
-            .Produces<CollectResponse>(StatusCodes.Status200OK)
+        endpoints.MapPost("/logistics", HandleLogistics)
+            .Accepts<LogisticsRequest>("application/json")
+            .Produces<LogisticsResponse>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status400BadRequest)
             .Produces(StatusCodes.Status404NotFound)
             .WithTags("Logistics")
-            .WithName("HandleCollect")
-            .WithSummary("Handle screen collection by logistics company");
+            .WithName("HandleLogistics")
+            .WithSummary("Handle logistics operations - both deliveries and pickups");
 
         return endpoints;
     }
 
-    private static async Task<IResult> HandleDropoff(
-        DropoffRequest request,
-        [FromServices] LogisticsService logisticsService)
+    private static async Task<IResult> HandleLogistics(
+        LogisticsRequest request,
+        [FromServices] LogisticsService logisticsService,
+        [FromServices] ILogger<LogisticsRequest> logger)
     {
         try
         {
-            if (request == null || request.Id <= 0 || request.Quantity <= 0)
+            // Basic validation
+            if (request == null || request.Id <= 0 || request.Quantity <= 0 || string.IsNullOrWhiteSpace(request.Type))
             {
-                return Results.BadRequest(new { error = "Invalid dropoff request. Id (shipmentId) and Quantity must be positive." });
+                logger.LogWarning("Invalid logistics request: Id={Id}, Quantity={Quantity}, Type={Type}",
+                    request?.Id, request?.Quantity, request?.Type);
+                return Results.BadRequest(new { error = "Invalid logistics request. Id, Quantity must be positive and Type must be specified." });
             }
 
-            var result = await logisticsService.HandleDropoffAsync(request);
-            return Results.Ok(result);
+            logger.LogInformation("Processing logistics request: Type={Type}, Id={Id}, Quantity={Quantity}",
+                request.Type, request.Id, request.Quantity);
+
+            switch (request.Type.ToUpper())
+            {
+                case "DELIVERY":
+                    var dropoffRequest = new DropoffRequest
+                    {
+                        Id = request.Id,
+                        Quantity = request.Quantity
+                    };
+                    var dropoffResult = await logisticsService.HandleDropoffAsync(dropoffRequest);
+
+                    return Results.Ok(new LogisticsResponse
+                    {
+                        Success = dropoffResult.Success,
+                        Id = dropoffResult.ShipmentId,
+                        OrderId = dropoffResult.OrderId,
+                        Quantity = dropoffResult.QuantityReceived,
+                        ItemType = dropoffResult.ItemType,
+                        Message = dropoffResult.Message,
+                        ProcessedAt = dropoffResult.ProcessedAt
+                    });
+
+                case "PICKUP":
+                    var collectRequest = new CollectRequest
+                    {
+                        Id = request.Id,
+                        Quantity = request.Quantity
+                    };
+                    var collectResult = await logisticsService.HandleCollectAsync(collectRequest);
+
+                    if (collectResult == null)
+                    {
+                        return Results.NotFound(new { error = "Order not found or not ready for collection" });
+                    }
+
+                    return Results.Ok(new LogisticsResponse
+                    {
+                        Success = collectResult.Success,
+                        Id = collectResult.OrderId,
+                        OrderId = collectResult.OrderId,
+                        Quantity = collectResult.QuantityCollected,
+                        ItemType = collectResult.ItemType,
+                        Message = collectResult.Status,
+                        ProcessedAt = collectResult.PreparedAt
+                    });
+
+                default:
+                    logger.LogWarning("Unknown logistics type: {Type}", request.Type);
+                    return Results.BadRequest(new { error = $"Unknown logistics type: {request.Type}. Must be 'DELIVERY' or 'PICKUP'." });
+            }
         }
         catch (InvalidOperationException ex)
         {
+            logger.LogError(ex, "Business logic error in logistics operation: Type={Type}, Id={Id}",
+                request?.Type, request?.Id);
             return Results.BadRequest(new { error = ex.Message });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return Results.Problem("An error occurred processing the dropoff");
-        }
-    }
-
-    private static async Task<IResult> HandleCollect(
-        CollectRequest request,
-        [FromServices] LogisticsService logisticsService)
-    {
-        try
-        {
-            if (request == null || request.Id <= 0 || request.Quantity <= 0)
-            {
-                return Results.BadRequest(new { error = "Invalid collect request. Id (orderId) and Quantity must be positive." });
-            }
-
-            var result = await logisticsService.HandleCollectAsync(request);
-            if (result == null)
-            {
-                return Results.NotFound(new { error = "Order not found or not ready for collection" });
-            }
-            
-            return Results.Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Results.BadRequest(new { error = ex.Message });
-        }
-        catch (Exception)
-        {
-            return Results.Problem("An error occurred preparing the collection");
+            logger.LogError(ex, "Unexpected error in logistics operation: Type={Type}, Id={Id}",
+                request?.Type, request?.Id);
+            return Results.Problem("An error occurred processing the logistics request");
         }
     }
 }
