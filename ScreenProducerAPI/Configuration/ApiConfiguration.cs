@@ -38,5 +38,7 @@ public static class ApiConfiguration
         services.AddScoped<ScreenOrderService>();
         services.AddScoped<LogisticsService>();
         services.AddScoped<BankService>();
+
+        services.AddSingleton<SimulationTimeService>();
     }
 }

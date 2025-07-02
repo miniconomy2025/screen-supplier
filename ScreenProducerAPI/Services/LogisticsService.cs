@@ -1,9 +1,11 @@
+using Microsoft.EntityFrameworkCore;
 using ScreenProducerAPI.Models.Requests;
 using ScreenProducerAPI.Models.Responses;
+using ScreenProducerAPI.ScreenDbContext;
 using ScreenProducerAPI.Services;
-using System.Text.Json;
-using System.Text;
 using ScreenProducerAPI.Util;
+using System.Text;
+using System.Text.Json;
 
 namespace ScreenProducerAPI.Services;
 
@@ -17,6 +19,7 @@ public class LogisticsService
     private readonly MaterialService _materialService;
     private readonly EquipmentService _equipmentService;
     private readonly ProductService _productService;
+    private readonly ScreenContext _context;
 
     public LogisticsService(
         ILogger<LogisticsService> logger,
@@ -26,7 +29,8 @@ public class LogisticsService
         ScreenOrderService screenOrderService,
         MaterialService materialService,
         EquipmentService equipmentService,
-        ProductService productService)
+        ProductService productService,
+        ScreenContext context)
     {
         _logger = logger;
         _configuration = configuration;
@@ -36,6 +40,7 @@ public class LogisticsService
         _materialService = materialService;
         _equipmentService = equipmentService;
         _productService = productService;
+        _context = context;
     }
 
     public async Task<DropoffResponse> HandleDropoffAsync(DropoffRequest request)
@@ -53,6 +58,13 @@ public class LogisticsService
             if (purchaseOrder == null)
             {
                 throw new InvalidOperationException($"Purchase order with shipment ID {shipmentId} not found");
+            }
+
+            // Validate in waiting for delivery state
+            var waitingDeliveryStatus = await _context.OrderStatuses.FirstOrDefaultAsync(os => os.Status == Status.WaitingForDelivery);
+            if (purchaseOrder.OrderStatusId != waitingDeliveryStatus.Id)
+            {
+                throw new InvalidOperationException($"Purchase order with shipment ID {shipmentId} not waiting for delivery.");
             }
 
             // Validate delivery quantity
@@ -191,7 +203,7 @@ public class LogisticsService
         }
     }
 
-    public async Task<(string PickupRequestId, string Message)> RequestPickupAsync(
+    public async Task<(string PickupRequestId, string BankAccountNumber)> RequestPickupAsync(
         string originCompanyId,
         string destinationCompanyId,
         string originalExternalOrderId,
@@ -247,7 +259,7 @@ public class LogisticsService
             _logger.LogInformation("Pickup requested successfully. PickupRequestId: {PickupRequestId}",
                 pickupResponse.PickupRequestId);
 
-            return (pickupResponse.PickupRequestId, pickupResponse.Message ?? "Pickup request created successfully");
+            return (pickupResponse.PickupRequestId, pickupResponse.BankAccountNumber);
         }
         catch (HttpRequestException ex)
         {

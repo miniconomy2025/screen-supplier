@@ -28,10 +28,10 @@ public class PurchaseOrderService
         try
         {
             // Get waiting_delivery status
-            var waitingDeliveryStatus = await _context.OrderStatuses
-                .FirstOrDefaultAsync(os => os.Status == Status.WaitingForDelivery);
+            var requiresPaymentToSupplier = await _context.OrderStatuses
+                .FirstOrDefaultAsync(os => os.Status == Status.RequiresPaymentToSupplier);
 
-            if (waitingDeliveryStatus == null)
+            if (requiresPaymentToSupplier == null)
             {
                 _logger.LogError("Status 'waiting_delivery' not found");
                 return null;
@@ -47,7 +47,7 @@ public class PurchaseOrderService
                 UnitPrice = unitPrice,
                 BankAccountNumber = sellerBankAccount,
                 Origin = origin,
-                OrderStatusId = waitingDeliveryStatus.Id,
+                OrderStatusId = requiresPaymentToSupplier.Id,
                 RawMaterialId = isEquipmentOrder ? null : rawMaterialId,
                 EquipmentOrder = isEquipmentOrder
             };

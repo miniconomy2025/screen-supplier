@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using ScreenProducerAPI.Configuration;
 using ScreenProducerAPI.ScreenDbContext;
+using ScreenProducerAPI.Services;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,6 +37,16 @@ app.UseHttpsRedirection();
 
 app.AddEndpoints();
 app.UseRateLimiter();
+
+var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+lifetime.ApplicationStopping.Register(() =>
+{
+    var simulationService = app.Services.GetRequiredService<SimulationTimeService>();
+    if (simulationService.IsSimulationRunning())
+    {
+        simulationService.StopSimulation();
+    }
+});
 
 app.Run();
 

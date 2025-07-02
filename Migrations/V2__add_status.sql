@@ -2,6 +2,9 @@ INSERT INTO "order_status" ("name") VALUES
 ('waiting_payment'),
 ('waiting_collection'), 
 ('collected'),
+('requires_payment_supplier'),
+('requires_delivery'),
+('requires_payment_delivery'),
 ('waiting_delivery'),
 ('delivered'),
 ('abandoned');
