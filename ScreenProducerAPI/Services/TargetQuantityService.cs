@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using ScreenProducerAPI.Models;
 using ScreenProducerAPI.Models.Configuration;
 using ScreenProducerAPI.ScreenDbContext;
 using ScreenProducerAPI.Util;
@@ -12,15 +11,17 @@ public class TargetQuantityService
     private readonly ScreenContext _context;
     private readonly ILogger<TargetQuantityService> _logger;
     private readonly IOptionsMonitor<TargetQuantitiesConfig> _targetConfig;
+    private readonly StockStatisticsService _stockStatisticsService;
 
     public TargetQuantityService(
         ScreenContext context,
         ILogger<TargetQuantityService> logger,
-        IOptionsMonitor<TargetQuantitiesConfig> targetConfig)
+        IOptionsMonitor<TargetQuantitiesConfig> targetConfig, StockStatisticsService stockStatisticsService)
     {
         _context = context;
         _logger = logger;
         _targetConfig = targetConfig;
+        _stockStatisticsService = stockStatisticsService;
     }
 
     public async Task<InventoryStatus> GetInventoryStatusAsync()
@@ -42,6 +43,8 @@ public class TargetQuantityService
         var incomingCopper = await GetIncomingMaterialQuantityAsync("copper");
         var incomingEquipment = await GetIncomingEquipmentQuantityAsync();
 
+        var materialStatistics = await _stockStatisticsService.GetMaterialStatisticsAsync();
+
         return new InventoryStatus
         {
             Sand = new MaterialStatus
@@ -50,8 +53,8 @@ public class TargetQuantityService
                 Incoming = incomingSand,
                 Total = currentSand + incomingSand,
                 Target = config.Sand.Target,
-                ReorderPoint = config.Sand.ReorderPoint,
-                NeedsReorder = (currentSand + incomingSand) <= config.Sand.ReorderPoint
+                ReorderPoint = materialStatistics.Sand.ReorderPoint,
+                NeedsReorder = (currentSand + incomingSand) <= materialStatistics.Sand.ReorderPoint
             },
             Copper = new MaterialStatus
             {
@@ -59,8 +62,8 @@ public class TargetQuantityService
                 Incoming = incomingCopper,
                 Total = currentCopper + incomingCopper,
                 Target = config.Copper.Target,
-                ReorderPoint = config.Copper.ReorderPoint,
-                NeedsReorder = (currentCopper + incomingCopper) <= config.Copper.ReorderPoint
+                ReorderPoint = materialStatistics.Copper.ReorderPoint,
+                NeedsReorder = (currentCopper + incomingCopper) <= materialStatistics.Copper.ReorderPoint
             },
             Equipment = new EquipmentStatus
             {
