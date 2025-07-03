@@ -8,6 +8,7 @@ public class ReorderService
 {
     private readonly TargetQuantityService _targetQuantityService;
     private readonly PurchaseOrderService _purchaseOrderService;
+    private readonly PurchaseOrderQueueService _queueService;
     private readonly MaterialService _materialService;
     private readonly ILogger<ReorderService> _logger;
     private readonly IOptionsMonitor<TargetQuantitiesConfig> _targetConfig;
@@ -16,6 +17,7 @@ public class ReorderService
     public ReorderService(
         TargetQuantityService targetQuantityService,
         PurchaseOrderService purchaseOrderService,
+        PurchaseOrderQueueService queueService,
         MaterialService materialService,
         ILogger<ReorderService> logger,
         IOptionsMonitor<TargetQuantitiesConfig> targetConfig,
@@ -27,6 +29,7 @@ public class ReorderService
         _targetConfig = targetConfig;
         _reorderConfig = reorderConfig;
         _materialService = materialService;
+        _queueService = queueService;
     }
 
     public async Task<ReorderResult> CheckAndProcessReordersAsync()
@@ -49,7 +52,7 @@ public class ReorderService
             _logger.LogInformation("Sand reorder required. Current + Incoming: {Total}, Reorder Point: {ReorderPoint}",
                 status.Sand.Total, status.Sand.ReorderPoint);
 
-            var sandOrder = await CreateMaterialReorderAsync("sand", config.Sand.OrderQuantity, "Sand Supplier");
+            var sandOrder = await CreateMaterialReorderAsync("sand", config.Sand.OrderQuantity);
             if (sandOrder != null)
             {
                 result.SandOrderCreated = true;
@@ -65,7 +68,7 @@ public class ReorderService
             _logger.LogInformation("Copper reorder required. Current + Incoming: {Total}, Reorder Point: {ReorderPoint}",
                 status.Copper.Total, status.Copper.ReorderPoint);
 
-            var copperOrder = await CreateMaterialReorderAsync("copper", config.Copper.OrderQuantity, "Copper Supplier");
+            var copperOrder = await CreateMaterialReorderAsync("copper", config.Copper.OrderQuantity);
             if (copperOrder != null)
             {
                 result.CopperOrderCreated = true;
@@ -99,11 +102,12 @@ public class ReorderService
         return result;
     }
 
-    private async Task<PurchaseOrder?> CreateMaterialReorderAsync(string materialName, int quantity, string supplierOrigin)
+    private async Task<PurchaseOrder?> CreateMaterialReorderAsync(string materialName, int quantity)
     {
         try
         {
             // For now, use placeholder values - will be replaced with Hand integration later
+            string supplierOrigin = "hand"; // need to decide
             var unitPrice = materialName.ToLower() == "sand" ? 50 : 75; // Default prices
             var sellerBankAccount = "SUPPLIER_BANK_PLACEHOLDER"; // Will come from Hand/Recycler
             Random rnd = new Random();
@@ -122,6 +126,11 @@ public class ReorderService
                 materialId,
                 false
             );
+
+            if (purchaseOrder != null)
+            {
+                _queueService.EnqueuePurchaseOrder(purchaseOrder.Id);
+            }
 
             return purchaseOrder;
         }
@@ -147,10 +156,15 @@ public class ReorderService
                 quantity,
                 unitPrice,
                 sellerBankAccount,
-                "Equipment Supplier",
+                "hand",
                 null,
                 true
             );
+
+            if (purchaseOrder != null)
+            {
+                _queueService.EnqueuePurchaseOrder(purchaseOrder.Id);
+            }
 
             return purchaseOrder;
         }

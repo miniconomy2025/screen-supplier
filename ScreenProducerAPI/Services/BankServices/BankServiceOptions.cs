@@ -5,6 +5,6 @@ namespace ScreenProducerAPI.Services.BankServices;
 public class BankServiceOptions : IOptions<BankServiceOptions>
 {
     public string BaseUrl { get; set; }
-    public static string Section { get; } = "BankService";
+    public static string Section { get; } = "CommercialBank";
     public BankServiceOptions Value => this;
 }

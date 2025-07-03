@@ -14,7 +14,8 @@ public static class ApiConfiguration
             .AddLogisticsEndpoints()
             .AddPaymentEndpoints()
             .AddOrderEndpoints()
-            .AddTargetQuantityEndpoints(); 
+            .AddTargetQuantityEndpoints()
+            .AddQueueEndpoints(); 
 
     }
 
@@ -40,6 +41,17 @@ public static class ApiConfiguration
         services.AddOptions<ReorderSettingsConfig>()
             .BindConfiguration("ReorderSettings")
             .ValidateDataAnnotations();
+
+        services.AddOptions<QueueSettingsConfig>()
+        .BindConfiguration("QueueSettings")
+        .ValidateDataAnnotations();
+
+        services.AddOptions<CompanyInfoConfig>()
+            .BindConfiguration("CompanyInfo")
+            .ValidateDataAnnotations();
+
+        services.AddSingleton<PurchaseOrderQueueService>();
+        services.AddHostedService<QueueProcessingBackgroundService>();
 
         services.AddScoped<TargetQuantityService>();
         services.AddScoped<ReorderService>();
