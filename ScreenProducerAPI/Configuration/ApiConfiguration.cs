@@ -2,6 +2,7 @@
 using ScreenProducerAPI.Models.Configuration;
 using ScreenProducerAPI.Services;
 using ScreenProducerAPI.Services.BankServices;
+using ScreenProducerAPI.Services.SupplierService;
 
 namespace ScreenProducerAPI.Configuration;
 
@@ -15,7 +16,7 @@ public static class ApiConfiguration
             .AddPaymentEndpoints()
             .AddOrderEndpoints()
             .AddTargetQuantityEndpoints()
-            .AddQueueEndpoints(); 
+            .AddQueueEndpoints();
 
     }
 
@@ -55,7 +56,14 @@ public static class ApiConfiguration
 
         services.AddScoped<TargetQuantityService>();
         services.AddScoped<ReorderService>();
-
+        services.AddOptions<SupplierServiceOptions>()
+            .BindConfiguration($"ExternalServices:{SupplierServiceOptions.Section}")
+            .ValidateDataAnnotations();
+        services.AddHttpClient<HandService>();
+        services.AddHttpClient<RecyclerService>();
+        services.AddOptions<StockManagementOptions>()
+            .BindConfiguration(StockManagementOptions.Section)
+            .ValidateDataAnnotations();
         services.AddScoped<MaterialService>();
         services.AddScoped<ProductService>();
         services.AddScoped<EquipmentService>();
@@ -63,7 +71,7 @@ public static class ApiConfiguration
         services.AddScoped<ScreenOrderService>();
         services.AddScoped<LogisticsService>();
         services.AddScoped<BankService>();
-
         services.AddSingleton<SimulationTimeService>();
-       }
+        services.AddScoped<StockStatisticsService>();
+    }
 }
