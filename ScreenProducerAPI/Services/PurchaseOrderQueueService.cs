@@ -1,6 +1,4 @@
-﻿namespace ScreenProducerAPI.Services;
-
-using ScreenProducerAPI.Models;
+﻿using ScreenProducerAPI.Models;
 using ScreenProducerAPI.Models.Configuration;
 using ScreenProducerAPI.Models.Requests;
 using ScreenProducerAPI.ScreenDbContext;
@@ -9,6 +7,8 @@ using ScreenProducerAPI.Util;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
+
+namespace ScreenProducerAPI.Services;
 
 public class PurchaseOrderQueueService
 {
@@ -79,7 +79,6 @@ public class PurchaseOrderQueueService
                 if (processed)
                 {
                     processedCount++;
-                    // Order was successfully processed or moved to terminal state
                     _logger.LogInformation("Successfully processed purchase order {PurchaseOrderId} in status {Status}",
                         purchaseOrder.Id, purchaseOrder.OrderStatus.Status);
                 }
@@ -148,13 +147,11 @@ public class PurchaseOrderQueueService
                 return await ProcessLogisticsPaymentAsync(serviceProvider, purchaseOrder, queueItem);
 
             case Status.WaitingForDelivery:
-                // Nothing to do, waiting for logistics to deliver
                 _logger.LogInformation("Purchase order {PurchaseOrderId} is waiting for delivery, removing from queue", purchaseOrder.Id);
                 return true;
 
             case Status.Delivered:
             case Status.Abandoned:
-                // Terminal states, remove from queue
                 _logger.LogInformation("Purchase order {PurchaseOrderId} is in terminal state {Status}, removing from queue",
                     purchaseOrder.Id, status);
                 return true;
@@ -176,15 +173,13 @@ public class PurchaseOrderQueueService
             var purchaseOrderService = serviceProvider.GetRequiredService<PurchaseOrderService>();
 
             var totalAmount = purchaseOrder.Quantity * purchaseOrder.UnitPrice;
-            var paymentRequest = new MakePaymentRequest
-            {
-                ToAccountNumber = purchaseOrder.BankAccountNumber,
-                ToBankId = 1, // ??? Not sure why there is another bankID was in there docs....
-                Amount = totalAmount,
-                Description = $"Payment for purchase order {purchaseOrder.OrderID}"
-            };
+            var description = purchaseOrder.OrderID.ToString(); // Use OrderID as description
 
-            var paymentSuccess = await bankService.MakePayment(paymentRequest);
+            var paymentSuccess = await bankService.MakePaymentAsync(
+                purchaseOrder.BankAccountNumber,
+                "commercial-bank", // Use enum value from bank API
+                totalAmount,
+                description);
 
             if (paymentSuccess)
             {
@@ -242,9 +237,9 @@ public class PurchaseOrderQueueService
             }
 
             var (pickupRequestId, logisticsBankAccount) = await logisticsService.RequestPickupAsync(
-                purchaseOrder.Origin, // Origin - materials/equipment come from
-                companyInfo.CompanyId, // Destination - us
-                purchaseOrder.OrderID.ToString(), // External order ID
+                purchaseOrder.Origin,
+                companyInfo.CompanyId,
+                purchaseOrder.OrderID.ToString(),
                 pickupItems
             );
 
@@ -276,21 +271,16 @@ public class PurchaseOrderQueueService
             var bankService = serviceProvider.GetRequiredService<BankService>();
             var purchaseOrderService = serviceProvider.GetRequiredService<PurchaseOrderService>();
 
-            // For now, use a default logistics cost - this should come from the pickup response
-            // Will be enhanced when we have the full logistics integration
-            var logisticsCost = 500; // We need to find out if pricing is dynamic or not if so will need to come from the other request and store either as
-            // db field or in queue/ probably easiest to add another column called shipping cost on a order ?
-            var logisticsBankAccount = "LOGISTICS_BANK_PLACEHOLDER"; // Should come from pickup response
+            // For now, use a default logistics cost
+            var logisticsCost = 500;
+            var logisticsBankAccount = "LOGISTICS_BANK_PLACEHOLDER";
+            var description = $"logistics_{purchaseOrder.ShipmentID}";
 
-            var paymentRequest = new MakePaymentRequest
-            {
-                ToAccountNumber = logisticsBankAccount,
-                ToBankId = 1, // Commercial bank ID
-                Amount = logisticsCost,
-                Description = $"Logistics payment for shipment {purchaseOrder.ShipmentID}"
-            };
-
-            var paymentSuccess = await bankService.MakePayment(paymentRequest);
+            var paymentSuccess = await bankService.MakePaymentAsync(
+                logisticsBankAccount,
+                "commercial-bank",
+                logisticsCost,
+                description);
 
             if (paymentSuccess)
             {

@@ -23,8 +23,7 @@ public static class QueueEndpoints
     }
 
     private static IResult GetQueueStatusHandler(
-        [FromServices] PurchaseOrderQueueService queueService,
-        [FromServices] ILogger<PurchaseOrderQueueService> logger)
+        [FromServices] PurchaseOrderQueueService queueService)
     {
         try
         {
@@ -36,24 +35,19 @@ public static class QueueEndpoints
                 Timestamp = DateTime.UtcNow
             };
 
-            logger.LogInformation("Queue status requested: {QueueCount} items in queue", queueCount);
             return Results.Ok(response);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error getting queue status");
             return Results.Problem("An error occurred getting queue status");
         }
     }
 
     private static async Task<IResult> ProcessQueueHandler(
-        [FromServices] PurchaseOrderQueueService queueService,
-        [FromServices] ILogger<PurchaseOrderQueueService> logger)
+        [FromServices] PurchaseOrderQueueService queueService)
     {
         try
         {
-            logger.LogInformation("Manual queue processing triggered");
-
             var queueCountBefore = queueService.GetQueueCount();
             await queueService.ProcessQueueAsync();
             var queueCountAfter = queueService.GetQueueCount();
@@ -66,12 +60,10 @@ public static class QueueEndpoints
                 ProcessedAt = DateTime.UtcNow
             };
 
-            logger.LogInformation("Manual queue processing completed: {Before} -> {After}", queueCountBefore, queueCountAfter);
             return Results.Ok(response);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error during manual queue processing");
             return Results.Problem("An error occurred processing the queue");
         }
     }

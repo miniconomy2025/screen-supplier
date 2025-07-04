@@ -16,25 +16,16 @@ public static class TargetQuantityEndpoints
     }
 
     private static async Task<IResult> GetTargetsHandler(
-        [FromServices] TargetQuantityService targetQuantityService,
-        [FromServices] ILogger<TargetQuantityService> logger)
+        [FromServices] TargetQuantityService targetQuantityService)
     {
         try
         {
-            logger.LogInformation("Retrieving inventory status and targets");
-
             var status = await targetQuantityService.GetInventoryStatusAsync();
-
-            logger.LogInformation("Retrieved inventory status: Sand {SandTotal}/{SandTarget}, Copper {CopperTotal}/{CopperTarget}, Equipment {EquipmentTotal}/{EquipmentTarget}",
-                status.Sand.Total, status.Sand.Target,
-                status.Copper.Total, status.Copper.Target,
-                status.Equipment.Total, status.Equipment.Target);
 
             return Results.Ok(status);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving inventory status");
             return Results.Problem("An error occurred retrieving inventory status");
         }
     }

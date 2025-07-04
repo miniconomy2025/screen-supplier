@@ -1,220 +1,228 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using ScreenProducerAPI.Models;
-using ScreenProducerAPI.Models.Requests;
 using ScreenProducerAPI.Models.Responses;
 using ScreenProducerAPI.ScreenDbContext;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ScreenProducerAPI.Services.BankServices;
 
-public class BankService(HttpClient httpClient, ScreenContext _context, IOptions<BankServiceOptions> options,
-    ILogger<BankService> _logger)
+public class BankService
 {
-    //TODO: This need to be tested once commercial bank is available
-    private readonly JsonSerializerOptions jsonSerializerOptions = new()
+    private readonly HttpClient _httpClient;
+    private readonly ScreenContext _context;
+    private readonly IOptions<BankServiceOptions> _options;
+    private readonly IConfiguration _configuration;
+
+    private readonly JsonSerializerOptions _jsonOptions = new()
     {
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
+
+    public BankService(
+        HttpClient httpClient,
+        ScreenContext context,
+        IOptions<BankServiceOptions> options,
+        IConfiguration configuration)
+    {
+        _httpClient = httpClient;
+        _context = context;
+        _options = options;
+        _configuration = configuration;
+    }
+
+    public async Task<bool> InitializeBankAccountAsync()
+    {
+        try
+        {
+            var existingAccount = await _context.BankDetails.FirstOrDefaultAsync();
+            if (existingAccount != null)
+            {
+                return true;
+            }
+
+            var accountResponse = await CreateBankAccountAsync();
+            if (string.IsNullOrEmpty(accountResponse?.AccountNumber))
+            {
+                return false;
+            }
+
+            var bankDetails = new BankDetails
+            {
+                AccountNumber = accountResponse.AccountNumber
+            };
+            _context.BankDetails.Add(bankDetails);
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> TakeInitialLoanAsync()
+    {
+        try
+        {
+            var loanAmount = _configuration.GetValue<int>("BankSettings:InitialLoanAmount", 50000);
+
+            var loanRequest = new
+            {
+                amount = loanAmount
+            };
+
+            var response = await _httpClient.PostAsJsonAsync(
+                $"{_options.Value.BaseUrl}/loan",
+                loanRequest,
+                _jsonOptions);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                return false;
+            }
+
+            var loanResponse = await response.Content.ReadFromJsonAsync<LoanCreationResponse>(_jsonOptions);
+            if (loanResponse?.Success == true)
+            {
+                return true;
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            return false;
+        }
+    }
+
+    private async Task<BankAccountResponse?> CreateBankAccountAsync()
+    {
+        try
+        {
+            var response = await _httpClient.PostAsync($"{_options.Value.BaseUrl}/account",
+                JsonContent.Create(new { }));
+            var rawJson = await response.Content.ReadAsStringAsync();
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<BankAccountResponse>(_jsonOptions);
+        }
+        catch (Exception ex)
+        {
+            return null;
+        }
+    }
+
+    public async Task<bool> SetupNotificationUrlAsync()
+    {
+        try
+        {
+            var notificationUrl = _configuration["BankSettings:NotificationUrl"];
+            if (string.IsNullOrEmpty(notificationUrl))
+            {
+                return false;
+            }
+
+            var request = new
+            {
+                notification_url = notificationUrl
+            };
+
+            var response = await _httpClient.PostAsJsonAsync(
+                $"{_options.Value.BaseUrl}/account/me/notify",
+                request,
+                _jsonOptions);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+            return false;
+
+        }
+        catch (Exception ex)
+        {
+            return false;
+        }
+    }
 
     public async Task<string?> GetBankAccountNumberAsync()
     {
         try
         {
             var bankDetails = await _context.BankDetails.FirstOrDefaultAsync();
-
-            if (bankDetails == null)
-            {
-                _logger.LogWarning("No bank account details found in database");
-                return null;
-            }
-
-            _logger.LogInformation("Retrieved bank account number: {AccountNumber}", bankDetails.AccountNumber);
-            return bankDetails.AccountNumber;
+            return bankDetails?.AccountNumber;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving bank account number");
             return null;
         }
     }
 
-    public async Task<bool> SetBankAccountNumberAsync(string accountNumber)
+    public async Task<int> GetAccountBalanceAsync()
     {
         try
         {
-            var existingBankDetails = await _context.BankDetails.FirstOrDefaultAsync();
+            var response = await _httpClient.GetAsync($"{_options.Value.BaseUrl}/account/me/balance");
+            response.EnsureSuccessStatusCode();
 
-            if (existingBankDetails != null)
+            var balanceResponse = await response.Content.ReadFromJsonAsync<BankAccountBalanceResponse>(_jsonOptions);
+            return balanceResponse?.Balance ?? 0;
+        }
+        catch (Exception ex)
+        {
+            return 0;
+        }
+    }
+
+    public async Task<bool> MakePaymentAsync(string toAccountNumber, string toBankName, int amount, string description)
+    {
+        try
+        {
+            var paymentRequest = new
             {
-                existingBankDetails.AccountNumber = accountNumber;
-                _logger.LogInformation("Updated bank account number to: {AccountNumber}", accountNumber);
-            }
-            else
+                to_account_number = toAccountNumber,
+                to_bank_name = toBankName,
+                amount = amount,
+                description = description
+            };
+
+            var response = await _httpClient.PostAsJsonAsync(
+                $"{_options.Value.BaseUrl}/transaction",
+                paymentRequest,
+                _jsonOptions);
+
+            if (response.IsSuccessStatusCode)
             {
-                var bankDetails = new BankDetails
+                var paymentResponse = await response.Content.ReadFromJsonAsync<PaymentResponse>(_jsonOptions);
+                if (paymentResponse?.Success == true)
                 {
-                    AccountNumber = accountNumber
-                };
-                _context.BankDetails.Add(bankDetails);
-                _logger.LogInformation("Created new bank account entry: {AccountNumber}", accountNumber);
-            }
-
-            await _context.SaveChangesAsync();
-            return true;
+                    return true;
+                }
+            }                
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error setting bank account number: {AccountNumber}", accountNumber);
             return false;
         }
+        return false;
     }
+}
 
-    public async Task<bool> HasBankAccountConfiguredAsync()
-    {
-        try
-        {
-            var bankDetails = await _context.BankDetails.FirstOrDefaultAsync();
-            return bankDetails != null && !string.IsNullOrEmpty(bankDetails.AccountNumber);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error checking if bank account is configured");
-            return false;
-        }
-    }
+public class LoanCreationResponse
+{
+    public bool Success { get; set; }
+    [JsonPropertyName("loan_number")]
+    public string LoanNumber { get; set; } = string.Empty;
+}
 
-    public async Task<BankAccountResponse> GetAccountNumber()
-    {
-        try
-        {
-            var baseUrl = options?.Value.BaseUrl;
-            var uriBuilder = new UriBuilder($"{baseUrl}/account/me");
-
-            var request = new HttpRequestMessage(HttpMethod.Get, uriBuilder.Uri);
-
-            var response = await httpClient.SendAsync(request);
-
-            response.EnsureSuccessStatusCode();
-
-            var accountResponse = await response.Content.ReadFromJsonAsync<BankAccountResponse>(jsonSerializerOptions);
-
-            await SetBankAccountNumberAsync(accountResponse.AccountNumber);
-
-            return accountResponse == null ? throw new Exception("Failed to retrieve account number.") : accountResponse;
-        }
-        catch (HttpRequestException ex)
-        {
-            throw new Exception("An error occurred while making the payment.", ex);
-        }
-    }
-
-    public async Task<BankAccountBalanceResponse> GetAccountBalance()
-    {
-        try
-        {
-            var baseUrl = options?.Value.BaseUrl;
-            var uriBuilder = new UriBuilder($"{baseUrl}/account/me/balance");
-
-            var request = new HttpRequestMessage(HttpMethod.Get, uriBuilder.Uri);
-
-            var response = await httpClient.SendAsync(request);
-
-            response.EnsureSuccessStatusCode();
-
-            var accountBalanceResponse = await response.Content.ReadFromJsonAsync<BankAccountBalanceResponse>(jsonSerializerOptions);
-
-            return accountBalanceResponse ?? throw new Exception("Failed to retrieve account balance.");
-        }
-        catch (HttpRequestException ex)
-        {
-            throw new Exception("An error occurred while retrieving the account balance.", ex);
-        }
-    }
-
-    public async Task<bool> MakePayment(MakePaymentRequest request)
-    {
-        try
-        {
-            var baseUrl = options?.Value.BaseUrl;
-            var uriBuilder = new UriBuilder($"{baseUrl}/transaction");
-
-            var response = await httpClient.PostAsJsonAsync(uriBuilder.Uri, request);
-
-            response.EnsureSuccessStatusCode();
-
-            return true;
-        }
-        catch (HttpRequestException ex)
-        {
-            throw new Exception("An error occurred while making the payment.", ex);
-        }
-    }
-
-    public async Task<LoanInformationResponse> GetAllLoanInformation()
-    {
-        try
-        {
-            var baseUrl = options?.Value.BaseUrl;
-            var uriBuilder = new UriBuilder($"{baseUrl}/loan");
-
-            var request = new HttpRequestMessage(HttpMethod.Get, uriBuilder.Uri);
-
-            var response = await httpClient.SendAsync(request);
-
-            response.EnsureSuccessStatusCode();
-
-            var loanInformationResponse = await response.Content.ReadFromJsonAsync<LoanInformationResponse>(jsonSerializerOptions);
-
-            return loanInformationResponse ?? throw new Exception("Failed to retrieve loan information.");
-        }
-        catch (HttpRequestException ex)
-        {
-            throw new Exception("An error occurred while retrieving the loan information.", ex);
-        }
-    }
-
-    public async Task<Loan> GetLoanInformation(string loanNumber)
-    {
-        try
-        {
-            var baseUrl = options?.Value.BaseUrl;
-            var uriBuilder = new UriBuilder($"{baseUrl}/loan/{loanNumber}");
-
-            var request = new HttpRequestMessage(HttpMethod.Get, uriBuilder.Uri);
-
-            var response = await httpClient.SendAsync(request);
-
-            response.EnsureSuccessStatusCode();
-
-            var loanResponse = await response.Content.ReadFromJsonAsync<Loan>();
-
-            return loanResponse ?? throw new Exception("Failed to retrieve loan.");
-        }
-        catch (HttpRequestException ex)
-        {
-            throw new Exception("An error occurred while retrieving the loan.", ex);
-        }
-    }
-
-    public async Task<RepayLoanResponse> PayOffLoan(RepayLoanRequest request, string loanNumber)
-    {
-        try
-        {
-            var baseUrl = options?.Value.BaseUrl;
-            var uriBuilder = new UriBuilder($"{baseUrl}/loan/{loanNumber}/pay");
-
-            var response = await httpClient.PostAsJsonAsync(uriBuilder.Uri, request);
-
-            response.EnsureSuccessStatusCode();
-
-            var loanRepayResponse = await response.Content.ReadFromJsonAsync<RepayLoanResponse>(jsonSerializerOptions);
-
-            return loanRepayResponse ?? throw new Exception("Failed to repay the loan.");
-        }
-        catch (HttpRequestException ex)
-        {
-            throw new Exception("An error occurred while repaying the loan.", ex);
-        }
-    }
+public class PaymentResponse
+{
+    public bool Success { get; set; }
+    [JsonPropertyName("transaction_number")]
+    public string TransactionNumber { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
 }

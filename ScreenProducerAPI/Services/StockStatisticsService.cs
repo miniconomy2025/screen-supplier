@@ -6,7 +6,10 @@ using ScreenProducerAPI.ScreenDbContext;
 
 namespace ScreenProducerAPI.Services;
 
-public class StockStatisticsService(ScreenContext context, ILogger<StockStatisticsService> logger, IOptionsMonitor<TargetQuantitiesConfig> targetConfig, IOptionsMonitor<StockManagementOptions> stockConfig, MaterialService materialService, PurchaseOrderService purchaseOrderService)
+public class StockStatisticsService(
+    ScreenContext context,
+    IOptionsMonitor<TargetQuantitiesConfig> targetConfig,
+    IOptionsMonitor<StockManagementOptions> stockConfig)
 {
     public async Task<AllMaterialStatistics> GetMaterialStatisticsAsync()
     {
@@ -17,7 +20,6 @@ public class StockStatisticsService(ScreenContext context, ILogger<StockStatisti
 
         if (machineCount == 0 || equipmentParameters == null)
         {
-            logger.LogWarning("No machines available for material consumption calculation.");
             return new AllMaterialStatistics();
         }
 

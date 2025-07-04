@@ -31,26 +31,20 @@ public static class OrderEndpoints
     private static async Task<IResult> CreateOrderHandler(
         CreateOrderRequest request,
         [FromServices] ScreenOrderService screenOrderService,
-        [FromServices] BankService bankService,
-        [FromServices] ILogger<CreateOrderRequest> logger)
+        [FromServices] BankService bankService)
     {
         try
         {
-            // Validate request
             if (request == null || request.Quantity <= 0)
             {
-                logger.LogWarning("Invalid order request: Quantity={Quantity}", request?.Quantity);
                 return Results.BadRequest(new { error = "Invalid order request. Quantity must be positive." });
             }
-
-            logger.LogInformation("Creating order for {Quantity} screens", request.Quantity);
 
             // Create the order
             var screenOrder = await screenOrderService.CreateOrderAsync(request.Quantity);
 
             if (screenOrder == null)
             {
-                logger.LogWarning("Failed to create order for {Quantity} screens - likely insufficient stock", request.Quantity);
                 return Results.BadRequest(new { error = "Unable to create order. Insufficient stock available." });
             }
 
@@ -58,7 +52,6 @@ public static class OrderEndpoints
             var bankAccountNumber = await bankService.GetBankAccountNumberAsync();
             if (string.IsNullOrEmpty(bankAccountNumber))
             {
-                logger.LogError("No bank account number configured");
                 return Results.Problem("Bank account not configured");
             }
 
@@ -71,32 +64,24 @@ public static class OrderEndpoints
                 OrderStatusLink = $"/order/{screenOrder.Id}"
             };
 
-            logger.LogInformation("Created order {OrderId} for {Quantity} screens. Total: {TotalPrice}, Bank: {BankAccount}",
-                screenOrder.Id, screenOrder.Quantity, totalPrice, bankAccountNumber);
-
             return Results.Created($"/order/{screenOrder.Id}", response);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error creating order for {Quantity} screens", request?.Quantity);
             return Results.Problem("An error occurred creating the order");
         }
     }
 
     private static async Task<IResult> GetOrderStatusHandler(
         int id,
-        [FromServices] ScreenOrderService screenOrderService,
-        [FromServices] ILogger<int> logger)
+        [FromServices] ScreenOrderService screenOrderService)
     {
         try
         {
-            logger.LogInformation("Retrieving status for order {OrderId}", id);
-
             var screenOrder = await screenOrderService.FindScreenOrderByIdAsync(id);
 
             if (screenOrder == null)
             {
-                logger.LogWarning("Order {OrderId} not found", id);
                 return Results.NotFound(new { error = $"Order {id} not found" });
             }
 
@@ -118,14 +103,10 @@ public static class OrderEndpoints
                 IsFullyPaid = isFullyPaid
             };
 
-            logger.LogInformation("Retrieved order {OrderId} status: {Status}, Paid: {AmountPaid}/{TotalPrice}",
-                id, response.Status, amountPaid, totalPrice);
-
             return Results.Ok(response);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving order status for order {OrderId}", id);
             return Results.Problem("An error occurred retrieving the order status");
         }
     }
