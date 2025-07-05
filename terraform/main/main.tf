@@ -77,21 +77,16 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
 }
 
-resource "aws_subnet" "private_1" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.1.0/24"
-  availability_zone = "af-south-1a"
-}
-
-resource "aws_subnet" "private_2" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.2.0/24"
-  availability_zone = "af-south-1b"
+resource "aws_subnet" "public_2" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.3.0/24"
+  availability_zone       = "af-south-1b"
+  map_public_ip_on_launch = true
 }
 
 resource "aws_db_subnet_group" "private-group" {
   name       = "screen-supplier-private-group"
-  subnet_ids = [aws_subnet.private_1.id, aws_subnet.private_2.id]
+  subnet_ids = [aws_subnet.public.id, aws_subnet.public_2.id]
   tags = {
     Name = "Screen Supplier Private subnet group"
   }
@@ -112,6 +107,11 @@ resource "aws_route_table" "public" {
 
 resource "aws_route_table_association" "a" {
   subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "public_2" {
+  subnet_id      = aws_subnet.public_2.id
   route_table_id = aws_route_table.public.id
 }
 
