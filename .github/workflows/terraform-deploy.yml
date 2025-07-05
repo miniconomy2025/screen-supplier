@@ -32,13 +32,10 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: terraform apply -auto-approve
 
-      - name: Setup Flyway
-        uses: flyway/flyway-github-action@v1
-        with:
-          version: 9.22.3
-
       - name: Run Database Migrations
         run: |
+          set -e
+          
           # Get database connection details from Secrets Manager
           DB_SECRET=$(aws secretsmanager get-secret-value --region af-south-1 --secret-id prod/postgres-screen-supplier --query SecretString --output text)
           DB_HOST=$(aws secretsmanager get-secret-value --region af-south-1 --secret-id screen-supplier-rds-host --query SecretString --output text)
@@ -47,16 +44,16 @@ jobs:
           DB_PASSWORD=$(echo $DB_SECRET | jq -r '.db_password')
           DB_URL="jdbc:postgresql://$DB_HOST:5432/ScreenProducerDb"
           
-          echo "Running database migrations..."
-          flyway \
-            -url="$DB_URL" \
-            -user="$DB_USERNAME" \
-            -password="$DB_PASSWORD" \
-            -locations="filesystem:./migration" \
-            -baselineOnMigrate=true \
-            -validateOnMigrate=true \
-            -table=flyway_schema_history \
-            migrate
+          echo "Running database migrations with Docker..."
+          docker run --rm \
+            -v $(pwd)/migration:/flyway/sql \
+            -e FLYWAY_URL="$DB_URL" \
+            -e FLYWAY_USER="$DB_USERNAME" \
+            -e FLYWAY_PASSWORD="$DB_PASSWORD" \
+            -e FLYWAY_BASELINE_ON_MIGRATE=true \
+            -e FLYWAY_VALIDATE_ON_MIGRATE=true \
+            -e FLYWAY_TABLE=flyway_schema_history \
+            flyway/flyway:9.22.3 migrate
           
           echo "Database migrations completed successfully!"
 
