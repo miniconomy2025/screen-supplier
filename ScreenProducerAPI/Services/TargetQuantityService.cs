@@ -9,7 +9,6 @@ namespace ScreenProducerAPI.Services;
 public class TargetQuantityService
 {
     private readonly ScreenContext _context;
-    private readonly ILogger<TargetQuantityService> _logger;
     private readonly IOptionsMonitor<TargetQuantitiesConfig> _targetConfig;
     private readonly StockStatisticsService _stockStatisticsService;
 
@@ -19,7 +18,6 @@ public class TargetQuantityService
         IOptionsMonitor<TargetQuantitiesConfig> targetConfig, StockStatisticsService stockStatisticsService)
     {
         _context = context;
-        _logger = logger;
         _targetConfig = targetConfig;
         _stockStatisticsService = stockStatisticsService;
     }

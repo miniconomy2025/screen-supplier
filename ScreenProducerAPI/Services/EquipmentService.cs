@@ -6,15 +6,13 @@ using ScreenProducerAPI.Services;
 public class EquipmentService
 {
     private readonly ScreenContext _context;
-    private readonly ILogger<EquipmentService> _logger;
     private readonly MaterialService _materialService;
     private readonly ProductService _productService;
 
-    public EquipmentService(ScreenContext context, ILogger<EquipmentService> logger, 
+    public EquipmentService(ScreenContext context, 
         MaterialService materialService, ProductService productService)
     {
         _context = context;
-        _logger = logger;
         _materialService = materialService;
         _productService = productService;
     }
@@ -23,16 +21,13 @@ public class EquipmentService
     {
         try
         {
-            // Get the equipment parameters (should be set during simulation start)
             var equipmentParams = await _context.EquipmentParameters.FirstOrDefaultAsync();
             
             if (equipmentParams == null)
             {
-                _logger.LogError("No equipment parameters found. Equipment parameters must be initialized on simulation start.");
                 return false;
             }
 
-            // Create new equipment instance - only store the foreign key reference
             var equipment = new Equipment
             {
                 ParametersID = equipmentParams.Id,
@@ -44,15 +39,10 @@ public class EquipmentService
             _context.Equipment.Add(equipment);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Added new equipment with ID {EquipmentId} for purchase order {PurchaseOrderId}. " +
-                "References parameters ID {ParametersId} with daily capacity: {OutputScreens} screens, requires {InputSand}kg sand + {InputCopper}kg copper",
-                equipment.Id, purchaseOrderId, equipmentParams.Id, equipmentParams.OutputScreens, equipmentParams.InputSandKg, equipmentParams.InputCopperKg);
-
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error adding equipment for purchase order {PurchaseOrderId}", purchaseOrderId);
             return false;
         }
     }
@@ -68,13 +58,10 @@ public class EquipmentService
                 .Where(e => e.IsAvailable && !e.IsProducing)
                 .ToListAsync();
 
-            _logger.LogInformation("Attempting to start production on {AvailableCount} available machines", availableEquipment.Count);
-
             foreach (var equipment in availableEquipment)
             {
                 if (equipment.EquipmentParameters == null)
                 {
-                    _logger.LogWarning("Equipment {EquipmentId} has no parameters, skipping", equipment.Id);
                     continue;
                 }
 
@@ -94,19 +81,14 @@ public class EquipmentService
                     {
                         equipment.IsProducing = true;
                         machinesStarted++;
-                        _logger.LogInformation("Started production on equipment {EquipmentId}. Consumed {SandKg}kg sand + {CopperKg}kg copper",
-                            equipment.Id, prdouctionParams.InputSandKg, prdouctionParams.InputCopperKg);
                     }
                     else
                     {
-                        _logger.LogError("Failed to consume materials for equipment {EquipmentId}", equipment.Id);
                         break; // Stop trying if material consumption fails
                     }
                 }
                 else
                 {
-                    _logger.LogInformation("Insufficient materials for equipment {EquipmentId}. Sand: {HasSand}, Copper: {HasCopper}",
-                        equipment.Id, hasSand, hasCopper);
                     break; // Stop when we run out of materials
                 }
             }
@@ -116,12 +98,10 @@ public class EquipmentService
                 await _context.SaveChangesAsync();
             }
 
-            _logger.LogInformation("Production started on {MachinesStarted} machines", machinesStarted);
             return machinesStarted;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during production startup");
             return machinesStarted;
         }
     }
@@ -137,13 +117,10 @@ public class EquipmentService
                 .Where(e => e.IsProducing)
                 .ToListAsync();
 
-            _logger.LogInformation("Stopping production on {ProducingCount} machines", producingEquipment.Count);
-
             foreach (var equipment in producingEquipment)
             {
                 if (equipment.EquipmentParameters == null)
                 {
-                    _logger.LogWarning("Equipment {EquipmentId} has no parameters, skipping production", equipment.Id);
                     continue;
                 }
 
@@ -151,9 +128,6 @@ public class EquipmentService
                 totalScreensProduced += screensProduced;
                 
                 equipment.IsProducing = false;
-                
-                _logger.LogInformation("Equipment {EquipmentId} produced {ScreensProduced} screens",
-                    equipment.Id, screensProduced);
             }
 
             if (totalScreensProduced > 0)
@@ -167,12 +141,10 @@ public class EquipmentService
                 await _context.SaveChangesAsync();
             }
 
-            _logger.LogInformation("Production stopped. Total screens produced: {TotalScreens}", totalScreensProduced);
             return totalScreensProduced;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during production shutdown");
             return totalScreensProduced;
         }
     }
@@ -207,11 +179,9 @@ public class EquipmentService
     {
         try
         {
-            // Check if parameters already exist
             var existingParams = await _context.EquipmentParameters.FirstOrDefaultAsync();
             if (existingParams != null)
             {
-                _logger.LogInformation("Equipment parameters already exist, skipping initialization");
                 return true;
             }
 
@@ -225,14 +195,10 @@ public class EquipmentService
             _context.EquipmentParameters.Add(equipmentParams);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Initialized equipment parameters: {InputSand}kg sand + {InputCopper}kg copper → {OutputScreens} screens/day",
-                inputSandKg, inputCopperKg, outputScreensPerDay);
-
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error initializing equipment parameters");
             return false;
         }
     }

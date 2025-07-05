@@ -1,4 +1,5 @@
-﻿using ScreenProducerAPI.Services;
+﻿using Microsoft.EntityFrameworkCore;
+using ScreenProducerAPI.ScreenDbContext;
 using ScreenProducerAPI.Services.BankServices;
 
 namespace ScreenProducerAPI.Services
@@ -10,6 +11,9 @@ namespace ScreenProducerAPI.Services
 
         private long _simulationStartUnixEpoch;
         private bool _simulationRunning;
+        private bool _bankAccountCreated = false;
+        private bool _bankLoanCreated = false;
+        private bool _notifcationUrlSet = false;
         private Timer? _dayTimer;
 
         // 2 minutes real time = 1 simulation day (120 seconds)
@@ -21,25 +25,38 @@ namespace ScreenProducerAPI.Services
             _serviceProvider = serviceProvider;
         }
 
-        public void StartSimulation(long unixEpochStart)
+        public async Task<bool> StartSimulationAsync(long unixEpochStart)
         {
             if (_simulationRunning)
             {
-                _logger.LogWarning("Simulation already running, stopping previous simulation first");
                 StopSimulation();
             }
 
-            _simulationStartUnixEpoch = unixEpochStart;
-            _simulationRunning = true;
+            
 
-            _logger.LogInformation("Simulation started at Unix epoch {Epoch} (UTC: {StartTime})",
-                unixEpochStart, DateTimeOffset.FromUnixTimeSeconds(unixEpochStart).ToString("yyyy-MM-dd HH:mm:ss UTC"));
+            _simulationStartUnixEpoch = unixEpochStart;
+
+            // Initialize bank integration first
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ScreenContext>();
+            var bankIntegrationService = scope.ServiceProvider.GetRequiredService<BankIntegrationService>();
+
+            await CleanUpDatabase(context);
+            (_bankAccountCreated, _bankLoanCreated, _notifcationUrlSet) = await bankIntegrationService.InitializeAsync(_bankAccountCreated, _bankLoanCreated, _notifcationUrlSet);
+
+            // Initialize equipment parameters: todo get from hand
+            var equipmentService = scope.ServiceProvider.GetRequiredService<EquipmentService>();
+            await equipmentService.InitializeEquipmentParametersAsync(1, 1, 500);
+
+            _simulationRunning = true;
 
             // Start the timer for daily processing - first tick after 2 minutes
             _dayTimer = new Timer(ProcessDayTransition, null, RealTimeToSimDayMs, RealTimeToSimDayMs);
 
             // Trigger initial day 0 start immediately
             _ = Task.Run(async () => await TriggerStartOfDay(0));
+
+            return true;
         }
 
         public int GetCurrentSimulationDay()
@@ -101,11 +118,17 @@ namespace ScreenProducerAPI.Services
             {
                 using var scope = _serviceProvider.CreateScope();
                 var equipmentService = scope.ServiceProvider.GetRequiredService<EquipmentService>();
-                var materialService = scope.ServiceProvider.GetRequiredService<MaterialService>();
                 var reorderService = scope.ServiceProvider.GetRequiredService<ReorderService>();
+                var bankIntegrationService = scope.ServiceProvider.GetRequiredService<BankIntegrationService>();
 
                 var simDate = new DateTime(2050, 1, 1).AddDays(day);
                 _logger.LogInformation("START OF DAY {Day} ({SimDate:yyyy-MM-dd})", day, simDate);
+
+                // Daily banking operations
+                if (!_bankAccountCreated || !_bankLoanCreated)
+                {
+                    await bankIntegrationService.InitializeAsync(_bankAccountCreated, _bankLoanCreated, _bankLoanCreated);
+                }
 
                 // Log current inventory status
                 await LogInventoryStatus(scope.ServiceProvider);
@@ -206,12 +229,12 @@ namespace ScreenProducerAPI.Services
 
                 try
                 {
-                    var balance = await bankService.GetAccountBalance();
-                    _logger.LogInformation("Account balance: {Balance}", balance.Balance);
+                    var balance = await bankService.GetAccountBalanceAsync();
+                    _logger.LogInformation("Account balance: {Balance}", balance);
                 }
                 catch
                 {
-                    _logger.LogInformation("Account balance: Not available (bank not configured)");
+                    _logger.LogInformation("Account balance: Not available");
                 }
 
                 var (totalScreens, reservedScreens, availableScreens) = await productService.GetStockSummaryAsync();
@@ -240,6 +263,29 @@ namespace ScreenProducerAPI.Services
 
             var finalDay = GetCurrentSimulationDay();
             _logger.LogInformation("Simulation stopped at day {Day}", finalDay);
+        }
+
+        private async Task CleanUpDatabase(ScreenContext context)
+        {
+            // Clear Tables
+            context.EquipmentParameters.ExecuteDelete();
+            context.Equipment.ExecuteDelete();
+            context.BankDetails.ExecuteDelete();
+            context.PurchaseOrders.ExecuteDelete();
+            context.ScreenOrders.ExecuteDelete();
+
+            // Reset others
+            await context.Products.ForEachAsync(p => { 
+                p.Price = 0;  
+                p.Quantity = 0;
+            });
+            await context.Materials.ForEachAsync(p =>
+            {
+                p.Quantity = 0;
+            });
+
+            await context.SaveChangesAsync();
+            return;
         }
 
         public void Dispose()

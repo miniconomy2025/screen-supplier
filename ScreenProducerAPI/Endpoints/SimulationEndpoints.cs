@@ -28,29 +28,18 @@ namespace ScreenProducerAPI.Endpoints
 
         private static async Task<IResult> StartSimulationHandler(
             SimulationStartRequest request,
-            [FromServices] SimulationTimeService simulationTimeService,
-            [FromServices] EquipmentService equipmentService,
-            [FromServices] ILogger<SimulationStartRequest> logger)
+            [FromServices] SimulationTimeService simulationTimeService)
         {
             try
             {
                 var requestTime = DateTimeOffset.FromUnixTimeSeconds(request.UnixEpochStart);
 
-                logger.LogInformation("Starting simulation with Unix epoch {Epoch} ({DateTime})",
-                    request.UnixEpochStart, requestTime.ToString("yyyy-MM-dd HH:mm:ss UTC"));
-
-                // Initialize equipment parameters if not already done
-                // 1kg sand + 1kg copper = 500 screens per day
-                // this will be done in a call to the hand for state (might need to move it)
-                await equipmentService.InitializeEquipmentParametersAsync(1, 1, 500);
-
-                // Start the simulation
-                simulationTimeService.StartSimulation(request.UnixEpochStart);
+                var success = await simulationTimeService.StartSimulationAsync(request.UnixEpochStart);
 
                 var response = new SimulationStartResponse
                 {
                     Success = true,
-                    Message = "Simulation started successfully",
+                    Message = "Simulation started successfully with bank integration",
                     StartedAt = requestTime,
                     CurrentDay = simulationTimeService.GetCurrentSimulationDay(),
                     SimulationDateTime = simulationTimeService.GetSimulationDateTime()
@@ -60,8 +49,7 @@ namespace ScreenProducerAPI.Endpoints
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed to start simulation");
-                return Results.Problem($"Failed to start simulation: {ex.Message}");
+               return Results.Problem($"Failed to start simulation: {ex.Message}");
             }
         }
 

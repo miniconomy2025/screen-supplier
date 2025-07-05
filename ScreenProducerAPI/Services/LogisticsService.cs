@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using ScreenProducerAPI.Models.Requests;
 using ScreenProducerAPI.Models.Responses;
 using ScreenProducerAPI.ScreenDbContext;
-using ScreenProducerAPI.Services;
 using ScreenProducerAPI.Util;
 using System.Text;
 using System.Text.Json;
@@ -11,7 +10,6 @@ namespace ScreenProducerAPI.Services;
 
 public class LogisticsService
 {
-    private readonly ILogger<LogisticsService> _logger;
     private readonly IConfiguration _configuration;
     private readonly HttpClient _httpClient;
     private readonly PurchaseOrderService _purchaseOrderService;
@@ -22,7 +20,6 @@ public class LogisticsService
     private readonly ScreenContext _context;
 
     public LogisticsService(
-        ILogger<LogisticsService> logger,
         IConfiguration configuration,
         HttpClient httpClient,
         PurchaseOrderService purchaseOrderService,
@@ -32,7 +29,6 @@ public class LogisticsService
         ProductService productService,
         ScreenContext context)
     {
-        _logger = logger;
         _configuration = configuration;
         _httpClient = httpClient;
         _purchaseOrderService = purchaseOrderService;
@@ -47,9 +43,6 @@ public class LogisticsService
     {
         int shipmentId = request.Id;
         int quantity = request.Quantity;
-
-        _logger.LogInformation("Handling dropoff for shipment {ShipmentId} with quantity {Quantity}", 
-            shipmentId, quantity);
 
         try
         {
@@ -90,8 +83,6 @@ public class LogisticsService
                 }
                 itemType = "equipment";
                 processed = true;
-                _logger.LogInformation("Added {Quantity} equipment units for purchase order {PurchaseOrderId}", 
-                    quantity, purchaseOrder.Id);
             }
             // Handle material delivery
             else if (purchaseOrder.RawMaterialId.HasValue && purchaseOrder.RawMaterial != null)
@@ -99,8 +90,6 @@ public class LogisticsService
                 var materialName = purchaseOrder.RawMaterial.Name;
                 processed = await _materialService.AddMaterialAsync(materialName, quantity);
                 itemType = materialName;
-                _logger.LogInformation("Added {Quantity}kg of {MaterialName} for purchase order {PurchaseOrderId}", 
-                    quantity, materialName, purchaseOrder.Id);
             }
             else
             {
@@ -128,7 +117,6 @@ public class LogisticsService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error handling dropoff for shipment {ShipmentId}", shipmentId);
             throw;
         }
     }
@@ -138,16 +126,12 @@ public class LogisticsService
         int orderId = request.Id;
         int quantity = request.Quantity;
 
-        _logger.LogInformation("Handling collect for order {OrderId} with quantity {Quantity}", 
-            orderId, quantity);
-
         try
         {
             // Find screen order by ID
             var screenOrder = await _screenOrderService.FindScreenOrderByIdAsync(orderId);
             if (screenOrder == null)
             {
-                _logger.LogWarning("Screen order {OrderId} not found", orderId);
                 return null;
             }
 
@@ -183,9 +167,6 @@ public class LogisticsService
                 throw new InvalidOperationException($"Failed to update order {orderId} status to collected");
             }
 
-            _logger.LogInformation("Successfully prepared {Quantity} screens for collection from order {OrderId}", 
-                quantity, orderId);
-
             return new CollectResponse
             {
                 Success = true,
@@ -198,7 +179,6 @@ public class LogisticsService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error handling collect for order {OrderId}", orderId);
             throw;
         }
     }
@@ -209,9 +189,6 @@ public class LogisticsService
         string originalExternalOrderId,
         List<PickupRequestItem> items)
     {
-        _logger.LogInformation("Requesting pickup: From={Origin} To={Destination} OrderId={OrderId} Items={ItemCount}",
-            originCompanyId, destinationCompanyId, originalExternalOrderId, items.Count);
-
         try
         {
             var bulkLogisticsUrl = _configuration["ExternalServices:BulkLogistics:BaseUrl"];
@@ -234,9 +211,6 @@ public class LogisticsService
             });
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            _logger.LogInformation("Sending pickup request to {Url}: {RequestData}",
-                $"{bulkLogisticsUrl}/pickup-request", json);
-
             var response = await _httpClient.PostAsync($"{bulkLogisticsUrl}/pickup-request", content);
 
             if (!response.IsSuccessStatusCode)
@@ -256,19 +230,14 @@ public class LogisticsService
                 throw new InvalidOperationException("Invalid response from bulk logistics service");
             }
 
-            _logger.LogInformation("Pickup requested successfully. PickupRequestId: {PickupRequestId}",
-                pickupResponse.PickupRequestId);
-
             return (pickupResponse.PickupRequestId, pickupResponse.BankAccountNumber);
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "HTTP error requesting pickup for order {OrderId}", originalExternalOrderId);
             throw new InvalidOperationException("Failed to communicate with bulk logistics service", ex);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error requesting pickup for order {OrderId}", originalExternalOrderId);
             throw;
         }
     }

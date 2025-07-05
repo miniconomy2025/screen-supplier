@@ -23,21 +23,14 @@ public static class LogisticsEndpoints
 
     private static async Task<IResult> HandleLogistics(
         LogisticsRequest request,
-        [FromServices] LogisticsService logisticsService,
-        [FromServices] ILogger<LogisticsRequest> logger)
+        [FromServices] LogisticsService logisticsService)
     {
         try
         {
-            // Basic validation
             if (request == null || request.Id <= 0 || request.Quantity <= 0 || string.IsNullOrWhiteSpace(request.Type))
             {
-                logger.LogWarning("Invalid logistics request: Id={Id}, Quantity={Quantity}, Type={Type}",
-                    request?.Id, request?.Quantity, request?.Type);
                 return Results.BadRequest(new { error = "Invalid logistics request. Id, Quantity must be positive and Type must be specified." });
             }
-
-            logger.LogInformation("Processing logistics request: Type={Type}, Id={Id}, Quantity={Quantity}",
-                request.Type, request.Id, request.Quantity);
 
             switch (request.Type.ToUpper())
             {
@@ -85,20 +78,15 @@ public static class LogisticsEndpoints
                     });
 
                 default:
-                    logger.LogWarning("Unknown logistics type: {Type}", request.Type);
                     return Results.BadRequest(new { error = $"Unknown logistics type: {request.Type}. Must be 'DELIVERY' or 'PICKUP'." });
             }
         }
         catch (InvalidOperationException ex)
         {
-            logger.LogError(ex, "Business logic error in logistics operation: Type={Type}, Id={Id}",
-                request?.Type, request?.Id);
             return Results.BadRequest(new { error = ex.Message });
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Unexpected error in logistics operation: Type={Type}, Id={Id}",
-                request?.Type, request?.Id);
             return Results.Problem("An error occurred processing the logistics request");
         }
     }

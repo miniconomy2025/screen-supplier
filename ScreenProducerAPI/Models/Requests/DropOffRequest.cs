@@ -2,6 +2,6 @@ namespace ScreenProducerAPI.Models.Requests;
 
 public class DropoffRequest
 {
-    public int Id { get; set; } // shipmentId
-    public int Quantity { get; set; } // how much being delivered
+    public int Id { get; set; }
+    public int Quantity { get; set; }
 }

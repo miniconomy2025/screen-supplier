@@ -8,12 +8,10 @@ namespace ScreenProducerAPI.Services;
 public class PurchaseOrderService
 {
     private readonly ScreenContext _context;
-    private readonly ILogger<PurchaseOrderService> _logger;
 
-    public PurchaseOrderService(ScreenContext context, ILogger<PurchaseOrderService> logger)
+    public PurchaseOrderService(ScreenContext context)
     {
         _context = context;
-        _logger = logger;
     }
 
     public async Task<PurchaseOrder?> CreatePurchaseOrderAsync(
@@ -27,13 +25,11 @@ public class PurchaseOrderService
     {
         try
         {
-            // Get requires_payement_supplier status
             var requiresPaymentToSupplier = await _context.OrderStatuses
                 .FirstOrDefaultAsync(os => os.Status == Status.RequiresPaymentToSupplier);
 
             if (requiresPaymentToSupplier == null)
             {
-                _logger.LogError("Status 'requires_payement_supplier' not found");
                 return null;
             }
 
@@ -56,14 +52,11 @@ public class PurchaseOrderService
             await _context.SaveChangesAsync();
 
             var orderType = isEquipmentOrder ? "equipment" : "material";
-            _logger.LogInformation("Created {OrderType} purchase order {PurchaseOrderId} for order {OrderId}: {Quantity} units at {UnitPrice} each",
-                orderType, purchaseOrder.Id, orderId, quantity, unitPrice);
 
             return purchaseOrder;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating purchase order for order {OrderId}", orderId);
             return null;
         }
     }
@@ -81,7 +74,6 @@ public class PurchaseOrderService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error finding purchase order by shipment ID {ShipmentId}", shipmentId);
             return null;
         }
     }
@@ -95,20 +87,16 @@ public class PurchaseOrderService
 
             if (purchaseOrder == null)
             {
-                _logger.LogWarning("Purchase order {PurchaseOrderId} not found", purchaseOrderId);
                 return false;
             }
 
             purchaseOrder.ShipmentID = shipmentId;
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Updated purchase order {PurchaseOrderId} with shipment ID {ShipmentId}", 
-                purchaseOrderId, shipmentId);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating purchase order {PurchaseOrderId} with shipment ID", purchaseOrderId);
             return false;
         }
     }
@@ -122,13 +110,11 @@ public class PurchaseOrderService
 
             if (purchaseOrder == null)
             {
-                _logger.LogWarning("Purchase order {PurchaseOrderId} not found", purchaseOrderId);
                 return false;
             }
 
             purchaseOrder.QuantityDelivered += deliveredQuantity;
 
-            // Check if fully delivered
             if (purchaseOrder.QuantityDelivered >= purchaseOrder.Quantity)
             {
                 var deliveredStatus = await _context.OrderStatuses
@@ -137,20 +123,15 @@ public class PurchaseOrderService
                 if (deliveredStatus != null)
                 {
                     purchaseOrder.OrderStatusId = deliveredStatus.Id;
-                    _logger.LogInformation("Purchase order {PurchaseOrderId} marked as fully delivered", purchaseOrderId);
                 }
             }
 
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Updated purchase order {PurchaseOrderId} delivered quantity: +{DeliveredQuantity}, total: {TotalDelivered}/{TotalOrdered}",
-                purchaseOrderId, deliveredQuantity, purchaseOrder.QuantityDelivered, purchaseOrder.Quantity);
-
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating delivery quantity for purchase order {PurchaseOrderId}", purchaseOrderId);
             return false;
         }
     }
@@ -164,7 +145,6 @@ public class PurchaseOrderService
 
             if (purchaseOrder == null)
             {
-                _logger.LogWarning("Purchase order {PurchaseOrderId} not found", purchaseOrderId);
                 return false;
             }
 
@@ -173,20 +153,15 @@ public class PurchaseOrderService
 
             if (status == null)
             {
-                _logger.LogWarning("Status '{StatusName}' not found", statusName);
                 return false;
             }
 
             purchaseOrder.OrderStatusId = status.Id;
             await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Updated purchase order {PurchaseOrderId} status to '{StatusName}'", 
-                purchaseOrderId, statusName);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating purchase order {PurchaseOrderId} status", purchaseOrderId);
             return false;
         }
     }

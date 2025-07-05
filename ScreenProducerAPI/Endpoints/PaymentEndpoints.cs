@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ScreenProducerAPI.Models.Requests;
-using ScreenProducerAPI.Models.Responses;
 using ScreenProducerAPI.Services;
 
 namespace ScreenProducerAPI.Endpoints;
@@ -9,72 +8,57 @@ public static class PaymentEndpoints
 {
     public static IEndpointRouteBuilder AddPaymentEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapPost("/payment", PaymentConfirmationHandler)
-            .Accepts<PaymentConfirmationRequest>("application/json")
-            .Produces<PaymentConfirmationResponse>(StatusCodes.Status200OK)
+        endpoints.MapPost("/payment", PaymentNotificationHandler)
+            .Accepts<TransactionNotification>("application/json")
+            .Produces<object>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status400BadRequest)
             .WithTags("Payments")
-            .WithName("PaymentConfirmation")
-            .WithSummary("Process payment confirmation from bank for screen orders");
+            .WithName("PaymentNotification")
+            .WithSummary("Process payment notification from commercial bank");
 
         return endpoints;
     }
 
-    private static async Task<IResult> PaymentConfirmationHandler(
-        PaymentConfirmationRequest request,
-        [FromServices] ScreenOrderService screenOrderService,
-        [FromServices] ILogger<PaymentConfirmationRequest> logger)
+    private static async Task<IResult> PaymentNotificationHandler(
+        TransactionNotification notification,
+        [FromServices] ScreenOrderService screenOrderService)
     {
         try
         {
-            // Basic validation
-            if (request == null ||
-                string.IsNullOrWhiteSpace(request.ReferenceId) ||
-                string.IsNullOrWhiteSpace(request.AccountNumber) ||
-                request.AmountPaid <= 0)
+            if (notification == null ||
+                string.IsNullOrWhiteSpace(notification.TransactionNumber) ||
+                string.IsNullOrWhiteSpace(notification.Description) ||
+                notification.Amount <= 0)
             {
-                logger.LogWarning("Invalid payment confirmation request: ReferenceId={ReferenceId}, AccountNumber={AccountNumber}, AmountPaid={AmountPaid}",
-                    request?.ReferenceId, request?.AccountNumber, request?.AmountPaid);
-
-                return Results.BadRequest(new PaymentConfirmationResponse
-                {
-                    Success = false,
-                    Message = "Invalid payment request. ReferenceId, AccountNumber, and AmountPaid are required and AmountPaid must be positive.",
-                    ProcessedAt = DateTime.UtcNow
-                });
+                return Results.BadRequest(new { error = "Invalid payment notification" });
             }
 
-            logger.LogInformation("Received payment confirmation: ReferenceId={ReferenceId}, AccountNumber={AccountNumber}, AmountPaid={AmountPaid}",
-                request.ReferenceId, request.AccountNumber, request.AmountPaid);
-
-            // Process the payment
-            var result = await screenOrderService.ProcessPaymentConfirmationAsync(request);
-
-            if (result == null)
+            if (!int.TryParse(notification.Description, out int orderId))
             {
-                logger.LogError("Payment processing returned null result for ReferenceId={ReferenceId}", request.ReferenceId);
-                return Results.Problem("An error occurred processing the payment confirmation");
+                return Results.BadRequest(new { error = "Invalid order ID in description" });
             }
 
-            if (result.Success)
+            var paymentRequest = new PaymentConfirmationRequest
             {
-                logger.LogInformation("Payment confirmation processed successfully for order {OrderId}: {Message}",
-                    result.OrderId, result.Message);
-                return Results.Ok(result);
+                ReferenceId = orderId.ToString(),
+                AccountNumber = notification.To,
+                AmountPaid = notification.Amount
+            };
+
+            var result = await screenOrderService.ProcessPaymentConfirmationAsync(paymentRequest);
+
+            if (result?.Success == true)
+            {
+                return Results.Ok(new { success = true });
             }
             else
             {
-                logger.LogWarning("Payment confirmation failed for ReferenceId={ReferenceId}: {Message}",
-                    request.ReferenceId, result.Message);
-                return Results.BadRequest(result);
+                return Results.BadRequest(new { error = result?.Message ?? "Payment processing failed" });
             }
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Unexpected error processing payment confirmation for ReferenceId={ReferenceId}",
-                request?.ReferenceId);
-
-            return Results.Problem("An unexpected error occurred processing the payment confirmation");
+            return Results.Problem("An unexpected error occurred processing the payment notification");
         }
     }
 }
