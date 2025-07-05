@@ -1,0 +1,44 @@
+name: Deploy Frontend
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'frontend/**' ]
+  workflow_dispatch: 
+    
+jobs:
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: af-south-1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies and build frontend
+        working-directory: frontend
+        run: |
+          npm install
+          npm run build -- --configuration=production
+
+      - name: Deploy to S3
+        working-directory: frontend
+        run: |
+          aws s3 sync ./dist/frontend/browser/ s3://screen-supplier-frontend-static --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          # Get CloudFront distribution ID for frontend
+          DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Aliases.Items[0]=='screen-supplier.projects.bbdgrad.com'].Id" --output text)
+          aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
