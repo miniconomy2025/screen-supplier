@@ -268,8 +268,8 @@ namespace ScreenProducerAPI.Services
         private async Task CleanUpDatabase(ScreenContext context)
         {
             // Clear Tables
-            context.EquipmentParameters.ExecuteDelete();
             context.Equipment.ExecuteDelete();
+            context.EquipmentParameters.ExecuteDelete();
             context.BankDetails.ExecuteDelete();
             context.PurchaseOrders.ExecuteDelete();
             context.ScreenOrders.ExecuteDelete();

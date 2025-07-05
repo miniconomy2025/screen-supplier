@@ -35,10 +35,10 @@ public class PurchaseOrder
     public string Origin { get; set; }
 
     [Column("order_shipping_price")]
-    public int OrderShippingPrice { get; set; }
+    public int OrderShippingPrice { get; set; } = 0;
 
     [Column("shipper_bank_account")]
-    public string ShipperBankAccout { get; set; }
+    public string? ShipperBankAccout { get; set; }
 
     [Column("status_id")]
     public int OrderStatusId { get; set; }

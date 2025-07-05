@@ -17,4 +17,6 @@ public class TargetQuantitiesConfig
 public class ReorderSettingsConfig
 {
     public bool EnableAutoReorder { get; set; } = true;
+    public bool EnableScreenStockCheck { get; set; } = true;
+    public int MaxScreensBeforeStopOrdering { get; set; } = 1000;
 }

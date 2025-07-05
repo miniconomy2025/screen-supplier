@@ -11,11 +11,13 @@ public class ScreenOrderService
 {
     private readonly ScreenContext _context;
     private readonly ProductService _productService;
+    private readonly SimulationTimeProvider _simulationTimeProvider;
 
-    public ScreenOrderService(ScreenContext context, ILogger<ScreenOrderService> logger, ProductService productService)
+    public ScreenOrderService(ScreenContext context, ILogger<ScreenOrderService> logger, ProductService productService, SimulationTimeProvider simulationTimeProvider)
     {
         _context = context;
         _productService = productService;
+        _simulationTimeProvider = simulationTimeProvider;
     }
 
     public async Task<PaymentConfirmationResponse?> ProcessPaymentConfirmationAsync(PaymentConfirmationRequest request)
@@ -29,7 +31,7 @@ public class ScreenOrderService
                     Success = false,
                     OrderId = request.ReferenceId,
                     Message = "Invalid reference ID format",
-                    ProcessedAt = DateTime.UtcNow
+                    ProcessedAt = _simulationTimeProvider.Now
                 };
             }
 
@@ -45,7 +47,7 @@ public class ScreenOrderService
                     Success = false,
                     OrderId = request.ReferenceId,
                     Message = "Order not found",
-                    ProcessedAt = DateTime.UtcNow
+                    ProcessedAt = _simulationTimeProvider.Now
                 };
             }
 
@@ -83,7 +85,7 @@ public class ScreenOrderService
                 Status = newStatus,
                 Message = isFullyPaid ? "Order fully paid and ready for collection" : $"Partial payment received. Remaining balance: {remainingBalance}",
                 IsFullyPaid = isFullyPaid,
-                ProcessedAt = DateTime.UtcNow
+                ProcessedAt = _simulationTimeProvider.Now
             };
         }
         catch (Exception ex)
@@ -93,7 +95,7 @@ public class ScreenOrderService
                 Success = false,
                 OrderId = request.ReferenceId,
                 Message = "Internal error processing payment",
-                ProcessedAt = DateTime.UtcNow
+                ProcessedAt = _simulationTimeProvider.Now
             };
         }
     }
@@ -125,7 +127,7 @@ public class ScreenOrderService
             var screenOrder = new ScreenOrder
             {
                 Quantity = quantity,
-                OrderDate = DateTime.UtcNow,
+                OrderDate = _simulationTimeProvider.Now,
                 UnitPrice = product.Price,
                 OrderStatusId = waitingPaymentStatus.Id,
                 ProductId = product.Id,

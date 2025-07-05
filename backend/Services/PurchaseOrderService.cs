@@ -8,10 +8,12 @@ namespace ScreenProducerAPI.Services;
 public class PurchaseOrderService
 {
     private readonly ScreenContext _context;
+    private readonly SimulationTimeProvider _simulationTimeProvider;
 
-    public PurchaseOrderService(ScreenContext context)
+    public PurchaseOrderService(ScreenContext context, SimulationTimeProvider simulationTimeProvider)
     {
         _context = context;
+        _simulationTimeProvider = simulationTimeProvider;
     }
 
     public async Task<PurchaseOrder?> CreatePurchaseOrderAsync(
@@ -39,7 +41,7 @@ public class PurchaseOrderService
                 ShipmentID = null, // Will be set when pickup is requested
                 Quantity = quantity,
                 QuantityDelivered = 0,
-                OrderDate = DateTime.UtcNow,
+                OrderDate = _simulationTimeProvider.Now,
                 UnitPrice = unitPrice,
                 BankAccountNumber = sellerBankAccount,
                 Origin = origin,
