@@ -70,6 +70,12 @@ resource "aws_vpc" "main" {
   enable_dns_support   = true  # This was already there
 }
 
+resource "aws_subnet" "private_1" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.1.0/24"
+  availability_zone = "af-south-1a"
+}
+
 resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "10.0.0.0/24"
