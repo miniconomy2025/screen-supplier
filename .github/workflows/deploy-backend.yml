@@ -1,8 +1,5 @@
 name: Deploy Backend API
 on:
-  push:
-    branches: [ main ]
-    paths: [ 'backend/**' ]
   workflow_dispatch: 
     
 jobs:
@@ -23,7 +20,7 @@ jobs:
       - name: Get EC2 public IP from repository variable
         id: tf_output
         run: |
-          echo "EC2_IP=${{ vars.EC2_PUBLIC_IP }}" >> $GITHUB_ENV
+          echo "EC2_IP=${{ vars.EC2_PUBLIC_DNS }}" >> $GITHUB_ENV
 
       - name: Setup SSH key
         run: |
@@ -34,11 +31,6 @@ jobs:
         working-directory: backend
         run: |
           scp -o StrictHostKeyChecking=no -i ../ec2_key.pem ./start.sh ubuntu@$EC2_IP:~/start.sh
-
-      - name: Copy migration files to EC2
-        working-directory: .
-        run: |
-          scp -r -o StrictHostKeyChecking=no -i ec2_key.pem backend/migration ubuntu@$EC2_IP:~/migrations
 
       - name: Clean up old build on EC2
         run: |
