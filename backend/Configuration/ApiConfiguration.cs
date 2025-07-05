@@ -85,5 +85,8 @@ public static class ApiConfiguration
         services.AddScoped<BankService>();
         services.AddSingleton<SimulationTimeService>();
         services.AddScoped<StockStatisticsService>();
+
+        // Time provider service
+        services.AddScoped<SimulationTimeProvider>();
     }
 }

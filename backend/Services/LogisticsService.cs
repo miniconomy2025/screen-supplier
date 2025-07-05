@@ -18,6 +18,7 @@ public class LogisticsService
     private readonly EquipmentService _equipmentService;
     private readonly ProductService _productService;
     private readonly ScreenContext _context;
+    private readonly SimulationTimeProvider _simulationTimeProvider;
 
     public LogisticsService(
         IConfiguration configuration,
@@ -27,6 +28,7 @@ public class LogisticsService
         MaterialService materialService,
         EquipmentService equipmentService,
         ProductService productService,
+        SimulationTimeProvider simulationTimeProvider,
         ScreenContext context)
     {
         _configuration = configuration;
@@ -36,6 +38,7 @@ public class LogisticsService
         _materialService = materialService;
         _equipmentService = equipmentService;
         _productService = productService;
+        _simulationTimeProvider = simulationTimeProvider;   
         _context = context;
     }
 
@@ -112,7 +115,7 @@ public class LogisticsService
                 QuantityReceived = quantity,
                 ItemType = itemType,
                 Message = $"Successfully received {quantity} units of {itemType}",
-                ProcessedAt = DateTime.UtcNow
+                ProcessedAt = _simulationTimeProvider.Now,
             };
         }
         catch (Exception ex)
@@ -174,7 +177,7 @@ public class LogisticsService
                 QuantityCollected = quantity,
                 ItemType = "screens",
                 Status = Status.Collected,
-                PreparedAt = DateTime.UtcNow
+                PreparedAt = _simulationTimeProvider.Now
             };
         }
         catch (Exception ex)
@@ -183,7 +186,7 @@ public class LogisticsService
         }
     }
 
-    public async Task<(string PickupRequestId, string BankAccountNumber)> RequestPickupAsync(
+    public async Task<(string PickupRequestId, string BankAccountNumber, int Price)> RequestPickupAsync(
         string originCompanyId,
         string destinationCompanyId,
         string originalExternalOrderId,
@@ -230,7 +233,7 @@ public class LogisticsService
                 throw new InvalidOperationException("Invalid response from bulk logistics service");
             }
 
-            return (pickupResponse.PickupRequestId, pickupResponse.BankAccountNumber);
+            return (pickupResponse.PickupRequestId, pickupResponse.BankAccountNumber, pickupResponse.Price);
         }
         catch (HttpRequestException ex)
         {

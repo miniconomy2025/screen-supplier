@@ -24,6 +24,8 @@ CREATE TABLE "purchase_orders" (
   "unit_price" integer NOT NULL,
   "seller_bank_account" varchar(50) NOT NULL,
   "origin" varchar(50) NOT NULL,
+  "order_shipping_price" integer,
+  "shipper_bank_account" varchar(50),
   "status_id" integer NOT NULL,
   "raw_materials_id" integer,
   "equipment_order" bool

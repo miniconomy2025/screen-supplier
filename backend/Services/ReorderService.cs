@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Options;
 using ScreenProducerAPI.Models;
 using ScreenProducerAPI.Models.Configuration;
+using ScreenProducerAPI.Services.BankServices;
 
 namespace ScreenProducerAPI.Services;
 
@@ -9,7 +10,9 @@ public class ReorderService
     private readonly TargetQuantityService _targetQuantityService;
     private readonly PurchaseOrderService _purchaseOrderService;
     private readonly PurchaseOrderQueueService _queueService;
+    private readonly ProductService _productService;
     private readonly MaterialService _materialService;
+    private readonly BankService _bankService;
     private readonly IOptionsMonitor<TargetQuantitiesConfig> _targetConfig;
     private readonly IOptionsMonitor<ReorderSettingsConfig> _reorderConfig;
 
@@ -17,7 +20,9 @@ public class ReorderService
         TargetQuantityService targetQuantityService,
         PurchaseOrderService purchaseOrderService,
         PurchaseOrderQueueService queueService,
+        ProductService productService,
         MaterialService materialService,
+        BankService bankService,
         ILogger<ReorderService> logger,
         IOptionsMonitor<TargetQuantitiesConfig> targetConfig,
         IOptionsMonitor<ReorderSettingsConfig> reorderConfig)
@@ -28,6 +33,8 @@ public class ReorderService
         _reorderConfig = reorderConfig;
         _materialService = materialService;
         _queueService = queueService;
+        _productService = productService;
+        _bankService = bankService;
     }
 
     public async Task<ReorderResult> CheckAndProcessReordersAsync()
@@ -40,6 +47,16 @@ public class ReorderService
         var status = await _targetQuantityService.GetInventoryStatusAsync();
         var config = _targetConfig.CurrentValue;
         var result = new ReorderResult { AutoReorderEnabled = true };
+
+        if (_reorderConfig.CurrentValue.EnableScreenStockCheck)
+        {
+            var screensInStock = await _productService.GetAvailableStockAsync();
+
+            if (screensInStock >= _reorderConfig.CurrentValue.MaxScreensBeforeStopOrdering)
+            {
+                return result;
+            }
+        }
 
         if (status.Sand.NeedsReorder)
         {
@@ -78,12 +95,23 @@ public class ReorderService
     {
         try
         {
+            // Logic to ping both hand and recycler - buy from cheapest
+            // get back price need to check bank balance
+            var availableBankBalance = await _bankService.GetAccountBalanceAsync();
+
             // For now, use placeholder values - will be replaced with Hand integration later
             string supplierOrigin = "hand"; // need to decide
             var unitPrice = materialName.ToLower() == "sand" ? 50 : 75; // Default prices
             var sellerBankAccount = "SUPPLIER_BANK_PLACEHOLDER"; // Will come from Hand/Recycler
             Random rnd = new Random();
             var orderId = rnd.Next(100000); // Generate unique order ID
+
+
+            // not enough monies
+            if (availableBankBalance < unitPrice *  quantity)
+            {
+                return null;
+            }
 
             // Find material ID
             var material = await _materialService.GetMaterialAsync(materialName);
@@ -116,11 +144,19 @@ public class ReorderService
     {
         try
         {
+            var availableBankBalance = await _bankService.GetAccountBalanceAsync();
+
             // For now, use placeholder values - will be replaced with Hand integration later
             var unitPrice = 10000; // Default equipment price
             var sellerBankAccount = "EQUIPMENT_SUPPLIER_BANK_PLACEHOLDER"; // Will come from Hand
             Random rnd = new Random();
             var orderId = rnd.Next(100000); // Generate unique order ID
+
+            // probably will change to total order price or something like that
+            if (availableBankBalance < unitPrice * quantity)
+            {
+                return null;
+            }
 
             var purchaseOrder = await _purchaseOrderService.CreatePurchaseOrderAsync(
                 (int)orderId,

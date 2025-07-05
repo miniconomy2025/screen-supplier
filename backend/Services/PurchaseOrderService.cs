@@ -8,10 +8,12 @@ namespace ScreenProducerAPI.Services;
 public class PurchaseOrderService
 {
     private readonly ScreenContext _context;
+    private readonly SimulationTimeProvider _simulationTimeProvider;
 
-    public PurchaseOrderService(ScreenContext context)
+    public PurchaseOrderService(ScreenContext context, SimulationTimeProvider simulationTimeProvider)
     {
         _context = context;
+        _simulationTimeProvider = simulationTimeProvider;
     }
 
     public async Task<PurchaseOrder?> CreatePurchaseOrderAsync(
@@ -39,7 +41,7 @@ public class PurchaseOrderService
                 ShipmentID = null, // Will be set when pickup is requested
                 Quantity = quantity,
                 QuantityDelivered = 0,
-                OrderDate = DateTime.UtcNow,
+                OrderDate = _simulationTimeProvider.Now,
                 UnitPrice = unitPrice,
                 BankAccountNumber = sellerBankAccount,
                 Origin = origin,
@@ -157,6 +159,29 @@ public class PurchaseOrderService
             }
 
             purchaseOrder.OrderStatusId = status.Id;
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> UpdateOrderShippingDetailsAsync(int purchaseOrderId, string bankAccount, int shippingPrice)
+    {
+        try
+        {
+            var purchaseOrder = await _context.PurchaseOrders
+                .FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
+
+            if (purchaseOrder == null)
+            {
+                return false;
+            }
+
+            purchaseOrder.ShipperBankAccout = bankAccount;
+            purchaseOrder.OrderShippingPrice = shippingPrice;
             await _context.SaveChangesAsync();
             return true;
         }

@@ -236,7 +236,7 @@ public class PurchaseOrderQueueService
                 return false;
             }
 
-            var (pickupRequestId, logisticsBankAccount) = await logisticsService.RequestPickupAsync(
+            var (pickupRequestId, logisticsBankAccount, shippingPrice) = await logisticsService.RequestPickupAsync(
                 purchaseOrder.Origin,
                 companyInfo.CompanyId,
                 purchaseOrder.OrderID.ToString(),
@@ -246,6 +246,7 @@ public class PurchaseOrderQueueService
             // Update shipment ID and status
             await purchaseOrderService.UpdateShipmentIdAsync(purchaseOrder.Id, int.Parse(pickupRequestId));
             await purchaseOrderService.UpdateStatusAsync(purchaseOrder.Id, Status.RequiresPaymentToLogistics);
+            await purchaseOrderService.UpdateOrderShippingDetailsAsync(purchaseOrder.Id, logisticsBankAccount, shippingPrice);
 
             // Add back to queue for logistics payment
             EnqueuePurchaseOrder(purchaseOrder.Id);
@@ -271,15 +272,12 @@ public class PurchaseOrderQueueService
             var bankService = serviceProvider.GetRequiredService<BankService>();
             var purchaseOrderService = serviceProvider.GetRequiredService<PurchaseOrderService>();
 
-            // For now, use a default logistics cost
-            var logisticsCost = 500;
-            var logisticsBankAccount = "LOGISTICS_BANK_PLACEHOLDER";
-            var description = $"logistics_{purchaseOrder.ShipmentID}";
+            var description = $"{purchaseOrder.ShipmentID}";
 
             var paymentSuccess = await bankService.MakePaymentAsync(
-                logisticsBankAccount,
+                purchaseOrder.ShipperBankAccout,
                 "commercial-bank",
-                logisticsCost,
+                purchaseOrder.OrderShippingPrice,
                 description);
 
             if (paymentSuccess)
@@ -288,7 +286,7 @@ public class PurchaseOrderQueueService
                 await purchaseOrderService.UpdateStatusAsync(purchaseOrder.Id, Status.WaitingForDelivery);
 
                 _logger.LogInformation("Logistics payment successful for purchase order {PurchaseOrderId}, amount {Amount}",
-                    purchaseOrder.Id, logisticsCost);
+                    purchaseOrder.Id, purchaseOrder.OrderShippingPrice);
                 return true;
             }
             else
