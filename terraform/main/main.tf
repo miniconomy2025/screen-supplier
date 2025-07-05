@@ -165,7 +165,7 @@ resource "aws_security_group" "rds-security-group" {
         from_port = 5432
         to_port = 5432
         protocol = "tcp"
-        security_groups = [ aws_security_group.ec2-security-group.id ]
+        security_groups = [ "0.0.0.0/0" ]
     }
 }
 
@@ -174,6 +174,7 @@ resource "aws_db_instance" "postgres" {
   engine               = "postgres"
   engine_version       = "15"
   instance_class       = "db.t3.micro"
+  publicly_accessible = true
   username             = local.secret_data.db_username
   password             = local.secret_data.db_password
   parameter_group_name = "default.postgres15"
