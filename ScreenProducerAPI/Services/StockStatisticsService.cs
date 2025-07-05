@@ -16,12 +16,14 @@ public class StockStatisticsService(
         var equipment = await context.Equipment.Where(equipment => equipment.IsAvailable || equipment.IsProducing).ToListAsync();
 
         var machineCount = equipment.Count();
-        var equipmentParameters = equipment.First().EquipmentParameters;
 
-        if (machineCount == 0 || equipmentParameters == null)
+        if (machineCount == 0)
         {
             return new AllMaterialStatistics();
         }
+
+        var equipmentParameters = equipment.First().EquipmentParameters;
+
 
         return new AllMaterialStatistics
         {

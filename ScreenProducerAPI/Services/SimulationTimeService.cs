@@ -1,4 +1,5 @@
-﻿using ScreenProducerAPI.Services;
+﻿using Microsoft.EntityFrameworkCore;
+using ScreenProducerAPI.ScreenDbContext;
 using ScreenProducerAPI.Services.BankServices;
 
 namespace ScreenProducerAPI.Services
@@ -31,12 +32,16 @@ namespace ScreenProducerAPI.Services
                 StopSimulation();
             }
 
+            
+
             _simulationStartUnixEpoch = unixEpochStart;
 
             // Initialize bank integration first
             using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ScreenContext>();
             var bankIntegrationService = scope.ServiceProvider.GetRequiredService<BankIntegrationService>();
 
+            await CleanUpDatabase(context);
             (_bankAccountCreated, _bankLoanCreated, _notifcationUrlSet) = await bankIntegrationService.InitializeAsync(_bankAccountCreated, _bankLoanCreated, _notifcationUrlSet);
 
             // Initialize equipment parameters: todo get from hand
@@ -258,6 +263,29 @@ namespace ScreenProducerAPI.Services
 
             var finalDay = GetCurrentSimulationDay();
             _logger.LogInformation("Simulation stopped at day {Day}", finalDay);
+        }
+
+        private async Task CleanUpDatabase(ScreenContext context)
+        {
+            // Clear Tables
+            context.EquipmentParameters.ExecuteDelete();
+            context.Equipment.ExecuteDelete();
+            context.BankDetails.ExecuteDelete();
+            context.PurchaseOrders.ExecuteDelete();
+            context.ScreenOrders.ExecuteDelete();
+
+            // Reset others
+            await context.Products.ForEachAsync(p => { 
+                p.Price = 0;  
+                p.Quantity = 0;
+            });
+            await context.Materials.ForEachAsync(p =>
+            {
+                p.Quantity = 0;
+            });
+
+            await context.SaveChangesAsync();
+            return;
         }
 
         public void Dispose()
