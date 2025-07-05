@@ -76,6 +76,12 @@ resource "aws_subnet" "private_1" {
   availability_zone = "af-south-1a"
 }
 
+resource "aws_subnet" "private_2" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.2.0/24"
+  availability_zone = "af-south-1b"
+}
+
 resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "10.0.0.0/24"
@@ -92,9 +98,17 @@ resource "aws_subnet" "public_2" {
 
 resource "aws_db_subnet_group" "private-group" {
   name       = "screen-supplier-private-group"
-  subnet_ids = [aws_subnet.public.id, aws_subnet.public_2.id]
+  subnet_ids = [aws_subnet.private_1.id, aws_subnet.private_2.id]
   tags = {
     Name = "Screen Supplier Private subnet group"
+  }
+}
+
+resource "aws_db_subnet_group" "public-group" {
+  name       = "screen-supplier-public-group"
+  subnet_ids = [aws_subnet.public.id, aws_subnet.public_2.id]
+  tags = {
+    Name = "Screen Supplier Public subnet group"
   }
 }
 
@@ -187,7 +201,7 @@ resource "aws_db_instance" "postgres" {
   skip_final_snapshot  = true
   db_name              = "ScreenProducerDb"
   vpc_security_group_ids = [aws_security_group.rds-security-group.id]
-  db_subnet_group_name   = aws_db_subnet_group.private-group.name
+  db_subnet_group_name   = aws_db_subnet_group.public-group.name
   
   tags = {
     Name = "screen-supplier-rds"
