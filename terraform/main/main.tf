@@ -159,13 +159,13 @@ resource "aws_security_group" "ec2-security-group" {
 
 resource "aws_security_group" "rds-security-group" {
     name = "screen-supplier-rds"
-    description = "Allow EC2 to talk to RDS"
+    description = "Allow RDS access from anywhere"
     vpc_id      = aws_vpc.main.id
     ingress{
         from_port = 5432
         to_port = 5432
         protocol = "tcp"
-        security_groups = [ "0.0.0.0/0" ]
+        cidr_blocks = ["0.0.0.0/0"] 
     }
 }
 
