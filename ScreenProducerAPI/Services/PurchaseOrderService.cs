@@ -166,6 +166,29 @@ public class PurchaseOrderService
         }
     }
 
+    public async Task<bool> UpdateOrderShippingDetailsAsync(int purchaseOrderId, string bankAccount, int shippingPrice)
+    {
+        try
+        {
+            var purchaseOrder = await _context.PurchaseOrders
+                .FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
+
+            if (purchaseOrder == null)
+            {
+                return false;
+            }
+
+            purchaseOrder.ShipperBankAccout = bankAccount;
+            purchaseOrder.OrderShippingPrice = shippingPrice;
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            return false;
+        }
+    }
+
     public async Task<PurchaseOrder?> GetPurchaseOrderByIdAsync(int purchaseOrderId)
     {
         return await _context.PurchaseOrders

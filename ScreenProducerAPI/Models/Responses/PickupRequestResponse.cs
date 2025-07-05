@@ -5,6 +5,7 @@ public class PickupRequestResponse
     public bool? Success { get; set; }
     public string PickupRequestId { get; set; } = string.Empty;
     public string BankAccountNumber { get; set; } = string.Empty;
+    public int Price { get; set; }
     public string? Message { get; set; } = string.Empty;
     public DateTime? CreatedAt { get; set; }
 }
