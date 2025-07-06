@@ -169,7 +169,8 @@ app.post('/transaction', getAccountNumber, (req, res) => {
     };
 
     console.log(`Transaction ${transactionNumber}: ${fromAccount} -> ${to_account_number}, Amount: ${amount}, Description: ${description}`);
-    console.log(accounts[fromAccount].balance)
+    console.log(`Amount transferred: ${amount}`)
+    console.log(`New Balance: ${accounts[fromAccount].balance}`)
 
     // Send notification to recipient if they have notification URL
     if (notificationUrls[to_account_number]) {
