@@ -2,6 +2,9 @@
 using ScreenProducerAPI.Models.Configuration;
 using ScreenProducerAPI.Services;
 using ScreenProducerAPI.Services.BankServices;
+using ScreenProducerAPI.Services.SupplierService;
+using ScreenProducerAPI.Services.SupplierService.Hand;
+using ScreenProducerAPI.Services.SupplierService.Recycler;
 
 namespace ScreenProducerAPI.Configuration;
 
@@ -25,6 +28,16 @@ public static class ApiConfiguration
 
         // HTTP Clients
         services.AddHttpClient<LogisticsService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
+        });
+        services.AddHttpClient<RecyclerService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
+        });
+        services.AddHttpClient<HandService>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
@@ -66,6 +79,11 @@ public static class ApiConfiguration
             .BindConfiguration(StockManagementOptions.Section)
             .ValidateDataAnnotations();
 
+        //Supplier options
+        services.AddOptions<SupplierServiceOptions>()
+            .BindConfiguration($"ExternalServices:{SupplierServiceOptions.Section}")
+            .ValidateDataAnnotations();
+
         // Queue Service and Background Processing
         services.AddSingleton<PurchaseOrderQueueService>();
         services.AddHostedService<QueueProcessingBackgroundService>();
@@ -85,6 +103,8 @@ public static class ApiConfiguration
         services.AddScoped<BankService>();
         services.AddSingleton<SimulationTimeService>();
         services.AddScoped<StockStatisticsService>();
+        services.AddScoped<RecyclerService>();
+        services.AddScoped<HandService>();
 
         // Time provider service
         services.AddScoped<SimulationTimeProvider>();
