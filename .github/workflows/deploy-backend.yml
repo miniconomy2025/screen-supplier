@@ -28,9 +28,8 @@ jobs:
           chmod 600 ec2_key.pem
       
       - name: Copy start.sh script to EC2
-        working-directory: backend
         run: |
-          scp -o StrictHostKeyChecking=no -i ../ec2_key.pem ./start.sh ubuntu@$EC2_IP:~/start.sh
+          scp -o StrictHostKeyChecking=no -i ec2_key.pem ./start.sh ubuntu@$EC2_IP:~/start.sh
 
       - name: Clean up old build on EC2
         run: |
