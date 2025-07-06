@@ -382,6 +382,15 @@ namespace ScreenProducerAPI.Services
             return;
         }
 
+        public async Task DestroySimulation()
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ScreenContext>();
+          
+            StopSimulation();
+            await CleanUpDatabase(context);
+        }
+
         public void Dispose()
         {
             StopSimulation();
