@@ -18,7 +18,8 @@ public static class ApiConfiguration
             .AddPaymentEndpoints()
             .AddOrderEndpoints()
             .AddTargetQuantityEndpoints()
-            .AddQueueEndpoints();
+            .AddQueueEndpoints()
+            .AddReportingEndpoints();
     }
 
     public static void AddApiServices(this IServiceCollection services)
@@ -105,6 +106,8 @@ public static class ApiConfiguration
         services.AddScoped<StockStatisticsService>();
         services.AddScoped<RecyclerService>();
         services.AddScoped<HandService>();
+        services.AddScoped<ProductionHistoryService>();
+        services.AddScoped<ReportingService>();
 
         // Time provider service
         services.AddScoped<SimulationTimeProvider>();

@@ -13,6 +13,7 @@ public class ScreenContext : DbContext
     public DbSet<Material> Materials { get; set; }
     public DbSet<PurchaseOrder> PurchaseOrders { get; set; }
     public DbSet<OrderStatus> OrderStatuses { get; set; }
+    public DbSet<ProductionHistory> ProductionHistory { get; set; }
 
     public ScreenContext(DbContextOptions<ScreenContext> options) : base(options)
     {
