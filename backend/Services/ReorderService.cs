@@ -107,17 +107,9 @@ public class ReorderService
             var availableBankBalance = await _bankService.GetAccountBalanceAsync();
 
             // Get pricing from both Hand and Recycler services
-            var (bestPrice, bestSupplier, bestBankAccount, bestOrderId) = await GetBestMaterialPriceAsync(materialName, quantity);
+            var (bestPrice, bestSupplier, bestBankAccount, bestOrderId) = await GetBestMaterialPriceAsync(materialName, quantity, availableBankBalance);
 
-            if (bestPrice <= 0)
-            {
-                return null;
-            }
-
-            // need to check what price returned on orders means
-            var totalCost = bestPrice * quantity;
-
-            if (availableBankBalance < totalCost)
+            if (bestOrderId == -1)
             {
                 return null;
             }
@@ -149,12 +141,12 @@ public class ReorderService
         }
     }
 
-    private async Task<(decimal price, string supplier, string bankAccount, int orderId)> GetBestMaterialPriceAsync(string materialName, int quantity)
+    private async Task<(decimal price, string supplier, string bankAccount, int orderId)> GetBestMaterialPriceAsync(string materialName, int quantity, int bankBalance)
     {
         var bestPrice = decimal.MaxValue;
         var bestSupplier = "";
         var bestBankAccount = "";
-        var bestOrderId = 0;
+        var bestOrderId = -1;
 
         try
         {
@@ -163,30 +155,29 @@ public class ReorderService
             var handMaterials = await _handService.GetRawMaterialsForSaleAsync();
             var handMaterial = handMaterials.FirstOrDefault(m =>
                 m.RawMaterialName.Equals(materialName, StringComparison.OrdinalIgnoreCase));
+         
 
-            if (handMaterial != null)
+            // Not null and have enough money in account
+            if (handMaterial != null && (handMaterial.PricePerKg * quantity <= bankBalance))
             {
-                if (handMaterial.PricePerKg < bestPrice)
+                // Make purchase request to get order details
+                var purchaseRequest = new PurchaseRawMaterialRequest
                 {
-                    // Make purchase request to get order details
-                    var purchaseRequest = new PurchaseRawMaterialRequest
-                    {
-                        MaterialName = handMaterial.RawMaterialName,
-                        WeightQuantity = Math.Min(handMaterial.QuantityAvailable, quantity)
-                    };
+                    MaterialName = handMaterial.RawMaterialName,
+                    WeightQuantity = quantity
+                };
 
-                    var purchaseResponse = await _handService.PurchaseRawMaterialAsync(purchaseRequest);
+                var purchaseResponse = await _handService.PurchaseRawMaterialAsync(purchaseRequest);
 
-                    bestPrice = handMaterial.PricePerKg;
-                    bestSupplier = "hand";
-                    bestBankAccount = purchaseResponse.BankAccount;
-                    bestOrderId = purchaseResponse.OrderId;
-                }
+                bestPrice = handMaterial.PricePerKg;
+                bestSupplier = "hand";
+                bestBankAccount = purchaseResponse.BankAccount;
+                bestOrderId = purchaseResponse.OrderId;
             }
         }
         catch (Exception ex)
         {
-            return (0, "", "", 0);
+            return (0, "", "", -1);
         }
 
         return (bestPrice, bestSupplier, bestBankAccount, bestOrderId);
