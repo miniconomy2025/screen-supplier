@@ -233,7 +233,7 @@ public class LogisticsService
                 throw new InvalidOperationException("Invalid response from bulk logistics service");
             }
 
-            return (pickupResponse.PickupRequestId, pickupResponse.BankAccountNumber, pickupResponse.Price);
+            return (pickupResponse.PickupRequestId, pickupResponse.bulkLogisticsBankAccountNumber, pickupResponse.Cost);
         }
         catch (HttpRequestException ex)
         {
