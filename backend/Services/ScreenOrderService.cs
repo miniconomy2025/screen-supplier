@@ -233,4 +233,19 @@ public class ScreenOrderService
             .Where(so => so.OrderStatus.Status == statusName)
             .ToListAsync();
     }
+
+    public async Task<List<ScreenOrder>> GetOrdersByDateAsync(DateTime date)
+    {
+        List<ScreenOrder> orders = [];
+
+        foreach (var item in _context.ScreenOrders)
+        {
+            if (item.OrderDate == date)
+            {
+                orders.Add(item);
+            }
+        }
+
+        return orders;
+    }
 }
