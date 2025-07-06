@@ -169,7 +169,7 @@ public class ReorderService
 
                 var purchaseResponse = await _handService.PurchaseRawMaterialAsync(purchaseRequest);
 
-                bestPrice = handMaterial.PricePerKg;
+                bestPrice = (int)Math.Ceiling(purchaseResponse.Price/quantity);
                 bestSupplier = "hand";
                 bestBankAccount = purchaseResponse.BankAccount;
                 bestOrderId = purchaseResponse.OrderId;
@@ -190,21 +190,13 @@ public class ReorderService
             var availableBankBalance = await _bankService.GetAccountBalanceAsync();
 
             // Get equipment pricing from Hand service
-            var (equipmentPrice, bankAccount, orderId) = await GetEquipmentPriceAsync(quantity);
+            var (equipmentPrice, bankAccount, orderId) = await GetEquipmentPriceAsync(quantity, availableBankBalance);
 
-            if (equipmentPrice <= 0)
+            if (orderId == -1)
             {
                 return null;
             }
             
-            // Todo check if this is the case
-            var totalCost = equipmentPrice * quantity;
-
-            if (availableBankBalance < totalCost)
-            {
-                return null;
-            }
-
             var purchaseOrder = await _purchaseOrderService.CreatePurchaseOrderAsync(
                 orderId,
                 quantity,
@@ -228,7 +220,7 @@ public class ReorderService
         }
     }
 
-    private async Task<(decimal price, string bankAccount, int orderId)> GetEquipmentPriceAsync(int quantity)
+    private async Task<(decimal price, string bankAccount, int orderId)> GetEquipmentPriceAsync(int quantity, int bankAccount)
     {
         try
         {
@@ -236,9 +228,9 @@ public class ReorderService
             var machinesResponse = await _handService.GetMachinesForSaleAsync();
             var screenMachine = machinesResponse.Machines.FirstOrDefault(m => m.MachineName == "screen_machine");
 
-            if (screenMachine == null || screenMachine.Quantity < quantity)
+            if (screenMachine == null || screenMachine.Quantity < quantity || screenMachine.Price * quantity > bankAccount)
             {
-                return (0, "", 0);
+                return (0, "", -1);
             }
 
             // Make purchase request to get pricing and order details
@@ -250,11 +242,11 @@ public class ReorderService
 
             var purchaseResponse = await _handService.PurchaseMachineAsync(purchaseRequest);
 
-            return (purchaseResponse.Price, purchaseResponse.BankAccount, purchaseResponse.OrderId);
+            return ((int)Math.Ceiling(purchaseResponse.Price/quantity), purchaseResponse.BankAccount, purchaseResponse.OrderId);
         }
         catch (Exception ex)
         {
-            return (0, "", 0);
+            return (0, "", -1);
         }
     }
 }
