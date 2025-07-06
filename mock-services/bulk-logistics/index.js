@@ -31,8 +31,8 @@ app.post('/pickup-request', (req, res) => {
         res.json({
             success: true,
             pickupRequestId: shipmentId.toString(),
-            bankAccountNumber: bankAccountNumber,
-            price: price
+            bulkLogisticsBankAccountNumber: bankAccountNumber,
+            cost: price
         });
 
     } catch (error) {

@@ -2,6 +2,7 @@
 using ScreenProducerAPI.Models.Requests;
 using ScreenProducerAPI.Models.Responses;
 using ScreenProducerAPI.Services;
+using System.Threading.Tasks;
 
 namespace ScreenProducerAPI.Endpoints
 {
@@ -22,6 +23,12 @@ namespace ScreenProducerAPI.Endpoints
                 .WithTags("Simulation")
                 .WithName("GetSimulationStatus")
                 .WithSummary("Get current simulation status and time");
+
+            endpoints.MapDelete("/simulation", StopSimulationHandler)
+                .Produces(StatusCodes.Status200OK)
+                .WithTags("Simulation")
+                .WithName("StopSimulation")
+                .WithSummary("Stop the simulation running, and clear database");
 
             return endpoints;
         }
@@ -65,6 +72,13 @@ namespace ScreenProducerAPI.Endpoints
             };
 
             return Results.Ok(response);
+        }
+
+        private static async Task<IResult> StopSimulationHandler(
+            [FromServices] SimulationTimeService simulationTimeService)
+        {
+            await simulationTimeService.DestroySimulation();
+            return Results.Ok();
         }
     }
 }

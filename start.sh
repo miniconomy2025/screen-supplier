@@ -23,6 +23,8 @@ export ExternalServices__CommercialBank__BaseUrl="https://commercial-bank-api.pr
 export ExternalServices__BulkLogistics__BaseUrl="https://bulk-logistics-api.projects.bbdgrad.com"
 export ExternalServices__Hand__BaseUrl="https://hand-api.projects.bbdgrad.com"
 export ExternalServices__Recycler__BaseUrl="https://recycler-api.projects.bbdgrad.com"
+export ExternalServices__Suppliers__HandBaseUrl="https://hand-api.projects.bbdgrad.com"
+export ExternalServices__Suppliers__RecyclerBaseUrl="https://recycler-api.projects.bbdgrad.com"
 export BankSettings__NotificationUrl="https://screen-supplier-api.projects.bbdgrad.com/payment"
 
 # Kill any existing process

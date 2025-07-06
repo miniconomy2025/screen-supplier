@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ScreenProducerAPI.ScreenDbContext;
 using ScreenProducerAPI.Services.BankServices;
+using ScreenProducerAPI.Services.SupplierService.Hand;
 
 namespace ScreenProducerAPI.Services
 {
@@ -13,7 +14,8 @@ namespace ScreenProducerAPI.Services
         private bool _simulationRunning;
         private bool _bankAccountCreated = false;
         private bool _bankLoanCreated = false;
-        private bool _notifcationUrlSet = false;
+        private bool _notificationUrlSet = false;
+        private bool _equipmentParametersInitialized = false;
         private Timer? _dayTimer;
 
         // 2 minutes real time = 1 simulation day (120 seconds)
@@ -32,21 +34,32 @@ namespace ScreenProducerAPI.Services
                 StopSimulation();
             }
 
-            
-
             _simulationStartUnixEpoch = unixEpochStart;
 
-            // Initialize bank integration first
+            // Initialize all required services
             using var scope = _serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ScreenContext>();
             var bankIntegrationService = scope.ServiceProvider.GetRequiredService<BankIntegrationService>();
+            var handService = scope.ServiceProvider.GetRequiredService<HandService>();
+            var equipmentService = scope.ServiceProvider.GetRequiredService<EquipmentService>();
 
             await CleanUpDatabase(context);
-            (_bankAccountCreated, _bankLoanCreated, _notifcationUrlSet) = await bankIntegrationService.InitializeAsync(_bankAccountCreated, _bankLoanCreated, _notifcationUrlSet);
 
-            // Initialize equipment parameters: todo get from hand
-            var equipmentService = scope.ServiceProvider.GetRequiredService<EquipmentService>();
-            await equipmentService.InitializeEquipmentParametersAsync(1, 1, 500);
+            // Initialize bank integration
+            (_bankAccountCreated, _bankLoanCreated, _notificationUrlSet) =
+                await bankIntegrationService.InitializeAsync(_bankAccountCreated, _bankLoanCreated, _notificationUrlSet);
+
+            // Initialize equipment parameters from Hand service
+            if (!_equipmentParametersInitialized)
+            {
+                _equipmentParametersInitialized = await InitializeEquipmentParametersFromHand(handService, equipmentService);
+
+                if (!_equipmentParametersInitialized)
+                {
+                    _logger.LogError("Failed to initialize equipment parameters from Hand service. Cannot start simulation.");
+                    return false;
+                }
+            }
 
             _simulationRunning = true;
 
@@ -57,6 +70,76 @@ namespace ScreenProducerAPI.Services
             _ = Task.Run(async () => await TriggerStartOfDay(0));
 
             return true;
+        }
+
+        private async Task<bool> InitializeEquipmentParametersFromHand(HandService handService, EquipmentService equipmentService)
+        {
+            try
+            {
+                _logger.LogInformation("Fetching equipment parameters from Hand service...");
+
+                var machinesResponse = await handService.GetMachinesForSaleAsync();
+                var screenMachine = machinesResponse.Machines.FirstOrDefault(m => m.MachineName == "screen_machine");
+
+                if (screenMachine == null)
+                {
+                    _logger.LogError("Screen machine not found in Hand service response");
+                    return false;
+                }
+
+                // Parse material ratio (e.g., "sand:copper" or "2:1")
+                var (sandKg, copperKg) = ParseMaterialRatio(screenMachine.MaterialRatio);
+                var outputScreensPerDay = screenMachine.ProductionRate;
+
+                _logger.LogInformation("Found screen machine - Sand: {SandKg}kg, Copper: {CopperKg}kg, Output: {OutputScreens} screens/day",
+                    sandKg, copperKg, outputScreensPerDay);
+
+                // Initialize equipment parameters
+                var success = await equipmentService.InitializeEquipmentParametersAsync(sandKg, copperKg, outputScreensPerDay);
+
+                if (success)
+                {
+                    _logger.LogInformation("Equipment parameters successfully initialized from Hand service");
+                }
+                else
+                {
+                    _logger.LogError("Failed to save equipment parameters to database");
+                }
+
+                return success;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error initializing equipment parameters from Hand service");
+                return false;
+            }
+        }
+
+        private (int sandKg, int copperKg) ParseMaterialRatio(string materialRatio)
+        {
+            try
+            {
+                // Handle formats like "sand:copper", "2:1", etc.
+                var parts = materialRatio.Split(':');
+                if (parts.Length != 2)
+                {
+                    _logger.LogWarning("Invalid material ratio format: {MaterialRatio}. Using default 1:1", materialRatio);
+                    return (1, 1);
+                }
+
+                // Try to parse as numbers first (e.g., "2:1")
+                if (int.TryParse(parts[0].Trim(), out int sandRatio) &&
+                    int.TryParse(parts[1].Trim(), out int copperRatio))
+                {
+                    return (sandRatio, copperRatio);
+                }
+                return (1, 1);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error parsing material ratio: {MaterialRatio}. Using default 1:1", materialRatio);
+                return (1, 1);
+            }
         }
 
         public int GetCurrentSimulationDay()
@@ -120,14 +203,20 @@ namespace ScreenProducerAPI.Services
                 var equipmentService = scope.ServiceProvider.GetRequiredService<EquipmentService>();
                 var reorderService = scope.ServiceProvider.GetRequiredService<ReorderService>();
                 var bankIntegrationService = scope.ServiceProvider.GetRequiredService<BankIntegrationService>();
+                var handService = scope.ServiceProvider.GetRequiredService<HandService>();
 
                 var simDate = new DateTime(2050, 1, 1).AddDays(day);
                 _logger.LogInformation("START OF DAY {Day} ({SimDate:yyyy-MM-dd})", day, simDate);
 
-                // Daily banking operations
-                if (!_bankAccountCreated || !_bankLoanCreated)
+                if (!_bankAccountCreated || !_bankLoanCreated || !_notificationUrlSet)
                 {
-                    await bankIntegrationService.InitializeAsync(_bankAccountCreated, _bankLoanCreated, _bankLoanCreated);
+                    await bankIntegrationService.InitializeAsync(_bankAccountCreated, _bankLoanCreated, _notificationUrlSet);
+                }
+
+                if (!_equipmentParametersInitialized)
+                {
+                    _equipmentParametersInitialized = await InitializeEquipmentParametersFromHand(
+                        handService, equipmentService);
                 }
 
                 // Log current inventory status
@@ -275,8 +364,8 @@ namespace ScreenProducerAPI.Services
             context.ScreenOrders.ExecuteDelete();
 
             // Reset others
-            await context.Products.ForEachAsync(p => { 
-                p.Price = 0;  
+            await context.Products.ForEachAsync(p => {
+                p.Price = 0;
                 p.Quantity = 0;
             });
             await context.Materials.ForEachAsync(p =>
@@ -285,7 +374,21 @@ namespace ScreenProducerAPI.Services
             });
 
             await context.SaveChangesAsync();
+
+            _equipmentParametersInitialized = false;
+            _bankAccountCreated = false;
+            _bankLoanCreated = false;
+            _notificationUrlSet = false;
             return;
+        }
+
+        public async Task DestroySimulation()
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ScreenContext>();
+          
+            StopSimulation();
+            await CleanUpDatabase(context);
         }
 
         public void Dispose()
