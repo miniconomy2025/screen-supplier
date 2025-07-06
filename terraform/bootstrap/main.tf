@@ -17,13 +17,11 @@ provider "aws" {
   region = "af-south-1"
 }
 
-# Provider for ACM certificates (must be us-east-1 for CloudFront)
 provider "aws" {
   alias  = "us_east_1"
   region = "us-east-1"
 }
 
-# S3 bucket for Terraform state
 resource "aws_s3_bucket" "terraform_state" {
   bucket = "terraform-state-bucket-screen-supplier-grp"  
   tags = {
@@ -56,7 +54,6 @@ resource "aws_s3_bucket_public_access_block" "terraform_state_block" {
   restrict_public_buckets = true
 }
 
-# S3 bucket for frontend static hosting (private, served via CloudFront)
 resource "aws_s3_bucket" "frontend" {
   bucket = "screen-supplier-frontend-static"
   tags = {
@@ -65,7 +62,6 @@ resource "aws_s3_bucket" "frontend" {
   }
 }
 
-# Keep bucket private, CloudFront will access via OAI
 resource "aws_s3_bucket_public_access_block" "frontend" {
   bucket = aws_s3_bucket.frontend.id
   block_public_acls       = true
@@ -74,12 +70,10 @@ resource "aws_s3_bucket_public_access_block" "frontend" {
   restrict_public_buckets = true
 }
 
-# CloudFront Origin Access Identity for S3
 resource "aws_cloudfront_origin_access_identity" "frontend_oai" {
   comment = "OAI for screen-supplier frontend"
 }
 
-# S3 bucket policy to allow CloudFront access
 resource "aws_s3_bucket_policy" "frontend" {
   bucket = aws_s3_bucket.frontend.id
 
@@ -101,7 +95,6 @@ resource "aws_s3_bucket_policy" "frontend" {
   depends_on = [aws_s3_bucket_public_access_block.frontend]
 }
 
-# ACM Certificate for both subdomains (must be in us-east-1 for CloudFront)
 resource "aws_acm_certificate" "main" {
   provider                  = aws.us_east_1
   domain_name              = "screen-supplier.projects.bbdgrad.com"
@@ -153,7 +146,6 @@ resource "aws_cloudfront_distribution" "frontend" {
     compress               = true
   }
 
-  # Handle SPA routing
   custom_error_response {
     error_code         = 404
     response_code      = 200
@@ -166,7 +158,7 @@ resource "aws_cloudfront_distribution" "frontend" {
     response_page_path = "/index.html"
   }
 
-  price_class = "PriceClass_100"  # Use only North America and Europe
+  price_class = "PriceClass_100" 
 
   restrictions {
     geo_restriction {

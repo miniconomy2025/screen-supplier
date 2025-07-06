@@ -16,12 +16,12 @@ terraform {
   }
 }
 
-# Get bootstrap outputs
+
 data "terraform_remote_state" "bootstrap" {
   backend = "s3"
   config = {
     bucket = "terraform-state-bucket-screen-supplier-grp"
-    key    = "bootstrap/terraform.tfstate"  # Bootstrap state path
+    key    = "bootstrap/terraform.tfstate"  
     region = "af-south-1"
   }
 }
@@ -42,7 +42,6 @@ provider "aws" {
   region  = "af-south-1"
 }
 
-# Provider for CloudFront (requires us-east-1)
 provider "aws" {
   alias  = "us_east_1"
   region = "us-east-1"
@@ -66,8 +65,8 @@ data "aws_ami" "ubuntu" {
 
 resource "aws_vpc" "main" {
   cidr_block           = "10.0.0.0/16"
-  enable_dns_hostnames = true  # This enables public DNS names
-  enable_dns_support   = true  # This was already there
+  enable_dns_hostnames = true  
+  enable_dns_support   = true  
 }
 
 resource "aws_subnet" "private_1" {
@@ -256,10 +255,9 @@ resource "aws_instance" "app_server" {
   tags = {
     Name = "screen-supplier-backend"
   }
-  key_name = "screen-supplier-key"  # You'll need to create this key pair
+  key_name = "screen-supplier-key" 
   vpc_security_group_ids = [aws_security_group.ec2-security-group.id]
 
-  # Install .NET runtime and nginx
   user_data = base64encode(<<-EOF
     #!/bin/bash
     apt-get update -y
@@ -325,7 +323,6 @@ output "frontend_cloudfront_domain" {
   value       = "Get from bootstrap terraform output"
 }
 
-# CloudFront distribution for API
 resource "aws_cloudfront_distribution" "api" {
   origin {
     domain_name = aws_instance.app_server.public_dns
@@ -341,7 +338,6 @@ resource "aws_cloudfront_distribution" "api" {
 
   enabled = true
 
-  # Comment out custom aliases for now
   # aliases = ["screen-supplier-api.projects.bbdgrad.com"]
 
   default_cache_behavior {
@@ -359,12 +355,11 @@ resource "aws_cloudfront_distribution" "api" {
 
     viewer_protocol_policy = "redirect-to-https"
     min_ttl                = 0
-    default_ttl            = 0     # Don't cache API responses
+    default_ttl            = 0     
     max_ttl                = 0
     compress               = false
   }
 
-  # Don't cache API endpoints by default
   ordered_cache_behavior {
     path_pattern     = "/api/*"
     allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
