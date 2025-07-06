@@ -2,6 +2,9 @@
 using ScreenProducerAPI.Models;
 using ScreenProducerAPI.Models.Configuration;
 using ScreenProducerAPI.Services.BankServices;
+using ScreenProducerAPI.Services.SupplierService.Hand;
+using ScreenProducerAPI.Services.SupplierService.Hand.Models;
+using ScreenProducerAPI.Services.SupplierService.Recycler;
 
 namespace ScreenProducerAPI.Services;
 
@@ -13,6 +16,8 @@ public class ReorderService
     private readonly ProductService _productService;
     private readonly MaterialService _materialService;
     private readonly BankService _bankService;
+    private readonly HandService _handService;
+    private readonly RecyclerService _recyclerService;
     private readonly IOptionsMonitor<TargetQuantitiesConfig> _targetConfig;
     private readonly IOptionsMonitor<ReorderSettingsConfig> _reorderConfig;
 
@@ -23,6 +28,8 @@ public class ReorderService
         ProductService productService,
         MaterialService materialService,
         BankService bankService,
+        HandService handService,
+        RecyclerService recyclerService,
         ILogger<ReorderService> logger,
         IOptionsMonitor<TargetQuantitiesConfig> targetConfig,
         IOptionsMonitor<ReorderSettingsConfig> reorderConfig)
@@ -35,6 +42,8 @@ public class ReorderService
         _queueService = queueService;
         _productService = productService;
         _bankService = bankService;
+        _handService = handService;
+        _recyclerService = recyclerService;
     }
 
     public async Task<ReorderResult> CheckAndProcessReordersAsync()
@@ -95,20 +104,20 @@ public class ReorderService
     {
         try
         {
-            // Logic to ping both hand and recycler - buy from cheapest
-            // get back price need to check bank balance
             var availableBankBalance = await _bankService.GetAccountBalanceAsync();
 
-            // For now, use placeholder values - will be replaced with Hand integration later
-            string supplierOrigin = "hand"; // need to decide
-            var unitPrice = materialName.ToLower() == "sand" ? 50 : 75; // Default prices
-            var sellerBankAccount = "SUPPLIER_BANK_PLACEHOLDER"; // Will come from Hand/Recycler
-            Random rnd = new Random();
-            var orderId = rnd.Next(100000); // Generate unique order ID
+            // Get pricing from both Hand and Recycler services
+            var (bestPrice, bestSupplier, bestBankAccount, bestOrderId) = await GetBestMaterialPriceAsync(materialName, quantity);
 
+            if (bestPrice <= 0)
+            {
+                return null;
+            }
 
-            // not enough monies
-            if (availableBankBalance < unitPrice *  quantity)
+            // need to check what price returned on orders means
+            var totalCost = bestPrice * quantity;
+
+            if (availableBankBalance < totalCost)
             {
                 return null;
             }
@@ -118,11 +127,11 @@ public class ReorderService
             var materialId = material?.Id;
 
             var purchaseOrder = await _purchaseOrderService.CreatePurchaseOrderAsync(
-                (int)orderId,
+                bestOrderId,
                 quantity,
-                unitPrice,
-                sellerBankAccount,
-                supplierOrigin,
+                (int)bestPrice,
+                bestBankAccount,
+                bestSupplier,
                 materialId,
                 false
             );
@@ -140,29 +149,76 @@ public class ReorderService
         }
     }
 
+    private async Task<(decimal price, string supplier, string bankAccount, int orderId)> GetBestMaterialPriceAsync(string materialName, int quantity)
+    {
+        var bestPrice = decimal.MaxValue;
+        var bestSupplier = "";
+        var bestBankAccount = "";
+        var bestOrderId = 0;
+
+        try
+        {
+            // Todo get pricing from recycler aswell
+            // Get pricing from Hand service
+            var handMaterials = await _handService.GetRawMaterialsForSaleAsync();
+            var handMaterial = handMaterials.FirstOrDefault(m =>
+                m.RawMaterialName.Equals(materialName, StringComparison.OrdinalIgnoreCase));
+
+            if (handMaterial != null)
+            {
+                if (handMaterial.PricePerKg < bestPrice)
+                {
+                    // Make purchase request to get order details
+                    var purchaseRequest = new PurchaseRawMaterialRequest
+                    {
+                        MaterialName = handMaterial.RawMaterialName,
+                        WeightQuantity = Math.Min(handMaterial.QuantityAvailable, quantity)
+                    };
+
+                    var purchaseResponse = await _handService.PurchaseRawMaterialAsync(purchaseRequest);
+
+                    bestPrice = handMaterial.PricePerKg;
+                    bestSupplier = "hand";
+                    bestBankAccount = purchaseResponse.BankAccount;
+                    bestOrderId = purchaseResponse.OrderId;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            return (0, "", "", 0);
+        }
+
+        return (bestPrice, bestSupplier, bestBankAccount, bestOrderId);
+    }
+
     private async Task<PurchaseOrder?> CreateEquipmentReorderAsync(int quantity)
     {
         try
         {
             var availableBankBalance = await _bankService.GetAccountBalanceAsync();
 
-            // For now, use placeholder values - will be replaced with Hand integration later
-            var unitPrice = 10000; // Default equipment price
-            var sellerBankAccount = "EQUIPMENT_SUPPLIER_BANK_PLACEHOLDER"; // Will come from Hand
-            Random rnd = new Random();
-            var orderId = rnd.Next(100000); // Generate unique order ID
+            // Get equipment pricing from Hand service
+            var (equipmentPrice, bankAccount, orderId) = await GetEquipmentPriceAsync(quantity);
 
-            // probably will change to total order price or something like that
-            if (availableBankBalance < unitPrice * quantity)
+            if (equipmentPrice <= 0)
+            {
+                return null;
+            }
+            
+            // Todo check if this is the case
+            var totalCost = equipmentPrice * quantity;
+
+            if (availableBankBalance < totalCost)
             {
                 return null;
             }
 
             var purchaseOrder = await _purchaseOrderService.CreatePurchaseOrderAsync(
-                (int)orderId,
+                orderId,
                 quantity,
-                unitPrice,
-                sellerBankAccount,
+                (int)equipmentPrice,
+                bankAccount,
                 "hand",
                 null,
                 true
@@ -178,6 +234,36 @@ public class ReorderService
         catch (Exception ex)
         {
             return null;
+        }
+    }
+
+    private async Task<(decimal price, string bankAccount, int orderId)> GetEquipmentPriceAsync(int quantity)
+    {
+        try
+        {
+            // Get machine details from Hand
+            var machinesResponse = await _handService.GetMachinesForSaleAsync();
+            var screenMachine = machinesResponse.Machines.FirstOrDefault(m => m.MachineName == "screen_machine");
+
+            if (screenMachine == null || screenMachine.Quantity < quantity)
+            {
+                return (0, "", 0);
+            }
+
+            // Make purchase request to get pricing and order details
+            var purchaseRequest = new PurchaseMachineRequest
+            {
+                MachineName = "screen_machine",
+                Quantity = quantity
+            };
+
+            var purchaseResponse = await _handService.PurchaseMachineAsync(purchaseRequest);
+
+            return (purchaseResponse.Price, purchaseResponse.BankAccount, purchaseResponse.OrderId);
+        }
+        catch (Exception ex)
+        {
+            return (0, "", 0);
         }
     }
 }
