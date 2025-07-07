@@ -92,13 +92,11 @@ public class MaterialService
 
     public async Task<decimal> GetAverageCostPerKgAsync(string materialName)
     {
-        // This would need to track purchase costs over time
-        // For now, return a default or calculate from recent purchase orders
         var recentPurchases = await _context.PurchaseOrders
             .Include(po => po.RawMaterial)
             .Where(po => po.RawMaterial != null && po.RawMaterial.Name.ToLower() == materialName.ToLower())
             .OrderByDescending(po => po.OrderDate)
-            .Take(5) // Last 5 purchases
+            .Take(5)
             .ToListAsync();
 
         if (!recentPurchases.Any())

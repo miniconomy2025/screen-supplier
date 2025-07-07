@@ -114,11 +114,25 @@ public class ProductService
             var sandCostPerKg = await _materialService.GetAverageCostPerKgAsync("sand");
             var copperCostPerKg = await _materialService.GetAverageCostPerKgAsync("copper");
 
-            // Calculate cost per screen based on material requirements
+            var machinesCost = await _context.PurchaseOrders
+                .Where(x => x.EquipmentOrder != null && x.OrderStatus.Status == Status.Delivered)
+                .SumAsync(x => x.UnitPrice * x.Quantity);
+
+            var totalScreensPurchase = await _context.ScreenOrders.Where(x => (x.OrderStatus.Status == Status.Collected)).SumAsync(x => x.Quantity);
+            var screens = await _context.Products.FirstOrDefaultAsync();
+            var screensInStock = screens != null ? screens.Quantity : 0;
+
+            // Calculate cost per screen based on material requirement
             var sandCostPerScreen = (sandCostPerKg * equipmentParams.InputSandKg) / equipmentParams.OutputScreens;
             var copperCostPerScreen = (copperCostPerKg * equipmentParams.InputCopperKg) / equipmentParams.OutputScreens;
+            double machineCostPerScreen = (machinesCost / (screensInStock + totalScreensPurchase + 1));
             
-            var materialCostPerScreen = sandCostPerScreen + copperCostPerScreen;
+            if (screensInStock + totalScreensPurchase < 2 * equipmentParams.OutputScreens)
+            {
+                machineCostPerScreen *= 0.05;
+            }
+
+            var materialCostPerScreen = sandCostPerScreen + copperCostPerScreen + (decimal)machineCostPerScreen;
             
             // Add margin (e.g., 25% markup)
             var margin = 0.25m;

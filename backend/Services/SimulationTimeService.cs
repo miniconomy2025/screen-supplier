@@ -50,16 +50,8 @@ public class SimulationTimeService : IDisposable
             await bankIntegrationService.InitializeAsync(_bankAccountCreated, _bankLoanCreated, _notificationUrlSet);
 
         // Initialize equipment parameters from Hand service
-        if (!_equipmentParametersInitialized)
-        {
-            _equipmentParametersInitialized = await InitializeEquipmentParametersFromHand(handService, equipmentService);
-
-            if (!_equipmentParametersInitialized)
-            {
-                _logger.LogError("Failed to initialize equipment parameters from Hand service. Cannot start simulation.");
-                return false;
-            }
-        }
+        
+        _equipmentParametersInitialized = await InitializeEquipmentParametersFromHand(handService, equipmentService);
 
         _simulationRunning = true;
 
@@ -365,6 +357,7 @@ public class SimulationTimeService : IDisposable
         context.BankDetails.ExecuteDelete();
         context.PurchaseOrders.ExecuteDelete();
         context.ScreenOrders.ExecuteDelete();
+        context.ProductionHistory.ExecuteDelete();
 
         // Reset others
         await context.Products.ForEachAsync(p =>
