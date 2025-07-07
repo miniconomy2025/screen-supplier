@@ -1,4 +1,4 @@
-name: Terraform Deploy Infrastructure
+name: Migrate DB
 on:
   workflow_dispatch: 
     
