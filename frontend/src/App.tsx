@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import {
   DollarSign,
@@ -12,7 +10,7 @@ import {
   XCircle,
   Clock,
 } from "lucide-react";
-import { apiService } from "@/services/reporting";
+import { apiService } from "./services/reporting";
 
 // Function to calculate days between two dates
 const getDaysBetween = (startDate: string, endDate: string) => {
@@ -257,7 +255,7 @@ const generateOrdersReportData = (
   };
 };
 
-export default function ReportingDashboard() {
+export default function App() {
   const [activeTab, setActiveTab] = useState("manufacturing");
   const [startDate, setStartDate] = useState("2024-01-01");
   const [endDate, setEndDate] = useState("2024-01-31");

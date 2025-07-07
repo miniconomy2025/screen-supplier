@@ -1,5 +1,3 @@
-// services/ApiService.ts
-
 export type DataResponse<T> = {
   status: "success" | "error";
   data: T;
