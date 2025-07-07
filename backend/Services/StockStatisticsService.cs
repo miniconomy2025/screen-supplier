@@ -17,18 +17,24 @@ public class StockStatisticsService(
 
         var machineCount = equipment.Count();
 
-        if (machineCount == 0)
-        {
-            return new AllMaterialStatistics();
-        }
-
         var equipmentParameters = await equipmentService.GetEquipmentParametersAsync();
 
-        if (equipmentParameters == null)
+        if (machineCount == 0 || equipmentParameters == null)
         {
-            return new AllMaterialStatistics();
+            return new AllMaterialStatistics
+            {
+                Sand = new MaterialStatistics()
+                {
+                    DailyConsumption = 0,
+                    ReorderPoint = targetConfig.CurrentValue.Sand.Target,
+                },
+                Copper = new MaterialStatistics()
+                {
+                    DailyConsumption = 0,
+                    ReorderPoint = targetConfig.CurrentValue.Sand.Target,
+                }
+            };
         }
-
 
         return new AllMaterialStatistics
         {
