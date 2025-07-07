@@ -27,7 +27,7 @@ jobs:
         working-directory: frontend
         run: |
           npm install
-          npm run build -- --configuration=production
+          npm run build
 
       - name: Deploy to S3
         working-directory: frontend
