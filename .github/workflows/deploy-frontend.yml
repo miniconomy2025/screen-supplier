@@ -32,7 +32,7 @@ jobs:
       - name: Deploy to S3
         working-directory: frontend
         run: |
-          aws s3 sync ./dist/frontend/browser/ s3://screen-supplier-frontend-static --delete
+          aws s3 sync ./dist/ s3://screen-supplier-frontend-static --delete
 
       - name: Invalidate CloudFront cache
         run: |
