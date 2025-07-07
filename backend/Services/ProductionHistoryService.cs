@@ -4,9 +4,9 @@ using ScreenProducerAPI.ScreenDbContext;
 
 namespace ScreenProducerAPI.Services;
 
-public class ProductionHistoryService(ScreenContext context, ILogger<ProductionHistoryService> logger, MaterialService materialService, ProductService productService)
+public class ProductionHistoryService(ScreenContext context, ILogger<ProductionHistoryService> logger, MaterialService materialService, ProductService productService, SimulationTimeProvider simulationTimeProvider)
 {
-    public async Task<ProductionHistory> GetProductionHistoryByDateAsync(DateTime date)
+    public async Task<ProductionHistory?> GetProductionHistoryByDateAsync(DateTime date)
     {
         ProductionHistory productionHistory = null;
 
@@ -22,13 +22,13 @@ public class ProductionHistoryService(ScreenContext context, ILogger<ProductionH
         if (productionHistory == null)
         {
             logger.LogWarning("No production history found in the database, querying and saving now.");
-            productionHistory = await StoreDailyProductionHistory(null, date);
+            return null;
         }
 
         return productionHistory;
     }
 
-    public async Task<ProductionHistory> StoreDailyProductionHistory(int? screensProduced, DateTime date)
+    public async Task<ProductionHistory> StoreDailyProductionHistory(int? screensProduced)
     {
         try
         {
@@ -38,7 +38,7 @@ public class ProductionHistoryService(ScreenContext context, ILogger<ProductionH
 
             foreach (var item in context.ProductionHistory)
             {
-                if (item.RecordDate == date)
+                if (item.RecordDate == simulationTimeProvider.Now)
                 {
                     existingRecord = item;
                     break;
@@ -51,7 +51,7 @@ public class ProductionHistoryService(ScreenContext context, ILogger<ProductionH
 
             var productionHistory = new ProductionHistory
             {
-                RecordDate = date.Date,
+                RecordDate = simulationTimeProvider.Now,
                 SandStock = materials.Where(materials => materials.Name.ToLower() == "sand").Sum(material => material.Quantity),
                 CopperStock = materials.Where(materials => materials.Name.ToLower() == "copper").Sum(material => material.Quantity),
                 ScreensProduced = screensProduced ?? 0
