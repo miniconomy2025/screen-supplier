@@ -1,2 +1,2 @@
 
-export const BASE_URL = 'https://localhost:7074';
+export const BASE_URL = 'https://screen-supplier-api.projects.bbdgrad.com/';

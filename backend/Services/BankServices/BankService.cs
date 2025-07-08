@@ -14,6 +14,7 @@ public class BankService
     private readonly ScreenContext _context;
     private readonly IOptions<BankServiceOptions> _options;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<BankService> _logger;
 
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
@@ -25,12 +26,14 @@ public class BankService
         HttpClient httpClient,
         ScreenContext context,
         IOptions<BankServiceOptions> options,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        ILogger<BankService> logger)
     {
         _httpClient = httpClient;
         _context = context;
         _options = options;
         _configuration = configuration;
+        _logger = logger;
     }
 
     public async Task<bool> InitializeBankAccountAsync()
@@ -60,6 +63,7 @@ public class BankService
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to initialize bank account");
             return false;
         }
     }
@@ -68,34 +72,77 @@ public class BankService
     {
         try
         {
-            var loanAmount = _configuration.GetValue<int>("BankSettings:InitialLoanAmount", 50000);
+            var initialLoanAmount = _configuration.GetValue<int>("BankSettings:InitialLoanAmount", 50000);
+            const int minimumLoanAmount = 5000;
+            const decimal decreasePercentage = 0.75m; // 25% decrease each retry
 
-            var loanRequest = new
+            var currentAttemptAmount = initialLoanAmount;
+
+            while (currentAttemptAmount >= minimumLoanAmount)
             {
-                amount = loanAmount
-            };
+                _logger.LogInformation("Attempting loan for amount: {Amount}", currentAttemptAmount);
 
-            var response = await _httpClient.PostAsJsonAsync(
-                $"{_options.Value.BaseUrl}/loan",
-                loanRequest,
-                _jsonOptions);
+                var loanRequest = new
+                {
+                    amount = currentAttemptAmount
+                };
 
-            if (!response.IsSuccessStatusCode)
-            {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                return false;
+                var response = await _httpClient.PostAsJsonAsync(
+                    $"{_options.Value.BaseUrl}/loan",
+                    loanRequest,
+                    _jsonOptions);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var loanResponse = await response.Content.ReadFromJsonAsync<LoanCreationResponse>(_jsonOptions);
+                    if (loanResponse?.Success == true)
+                    {
+                        _logger.LogInformation("Loan successful for amount: {Amount}", currentAttemptAmount);
+                        return true;
+                    }
+                }
+
+                // Decrease amount for next attempt
+                currentAttemptAmount = (int)(currentAttemptAmount * decreasePercentage);
+                _logger.LogWarning("Loan failed, retrying with amount: {Amount}", currentAttemptAmount);
             }
 
-            var loanResponse = await response.Content.ReadFromJsonAsync<LoanCreationResponse>(_jsonOptions);
-            if (loanResponse?.Success == true)
-            {
-                return true;
-            }
-
+            _logger.LogError("Failed to secure minimum loan amount of {MinAmount}", minimumLoanAmount);
             return false;
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Error during loan process");
+            return false;
+        }
+    }
+
+    public async Task<int> GetSafetyBalance()
+    {
+        try
+        {
+            var initialLoanAmount = _configuration.GetValue<int>("BankSettings:InitialLoanAmount", 50000);
+            return (int)(initialLoanAmount * 0.20m); // 20% of loan as safety
+        }
+        catch
+        {
+            return 10000; // Fallback safety amount
+        }
+    }
+
+    public async Task<bool> HasSufficientBalanceAsync(int requiredAmount)
+    {
+        try
+        {
+            var currentBalance = await GetAccountBalanceAsync();
+            var safetyBalance = await GetSafetyBalance();
+            var availableBalance = currentBalance - safetyBalance;
+
+            return availableBalance >= requiredAmount;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking balance sufficiency");
             return false;
         }
     }
@@ -112,6 +159,7 @@ public class BankService
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to create bank account");
             return null;
         }
     }
@@ -136,15 +184,11 @@ public class BankService
                 request,
                 _jsonOptions);
 
-            if (response.IsSuccessStatusCode)
-            {
-                return true;
-            }
-            return false;
-
+            return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to setup notification URL");
             return false;
         }
     }
@@ -158,6 +202,7 @@ public class BankService
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to get bank account number");
             return null;
         }
     }
@@ -174,6 +219,7 @@ public class BankService
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to get account balance");
             return 0;
         }
     }
@@ -198,15 +244,12 @@ public class BankService
             if (response.IsSuccessStatusCode)
             {
                 var paymentResponse = await response.Content.ReadFromJsonAsync<PaymentResponse>(_jsonOptions);
-                if (paymentResponse?.Success == true)
-                {
-                    return true;
-                }
-            }                
+                return paymentResponse?.Success == true;
+            }
         }
         catch (Exception ex)
         {
-            return false;
+            _logger.LogError(ex, "Payment failed for amount {Amount} to {Account}", amount, toAccountNumber);
         }
         return false;
     }
