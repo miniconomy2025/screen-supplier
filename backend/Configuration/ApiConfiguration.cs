@@ -5,6 +5,9 @@ using ScreenProducerAPI.Services.BankServices;
 using ScreenProducerAPI.Services.SupplierService;
 using ScreenProducerAPI.Services.SupplierService.Hand;
 using ScreenProducerAPI.Services.SupplierService.Recycler;
+using System.Net.Security;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 
 namespace ScreenProducerAPI.Configuration;
 
@@ -22,33 +25,123 @@ public static class ApiConfiguration
             .AddReportingEndpoints();
     }
 
+    public static void ConfigureApp(this WebApplication app)
+    {
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ScreenProducerAPI v1"));
+        }
+
+        app.Use(async (context, next) =>
+        {
+            //Does grab the request and returns a 401 if there isn't a cert, validation to be done later
+
+            X509Certificate2 clientCertificate = context.Connection.ClientCertificate;
+
+            if (clientCertificate == null || !clientCertificate.Verify())
+            {
+                //context.Response.StatusCode = 401;
+                //await context.Response.CompleteAsync();
+                //return;
+            }
+
+            //Cert validation
+
+            await next.Invoke();
+        });
+
+        app.UseSwagger();
+        app.UseSwaggerUI();
+
+        app.UseHttpsRedirection();
+
+        app.AddEndpoints();
+        app.UseRateLimiter();
+
+    }
+
     public static void AddApiServices(this IServiceCollection services)
     {
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
 
+        X509Certificate2 clientCertificate = new X509Certificate2("test-file-dont-panic.pfx", "YourPassword");
+
         // HTTP Clients
         services.AddHttpClient<LogisticsService>(client =>
         {
+            var handler = new HttpClientHandler
+            {
+                ClientCertificateOptions = ClientCertificateOption.Manual,
+                SslProtocols = SslProtocols.Tls12,
+                ServerCertificateCustomValidationCallback = ValidateServerCertificate,
+                ClientCertificates = { clientCertificate }
+            };
+
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
-        });
+        }).ConfigurePrimaryHttpMessageHandler(() =>
+            new HttpClientHandler
+            {
+                ClientCertificateOptions = ClientCertificateOption.Manual,
+                SslProtocols = SslProtocols.Tls12,
+                ServerCertificateCustomValidationCallback = ValidateServerCertificate,
+                ClientCertificates = { clientCertificate }
+            });
+
         services.AddHttpClient<RecyclerService>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
-        });
+        }).ConfigurePrimaryHttpMessageHandler(() =>
+            new HttpClientHandler
+            {
+                ClientCertificateOptions = ClientCertificateOption.Manual,
+                SslProtocols = SslProtocols.Tls12,
+                ServerCertificateCustomValidationCallback = ValidateServerCertificate,
+                ClientCertificates = { clientCertificate }
+            });
         services.AddHttpClient<HandService>(client =>
+        {
+            var handler = new HttpClientHandler
+            {
+                ClientCertificateOptions = ClientCertificateOption.Manual,
+                SslProtocols = SslProtocols.Tls12,
+                ServerCertificateCustomValidationCallback = ValidateServerCertificate,
+                ClientCertificates = { clientCertificate }
+            };
+
+            client.Timeout = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
+        }).ConfigurePrimaryHttpMessageHandler(() =>
+            new HttpClientHandler
+            {
+                ClientCertificateOptions = ClientCertificateOption.Manual,
+                SslProtocols = SslProtocols.Tls12,
+                ServerCertificateCustomValidationCallback = ValidateServerCertificate,
+                ClientCertificates = { clientCertificate }
+            });
+
+        services.AddHttpClient<BankService>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
-        });
+        })
+        .ConfigurePrimaryHttpMessageHandler(() =>
+            new HttpClientHandler
+            {
+                ClientCertificateOptions = ClientCertificateOption.Manual,
+                SslProtocols = SslProtocols.Tls12,
+                ServerCertificateCustomValidationCallback = ValidateServerCertificate,
+                ClientCertificates = { clientCertificate }
+            });
 
         // Bank Services
         services.AddOptions<BankServiceOptions>()
             .BindConfiguration($"ExternalServices:{BankServiceOptions.Section}")
             .ValidateDataAnnotations();
-        services.AddHttpClient<BankService>();
+
         services.AddScoped<BankIntegrationService>();
 
         // Bank Settings
@@ -101,15 +194,17 @@ public static class ApiConfiguration
         services.AddScoped<PurchaseOrderService>();
         services.AddScoped<ScreenOrderService>();
         services.AddScoped<LogisticsService>();
-        services.AddScoped<BankService>();
         services.AddSingleton<SimulationTimeService>();
         services.AddScoped<StockStatisticsService>();
-        services.AddScoped<RecyclerService>();
-        services.AddScoped<HandService>();
         services.AddScoped<ProductionHistoryService>();
         services.AddScoped<ReportingService>();
 
         // Time provider service
         services.AddScoped<SimulationTimeProvider>();
+    }
+
+    private static bool ValidateServerCertificate(HttpRequestMessage message, X509Certificate2? certificate, X509Chain? chain, SslPolicyErrors errors)
+    {
+        return true;
     }
 }

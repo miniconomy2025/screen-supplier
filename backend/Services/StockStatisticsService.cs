@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using ScreenProducerAPI.Models;
 using ScreenProducerAPI.Models.Configuration;
 using ScreenProducerAPI.ScreenDbContext;
@@ -9,21 +8,33 @@ namespace ScreenProducerAPI.Services;
 public class StockStatisticsService(
     ScreenContext context,
     IOptionsMonitor<TargetQuantitiesConfig> targetConfig,
-    IOptionsMonitor<StockManagementOptions> stockConfig)
+    IOptionsMonitor<StockManagementOptions> stockConfig,
+    EquipmentService equipmentService)
 {
     public async Task<AllMaterialStatistics> GetMaterialStatisticsAsync()
     {
-        var equipment = await context.Equipment.Where(equipment => equipment.IsAvailable || equipment.IsProducing).ToListAsync();
+        var equipment = await equipmentService.GetAllEquipmentAsync();
 
         var machineCount = equipment.Count();
 
-        if (machineCount == 0)
+        var equipmentParameters = await equipmentService.GetEquipmentParametersAsync();
+
+        if (machineCount == 0 || equipmentParameters == null)
         {
-            return new AllMaterialStatistics();
+            return new AllMaterialStatistics
+            {
+                Sand = new MaterialStatistics()
+                {
+                    DailyConsumption = 0,
+                    ReorderPoint = targetConfig.CurrentValue.Sand.Target,
+                },
+                Copper = new MaterialStatistics()
+                {
+                    DailyConsumption = 0,
+                    ReorderPoint = targetConfig.CurrentValue.Sand.Target,
+                }
+            };
         }
-
-        var equipmentParameters = equipment.First().EquipmentParameters;
-
 
         return new AllMaterialStatistics
         {
