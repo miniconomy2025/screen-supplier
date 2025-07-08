@@ -26,15 +26,7 @@ builder.Services.AddDbContextPool<ScreenContext>(options =>
 
 var app = builder.Build();
 
-
-app.UseSwagger();
-app.UseSwaggerUI();
-
-
-app.UseHttpsRedirection();
-
-app.AddEndpoints();
-app.UseRateLimiter();
+app.ConfigureApp();
 
 var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
 lifetime.ApplicationStopping.Register(() =>
