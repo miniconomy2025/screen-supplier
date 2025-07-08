@@ -1,3 +1,5 @@
+import { BASE_URL } from "./config";
+
 export interface PeriodReport {
   date: string;
   sandStock: number;
@@ -29,8 +31,6 @@ export interface ScreenOrder {
   };
   amountPaid?: number;
 }
-
-const BASE_URL = 'https://localhost:7074';
 
 export const apiClient = {
   async getPeriodReport(pastDaysToInclude: number): Promise<PeriodReport[]> {
