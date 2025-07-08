@@ -35,15 +35,15 @@ public static class ApiConfiguration
 
         app.Use(async (context, next) =>
         {
-            //Does grab the request, difficult to test without a real service
+            //Does grab the request and returns a 401 if there isn't a cert, validation to be done later
 
             X509Certificate2 clientCertificate = context.Connection.ClientCertificate;
 
             if (clientCertificate == null || !clientCertificate.Verify())
             {
-                context.Response.StatusCode = 401;
-                await context.Response.CompleteAsync();
-                return;
+                //context.Response.StatusCode = 401;
+                //await context.Response.CompleteAsync();
+                //return;
             }
 
             //Cert validation
