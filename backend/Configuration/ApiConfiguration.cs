@@ -25,6 +25,42 @@ public static class ApiConfiguration
             .AddReportingEndpoints();
     }
 
+    public static void ConfigureApp(this WebApplication app)
+    {
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ScreenProducerAPI v1"));
+        }
+
+        app.Use(async (context, next) =>
+        {
+            //Does grab the request, difficult to test without a real service
+
+            X509Certificate2 clientCertificate = context.Connection.ClientCertificate;
+
+            if (clientCertificate == null || !clientCertificate.Verify())
+            {
+                context.Response.StatusCode = 401;
+                await context.Response.CompleteAsync();
+                return;
+            }
+
+            //Cert validation
+
+            await next.Invoke();
+        });
+
+        app.UseSwagger();
+        app.UseSwaggerUI();
+
+        app.UseHttpsRedirection();
+
+        app.AddEndpoints();
+        app.UseRateLimiter();
+
+    }
+
     public static void AddApiServices(this IServiceCollection services)
     {
         services.AddEndpointsApiExplorer();
