@@ -25,6 +25,13 @@ public static class OrderEndpoints
             .WithName("GetOrderStatus")
             .WithSummary("Get order status and details");
 
+        endpoints.MapGet("/order/period", GetLastPeriodOrdersHandler)
+            .Produces<IEnumerable<OrderStatusResponse>>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status404NotFound)
+            .WithTags("Orders")
+            .WithName("GetOrdersInPeriod")
+            .WithSummary("Get orders in last period");
+
         return endpoints;
     }
 
@@ -109,5 +116,24 @@ public static class OrderEndpoints
         {
             return Results.Problem("An error occurred retrieving the order status");
         }
+    }
+
+    public static async Task<IResult> GetLastPeriodOrdersHandler(
+        [FromQuery] int pastDaysToInclude,
+        [FromServices] ScreenOrderService screenOrderService, [FromServices] SimulationTimeProvider simulationTimeProvider)
+    {
+        if (pastDaysToInclude <= 0 || pastDaysToInclude > 90)
+        {
+            return Results.BadRequest(new { error = "Invalid number of days specified. Please provide a value between 1 and 90." });
+        }
+
+        var reports = await screenOrderService.GetPastOrdersAsync(
+            simulationTimeProvider.Now.Date.AddDays(-pastDaysToInclude));
+
+        if (reports == null)
+        {
+            return Results.NotFound(new { error = "No orders found for the last seven days." });
+        }
+        return Results.Ok(reports);
     }
 }
