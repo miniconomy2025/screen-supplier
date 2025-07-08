@@ -24,7 +24,8 @@ app.get('/simulation/machines', (req, res) => {
             quantity: 10,
             materialRatio: "2:3", // sand:copper ratio
             productionRate: 200, // screens per day
-            price: 8500
+            price: 8500,
+            weight: 2000,
         }
     ];
 

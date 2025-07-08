@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ScreenProducerAPI.Models;
 using ScreenProducerAPI.Models.Requests;
 using ScreenProducerAPI.Models.Responses;
 using ScreenProducerAPI.ScreenDbContext;
@@ -45,7 +46,6 @@ public class LogisticsService
     public async Task<DropoffResponse> HandleDropoffAsync(DropoffRequest request)
     {
         int shipmentId = request.Id;
-        int quantity = request.Quantity;
 
         try
         {
@@ -55,6 +55,8 @@ public class LogisticsService
             {
                 throw new InvalidOperationException($"Purchase order with shipment ID {shipmentId} not found");
             }
+
+            int quantity = purchaseOrder.EquipmentOrder == true ? 1 : request.Quantity;
 
             // Validate in waiting for delivery state
             var waitingDeliveryStatus = await _context.OrderStatuses.FirstOrDefaultAsync(os => os.Status == Status.WaitingForDelivery);
@@ -76,13 +78,10 @@ public class LogisticsService
             // Handle equipment delivery
             if (purchaseOrder.EquipmentOrder == true)
             {
-                for (int i = 0; i < quantity; i++)
+                var equipmentAdded = await _equipmentService.AddEquipmentAsync(purchaseOrder.Id);
+                if (!equipmentAdded)
                 {
-                    var equipmentAdded = await _equipmentService.AddEquipmentAsync(purchaseOrder.Id);
-                    if (!equipmentAdded)
-                    {
-                        throw new InvalidOperationException($"Failed to add equipment #{i + 1} for purchase order {purchaseOrder.Id}");
-                    }
+                    throw new InvalidOperationException($"Failed to add equipment for purchase order {purchaseOrder.Id}");
                 }
                 itemType = "equipment";
                 processed = true;
@@ -150,25 +149,20 @@ public class LogisticsService
                 throw new InvalidOperationException($"Collection quantity {quantity} exceeds order quantity {screenOrder.Quantity}");
             }
 
-            // For now, require full collection
-            if (quantity != screenOrder.Quantity)
+            var remainingToCollectQuantity = screenOrder.Quantity - screenOrder.QuantityCollected;
+            if (quantity > remainingToCollectQuantity)
             {
-                throw new InvalidOperationException($"Partial collections not supported. Must collect full quantity {screenOrder.Quantity}");
+                throw new InvalidOperationException($"Collection quantity {quantity} exceeds remaining order quantity {remainingToCollectQuantity}");
             }
 
-            // Consume screens from inventory
+            // Consume screens from inventory for those collected
             var screensConsumed = await _productService.ConsumeScreensAsync(quantity);
             if (!screensConsumed)
             {
                 throw new InvalidOperationException($"Failed to consume {quantity} screens from inventory");
             }
 
-            // Update order status to collected
-            var statusUpdated = await _screenOrderService.UpdateStatusAsync(orderId, Status.Collected);
-            if (!statusUpdated)
-            {
-                throw new InvalidOperationException($"Failed to update order {orderId} status to collected");
-            }
+            await _screenOrderService.UpdateQuantityCollectedAsync(screenOrder.Id, quantity);
 
             return new CollectResponse
             {
@@ -245,7 +239,7 @@ public class LogisticsService
         }
     }
 
-    public static List<PickupRequestItem> CreatePickupItems(string itemType, double quantity, bool isEquipment = false)
+    public static List<PickupRequestItem> CreatePickupItems(string itemType, int quantity, bool isEquipment = false)
     {
         var measurementType = isEquipment ? "UNIT" : "KG";
         var itemName = itemType.ToLower() switch

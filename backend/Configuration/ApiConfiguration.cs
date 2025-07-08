@@ -68,6 +68,7 @@ public static class ApiConfiguration
 
         X509Certificate2 clientCertificate = new X509Certificate2();
 
+
         // HTTP Clients
         services.AddHttpClient<LogisticsService>(client =>
         {
