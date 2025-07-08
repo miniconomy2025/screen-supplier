@@ -131,6 +131,7 @@ public class ScreenOrderService
                 UnitPrice = product.Price,
                 OrderStatusId = waitingPaymentStatus.Id,
                 ProductId = product.Id,
+                QuantityCollected = 0,
                 AmountPaid = 0
             };
 
@@ -206,6 +207,41 @@ public class ScreenOrderService
             }
 
             screenOrder.AmountPaid = amountPaid;
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> UpdateQuantityCollectedAsync(int purchaseOrderId, int quantityCollected)
+    {
+        try
+        {
+            var screenOrder = await _context.ScreenOrders
+                .FirstOrDefaultAsync(po => po.Id == purchaseOrderId);
+
+            if (screenOrder == null)
+            {
+                return false;
+            }
+
+            screenOrder.QuantityCollected += quantityCollected;
+
+            if (screenOrder.QuantityCollected >= screenOrder.Quantity)
+            {
+                var deliveredStatus = await _context.OrderStatuses
+                    .FirstOrDefaultAsync(os => os.Status == Status.Collected);
+
+                if (deliveredStatus != null)
+                {
+                    screenOrder.OrderStatusId = deliveredStatus.Id;
+                }
+            }
+
             await _context.SaveChangesAsync();
 
             return true;

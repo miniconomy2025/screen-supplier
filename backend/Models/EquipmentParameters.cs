@@ -18,5 +18,8 @@ namespace ScreenProducerAPI.Models
 
         [Column("output_screens_day")]
         public int OutputScreens { get; set; }
+
+        [Column("equipment_weight")]
+        public int EquipmentWeight { get; set; }
     }
 }

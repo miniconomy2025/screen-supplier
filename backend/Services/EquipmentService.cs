@@ -175,7 +175,7 @@ public class EquipmentService
         return equipment.Sum(e => e.EquipmentParameters?.OutputScreens ?? 0);
     }
 
-    public async Task<bool> InitializeEquipmentParametersAsync(int inputSandKg, int inputCopperKg, int outputScreensPerDay)
+    public async Task<bool> InitializeEquipmentParametersAsync(int inputSandKg, int inputCopperKg, int outputScreensPerDay, int machineWeight)
     {
         try
         {
@@ -189,7 +189,8 @@ public class EquipmentService
             {
                 InputSandKg = inputSandKg,
                 InputCopperKg = inputCopperKg,
-                OutputScreens = outputScreensPerDay
+                OutputScreens = outputScreensPerDay,
+                EquipmentWeight = machineWeight
             };
 
             _context.EquipmentParameters.Add(equipmentParams);
