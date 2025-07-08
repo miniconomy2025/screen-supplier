@@ -13,6 +13,9 @@ public class ScreenOrder
     [Column("quantity")]
     public int Quantity { get; set; }
 
+    [Column("quantity_collected")]
+    public int QuantityCollected { get; set; }
+
     [Column("order_date")]
     public DateTime OrderDate { get; set; }
 

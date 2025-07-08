@@ -87,7 +87,7 @@ public class SimulationTimeService : IDisposable
                 sandKg, copperKg, outputScreensPerDay);
 
             // Initialize equipment parameters
-            var success = await equipmentService.InitializeEquipmentParametersAsync(sandKg, copperKg, outputScreensPerDay);
+            var success = await equipmentService.InitializeEquipmentParametersAsync(sandKg, copperKg, outputScreensPerDay, screenMachine.Weight);
 
             if (success)
             {
