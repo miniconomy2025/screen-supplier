@@ -17,10 +17,10 @@ public class PurchaseOrderService
     }
 
     public async Task<PurchaseOrder?> CreatePurchaseOrderAsync(
-        int orderId, 
-        int quantity, 
-        int unitPrice, 
-        string sellerBankAccount, 
+        int orderId,
+        int quantity,
+        int unitPrice,
+        string sellerBankAccount,
         string origin,
         int? rawMaterialId = null,
         bool isEquipmentOrder = false)
@@ -206,5 +206,17 @@ public class PurchaseOrderService
             .Include(po => po.RawMaterial)
             .Where(po => po.OrderStatus.Status != Status.Delivered)
             .ToListAsync();
+    }
+
+    public async Task<List<PurchaseOrder>> GetPastOrdersAsync(DateTime dateTime)
+    {
+        var orders = await _context.PurchaseOrders
+            .Include(po => po.OrderStatus)
+            .Include(po => po.RawMaterial)
+            .OrderByDescending(po => po.OrderDate)
+            .Take(100)
+            .ToListAsync();
+
+        return orders;
     }
 }

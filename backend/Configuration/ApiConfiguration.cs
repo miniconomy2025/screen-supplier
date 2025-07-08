@@ -66,7 +66,8 @@ public static class ApiConfiguration
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
 
-        X509Certificate2 clientCertificate = new X509Certificate2("../test-file-dont-panic.pfx", "YourPassword");
+        X509Certificate2 clientCertificate = new X509Certificate2();
+
 
         // HTTP Clients
         services.AddHttpClient<LogisticsService>(client =>

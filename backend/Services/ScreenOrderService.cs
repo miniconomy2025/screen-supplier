@@ -111,7 +111,7 @@ public class ScreenOrderService
             }
 
             var availableStock = await _productService.GetAvailableStockAsync();
-            if (availableStock <= quantity)
+            if (availableStock < quantity)
             {
                 return null;
             }
@@ -281,6 +281,18 @@ public class ScreenOrderService
                 orders.Add(item);
             }
         }
+
+        return orders;
+    }
+
+    public async Task<List<ScreenOrder>> GetPastOrdersAsync(DateTime date)
+    {
+        var orders = await _context.ScreenOrders
+            .Include(so => so.OrderStatus)
+            .Include(so => so.Product)
+            .OrderByDescending(po => po.OrderDate)
+            .Take(100)
+            .ToListAsync();
 
         return orders;
     }
