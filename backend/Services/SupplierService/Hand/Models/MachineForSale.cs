@@ -7,4 +7,5 @@ public class MachineForSale
     public int Price { get; set; }
     public string MaterialRatio { get; set; }
     public int ProductionRate { get; set; }
+    public int Weight { get; set; }
 }

@@ -27,7 +27,7 @@ public static class LogisticsEndpoints
     {
         try
         {
-            if (request == null || request.Id <= 0 || request.Quantity <= 0 || string.IsNullOrWhiteSpace(request.Type))
+            if (request == null || request.Id <= 0 || request.Items[0].Quantity <= 0 || string.IsNullOrWhiteSpace(request.Type))
             {
                 return Results.BadRequest(new { error = "Invalid logistics request. Id, Quantity must be positive and Type must be specified." });
             }
@@ -38,7 +38,7 @@ public static class LogisticsEndpoints
                     var dropoffRequest = new DropoffRequest
                     {
                         Id = request.Id,
-                        Quantity = request.Quantity
+                        Quantity = request.Items[0].Quantity
                     };
                     var dropoffResult = await logisticsService.HandleDropoffAsync(dropoffRequest);
 
@@ -57,7 +57,7 @@ public static class LogisticsEndpoints
                     var collectRequest = new CollectRequest
                     {
                         Id = request.Id,
-                        Quantity = request.Quantity
+                        Quantity = request.Items[0].Quantity
                     };
                     var collectResult = await logisticsService.HandleCollectAsync(collectRequest);
 

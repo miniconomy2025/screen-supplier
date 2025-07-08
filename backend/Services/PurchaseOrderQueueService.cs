@@ -216,14 +216,23 @@ public class PurchaseOrderQueueService
 
             var logisticsService = serviceProvider.GetRequiredService<LogisticsService>();
             var purchaseOrderService = serviceProvider.GetRequiredService<PurchaseOrderService>();
+            var equipmentParamService = serviceProvider.GetRequiredService<EquipmentService>();
             var companyInfo = _companyConfig.CurrentValue;
 
             // Create pickup items based on order type
             var pickupItems = new List<PickupRequestItem>();
 
+            var equipmentToGet = await equipmentParamService.GetEquipmentParametersAsync();
+            if (equipmentToGet == null)
+            {
+                _logger.LogError("Failed to get weight of machine for request");
+                return false;
+            }
+
             if (purchaseOrder.EquipmentOrder == true)
             {
-                pickupItems = LogisticsService.CreatePickupItems("equipment", purchaseOrder.Quantity, true);
+                // Treated as weight here...
+                pickupItems = LogisticsService.CreatePickupItems("equipment", equipmentToGet.EquipmentWeight, true);
             }
             else if (purchaseOrder.RawMaterial != null)
             {
