@@ -6,6 +6,7 @@ import GraphsTab from "./GraphsTab";
 import SimulationStatus from "./SimulationStatus";
 import appStyles from "./styles/App.module.scss";
 import { FiMenu } from "react-icons/fi";
+import PurchaseOrdersTab from "./PurchaseOrdersTab";
 
 export default function ReportingDashboard() {
   // Persist tab in localStorage
@@ -138,6 +139,15 @@ export default function ReportingDashboard() {
             >
               Orders
             </button>
+            <button
+              className={[
+                appStyles.navItem,
+                activeMainTab === "purchases" ? appStyles.navItemActive : "",
+              ].join(" ")}
+              onClick={() => handleTabClick("purchases")}
+            >
+              Purchases
+            </button>
           </nav>
           <SimulationStatus onStatusRefresh={handleStatusRefresh} />
         </div>
@@ -153,6 +163,7 @@ export default function ReportingDashboard() {
           {activeMainTab === "dashboard" && <Dashboard refreshKey={lastStatusRefresh} simulationStatus={simulationStatus} />}
           {activeMainTab === "graphs" && <GraphsTab refreshKey={lastStatusRefresh} />}
           {activeMainTab === "orders" && <ReportsPage refreshKey={lastStatusRefresh} />}
+          {activeMainTab === "purchases" && <PurchaseOrdersTab />}
         </div>
       </div>
       {/* Mobile overlay: clicking outside sidebar closes it */}

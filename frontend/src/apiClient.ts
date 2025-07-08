@@ -97,4 +97,11 @@ export const apiClient = {
     localStorage.setItem('screensHistory', JSON.stringify(history));
     return history;
   },
+  async getPurchases(): Promise<any[]> {
+    const response = await fetch(`${BASE_URL}/report/purchases`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    return response.json();
+  },
 };
