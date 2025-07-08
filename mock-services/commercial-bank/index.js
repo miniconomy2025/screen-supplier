@@ -1,93 +1,8 @@
 const express = require('express');
-const https = require('https');
-const fs = require('fs');
-const path = require('path');
 const app = express();
-const port = 3443; // HTTPS port
+const port = 3000;
 
 app.use(express.json());
-
-// Certificate and request logging middleware
-app.use((req, res, next) => {
-    console.log(`\n=== Incoming Request ===`);
-    console.log(`${req.method} ${req.path}`);
-    console.log(`User-Agent: ${req.get('User-Agent') || 'N/A'}`);
-    console.log(`Content-Type: ${req.get('Content-Type') || 'N/A'}`);
-    console.log(`Protocol: ${req.protocol}`);
-    console.log(`Secure: ${req.secure}`);
-    
-    // Log client certificate information if present
-    let certificateFound = false;
-    
-    // Check req.connection.getPeerCertificate (older Node.js)
-    if (req.connection && typeof req.connection.getPeerCertificate === 'function') {
-        try {
-            const cert = req.connection.getPeerCertificate(true); // detailed=true
-            if (cert && Object.keys(cert).length > 0 && cert.subject) {
-                certificateFound = true;
-                console.log('✅ Client Certificate Details (connection):');
-                console.log(`  Subject: ${JSON.stringify(cert.subject)}`);
-                console.log(`  Issuer: ${JSON.stringify(cert.issuer)}`);
-                console.log(`  Serial Number: ${cert.serialNumber || 'N/A'}`);
-                console.log(`  Valid From: ${cert.valid_from || 'N/A'}`);
-                console.log(`  Valid To: ${cert.valid_to || 'N/A'}`);
-                console.log(`  Fingerprint: ${cert.fingerprint || 'N/A'}`);
-                console.log(`  Fingerprint256: ${cert.fingerprint256 || 'N/A'}`);
-            }
-        } catch (error) {
-            console.log('⚠️  Error reading client certificate from connection:', error.message);
-        }
-    }
-    
-    // Check req.socket.getPeerCertificate (newer Node.js)
-    if (!certificateFound && req.socket && typeof req.socket.getPeerCertificate === 'function') {
-        try {
-            const cert = req.socket.getPeerCertificate(true); // detailed=true
-            if (cert && Object.keys(cert).length > 0 && cert.subject) {
-                certificateFound = true;
-                console.log('✅ Client Certificate Details (socket):');
-                console.log(`  Subject: ${JSON.stringify(cert.subject)}`);
-                console.log(`  Issuer: ${JSON.stringify(cert.issuer)}`);
-                console.log(`  Serial Number: ${cert.serialNumber || 'N/A'}`);
-                console.log(`  Valid From: ${cert.valid_from || 'N/A'}`);
-                console.log(`  Valid To: ${cert.valid_to || 'N/A'}`);
-                console.log(`  Fingerprint: ${cert.fingerprint || 'N/A'}`);
-                console.log(`  Fingerprint256: ${cert.fingerprint256 || 'N/A'}`);
-            }
-        } catch (error) {
-            console.log('⚠️  Error reading client certificate from socket:', error.message);
-        }
-    }
-    
-    // Check for certificate in headers (proxy forwarded)
-    const certHeaders = [
-        'X-Client-Cert', 
-        'X-SSL-Client-Cert', 
-        'SSL_CLIENT_CERT',
-        'X-SSL-CERT',
-        'X-Client-Certificate'
-    ];
-    
-    for (const headerName of certHeaders) {
-        const certHeader = req.get(headerName);
-        if (certHeader) {
-            certificateFound = true;
-            console.log(`✅ Certificate found in header ${headerName}:`, certHeader.substring(0, 100) + '...');
-            break;
-        }
-    }
-    
-    if (!certificateFound) {
-        if (req.secure) {
-            console.log('❌ No client certificate provided in HTTPS request');
-        } else {
-            console.log('ℹ️  HTTP connection - no certificate available');
-        }
-    }
-    
-    console.log('========================\n');
-    next();
-});
 
 // In-memory storage
 let accounts = {};
@@ -500,55 +415,6 @@ app.post('/debug/reset', (req, res) => {
     res.json({ message: 'All data reset successfully' });
 });
 
-// HTTPS server configuration
-const httpsOptions = {
-    // For development, create self-signed certificates
-    // In production, use proper certificates from a CA
-    key: fs.existsSync(path.join(__dirname, 'server.key')) 
-        ? fs.readFileSync(path.join(__dirname, 'server.key'))
-        : undefined,
-    cert: fs.existsSync(path.join(__dirname, 'server.crt'))
-        ? fs.readFileSync(path.join(__dirname, 'server.crt'))
-        : undefined,
-    // Request client certificates
-    requestCert: true,
-    // Don't reject unauthorized certificates (for development)
-    rejectUnauthorized: false,
-    // Optional: specify CA certificates if you have them
-    ca: fs.existsSync(path.join(__dirname, 'ca.crt'))
-        ? fs.readFileSync(path.join(__dirname, 'ca.crt'))
-        : undefined
-};
-
-// Check if certificates exist, if not provide instructions
-if (!httpsOptions.key || !httpsOptions.cert) {
-    console.log('\n⚠️  SSL certificates not found!');
-    console.log('To generate self-signed certificates for development, run:');
-    console.log('');
-    console.log('# Generate private key');
-    console.log('openssl genrsa -out server.key 2048');
-    console.log('');
-    console.log('# Generate certificate');
-    console.log('openssl req -new -x509 -key server.key -out server.crt -days 365');
-    console.log('');
-    console.log('# Optional: Generate CA certificate');
-    console.log('openssl req -new -x509 -key server.key -out ca.crt -days 365');
-    console.log('');
-    console.log('Place these files in the same directory as this script.');
-    console.log('');
-    
-    // Fallback to HTTP for development
-    app.listen(3000, () => {
-        console.log("⚠️  Running in HTTP mode on port 3000 (certificates not found)");
-        console.log("Certificate logging will show 'HTTP connection' messages");
-    });
-} else {
-    // Start HTTPS server
-    const server = https.createServer(httpsOptions, app);
-    
-    server.listen(port, () => {
-        console.log(`✅ Commercial Bank HTTPS Server Started: Port ${port}`);
-        console.log('🔐 Client certificate authentication enabled');
-        console.log('📋 Certificate logging middleware active');
-    });
-}
+app.listen(port, () => {
+   console.log("Commercial Bank Started: Port 3000")
+});
