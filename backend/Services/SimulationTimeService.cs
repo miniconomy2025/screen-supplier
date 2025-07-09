@@ -43,7 +43,6 @@ public class SimulationTimeService : IDisposable
 
         await CleanUpDatabase(context);
 
-
         _simulationRunning = true;
 
         // Start the timer for daily processing - first tick after 2 minutes
