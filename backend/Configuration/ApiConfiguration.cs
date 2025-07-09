@@ -1,5 +1,6 @@
 ﻿using ScreenProducerAPI.Commands.Queue;
 using ScreenProducerAPI.Endpoints;
+using ScreenProducerAPI.Middleware;
 using ScreenProducerAPI.Models.Configuration;
 using ScreenProducerAPI.Services;
 using ScreenProducerAPI.Services.BankServices;
@@ -28,6 +29,8 @@ public static class ApiConfiguration
 
     public static void ConfigureApp(this WebApplication app)
     {
+        app.UseMiddleware<ExceptionHandlingMiddleware>();
+
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();

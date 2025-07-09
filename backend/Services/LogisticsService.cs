@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ScreenProducerAPI.Exceptions;
 using ScreenProducerAPI.Models;
 using ScreenProducerAPI.Models.Requests;
 using ScreenProducerAPI.Models.Responses;
@@ -47,80 +48,56 @@ public class LogisticsService
     {
         int shipmentId = request.Id;
 
-        try
+        var purchaseOrder = await _purchaseOrderService.FindPurchaseOrderByShipmentIdAsync(shipmentId);
+        if (purchaseOrder == null)
+            throw new OrderNotFoundException(shipmentId);
+
+        int quantity = purchaseOrder.EquipmentOrder == true ? 1 : request.Quantity;
+
+        var waitingDeliveryStatus = await _context.OrderStatuses
+            .FirstOrDefaultAsync(os => os.Status == Status.WaitingForDelivery);
+
+        if (purchaseOrder.OrderStatusId != waitingDeliveryStatus?.Id)
+            throw new InvalidOrderStateException(shipmentId, purchaseOrder.OrderStatus?.Status ?? "unknown", Status.WaitingForDelivery);
+
+        var remainingQuantity = purchaseOrder.Quantity - purchaseOrder.QuantityDelivered;
+        if (quantity > remainingQuantity)
+            throw new InvalidRequestException($"Delivery quantity {quantity} exceeds remaining order quantity {remainingQuantity}");
+
+        string itemType = "";
+        bool processed = false;
+
+        if (purchaseOrder.EquipmentOrder == true)
         {
-            // Find purchase order by shipment ID
-            var purchaseOrder = await _purchaseOrderService.FindPurchaseOrderByShipmentIdAsync(shipmentId);
-            if (purchaseOrder == null)
-            {
-                throw new InvalidOperationException($"Purchase order with shipment ID {shipmentId} not found");
-            }
-
-            int quantity = purchaseOrder.EquipmentOrder == true ? 1 : request.Quantity;
-
-            // Validate in waiting for delivery state
-            var waitingDeliveryStatus = await _context.OrderStatuses.FirstOrDefaultAsync(os => os.Status == Status.WaitingForDelivery);
-            if (purchaseOrder.OrderStatusId != waitingDeliveryStatus.Id)
-            {
-                throw new InvalidOperationException($"Purchase order with shipment ID {shipmentId} not waiting for delivery.");
-            }
-
-            // Validate delivery quantity
-            var remainingQuantity = purchaseOrder.Quantity - purchaseOrder.QuantityDelivered;
-            if (quantity > remainingQuantity)
-            {
-                throw new InvalidOperationException($"Delivery quantity {quantity} exceeds remaining order quantity {remainingQuantity}");
-            }
-
-            string itemType = "";
-            bool processed = false;
-
-            // Handle equipment delivery
-            if (purchaseOrder.EquipmentOrder == true)
-            {
-                var equipmentAdded = await _equipmentService.AddEquipmentAsync(purchaseOrder.Id);
-                if (!equipmentAdded)
-                {
-                    throw new InvalidOperationException($"Failed to add equipment for purchase order {purchaseOrder.Id}");
-                }
-                itemType = "equipment";
-                processed = true;
-            }
-            // Handle material delivery
-            else if (purchaseOrder.RawMaterialId.HasValue && purchaseOrder.RawMaterial != null)
-            {
-                var materialName = purchaseOrder.RawMaterial.Name;
-                processed = await _materialService.AddMaterialAsync(materialName, quantity);
-                itemType = materialName;
-            }
-            else
-            {
-                throw new InvalidOperationException($"Purchase order {purchaseOrder.Id} has invalid configuration");
-            }
-
-            if (!processed)
-            {
-                throw new InvalidOperationException($"Failed to process {itemType} delivery");
-            }
-
-            // Update delivery quantity
-            await _purchaseOrderService.UpdateDeliveryQuantityAsync(purchaseOrder.Id, quantity);
-
-            return new DropoffResponse
-            {
-                Success = true,
-                ShipmentId = shipmentId,
-                OrderId = purchaseOrder.OrderID,
-                QuantityReceived = quantity,
-                ItemType = itemType,
-                Message = $"Successfully received {quantity} units of {itemType}",
-                ProcessedAt = _simulationTimeProvider.Now,
-            };
+            processed = await _equipmentService.AddEquipmentAsync(purchaseOrder.Id);
+            itemType = "equipment";
         }
-        catch (Exception ex)
+        else if (purchaseOrder.RawMaterialId.HasValue && purchaseOrder.RawMaterial != null)
         {
-            throw;
+            var materialName = purchaseOrder.RawMaterial.Name;
+            processed = await _materialService.AddMaterialAsync(materialName, quantity);
+            itemType = materialName;
         }
+        else
+        {
+            throw new SystemConfigurationException($"Purchase order {purchaseOrder.Id} has invalid configuration");
+        }
+
+        if (!processed)
+            throw new InvalidOperationException($"Failed to process {itemType} delivery");
+
+        await _purchaseOrderService.UpdateDeliveryQuantityAsync(purchaseOrder.Id, quantity);
+
+        return new DropoffResponse
+        {
+            Success = true,
+            ShipmentId = shipmentId,
+            OrderId = purchaseOrder.OrderID,
+            QuantityReceived = quantity,
+            ItemType = itemType,
+            Message = $"Successfully received {quantity} units of {itemType}",
+            ProcessedAt = _simulationTimeProvider.Now,
+        };
     }
 
     public async Task<CollectResponse?> HandleCollectAsync(CollectRequest request)

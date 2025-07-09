@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using ScreenProducerAPI.Exceptions;
 using ScreenProducerAPI.Models.Requests;
 using ScreenProducerAPI.Models.Responses;
 using ScreenProducerAPI.Services;
@@ -40,82 +41,53 @@ public static class OrderEndpoints
         [FromServices] ScreenOrderService screenOrderService,
         [FromServices] BankService bankService)
     {
-        try
+        if (request?.Quantity <= 0)
+            throw new InvalidRequestException("Invalid order request. Quantity must be positive.");
+
+        var screenOrder = await screenOrderService.CreateOrderAsync(request.Quantity);
+
+        var bankAccountNumber = await bankService.GetBankAccountNumberAsync();
+        if (string.IsNullOrEmpty(bankAccountNumber))
+            throw new SystemConfigurationException("Bank account not configured");
+
+        var totalPrice = screenOrder.Quantity * screenOrder.UnitPrice;
+        var response = new CreateOrderResponse
         {
-            if (request == null || request.Quantity <= 0)
-            {
-                return Results.BadRequest(new { error = "Invalid order request. Quantity must be positive." });
-            }
+            OrderId = screenOrder.Id,
+            TotalPrice = totalPrice,
+            BankAccountNumber = bankAccountNumber,
+            OrderStatusLink = $"/order/{screenOrder.Id}"
+        };
 
-            // Create the order
-            var screenOrder = await screenOrderService.CreateOrderAsync(request.Quantity);
-
-            if (screenOrder == null)
-            {
-                return Results.BadRequest(new { error = "Unable to create order. Insufficient stock available." });
-            }
-
-            // Get bank account number
-            var bankAccountNumber = await bankService.GetBankAccountNumberAsync();
-            if (string.IsNullOrEmpty(bankAccountNumber))
-            {
-                return Results.Problem("Bank account not configured");
-            }
-
-            var totalPrice = screenOrder.Quantity * screenOrder.UnitPrice;
-            var response = new CreateOrderResponse
-            {
-                OrderId = screenOrder.Id,
-                TotalPrice = totalPrice,
-                BankAccountNumber = bankAccountNumber,
-                OrderStatusLink = $"/order/{screenOrder.Id}"
-            };
-
-            return Results.Created($"/order/{screenOrder.Id}", response);
-        }
-        catch (Exception ex)
-        {
-            return Results.Problem("An error occurred creating the order");
-        }
+        return Results.Created($"/order/{screenOrder.Id}", response);
     }
 
+
     private static async Task<IResult> GetOrderStatusHandler(
-        int id,
-        [FromServices] ScreenOrderService screenOrderService)
+         int id,
+         [FromServices] ScreenOrderService screenOrderService)
     {
-        try
+        var screenOrder = await screenOrderService.FindScreenOrderByIdAsync(id);
+
+        var totalPrice = screenOrder.Quantity * screenOrder.UnitPrice;
+        var amountPaid = screenOrder.AmountPaid ?? 0;
+        var remainingBalance = Math.Max(0, totalPrice - amountPaid);
+        var isFullyPaid = amountPaid >= totalPrice;
+
+        var response = new OrderStatusResponse
         {
-            var screenOrder = await screenOrderService.FindScreenOrderByIdAsync(id);
+            OrderId = screenOrder.Id,
+            Quantity = screenOrder.Quantity,
+            UnitPrice = screenOrder.UnitPrice,
+            TotalPrice = totalPrice,
+            Status = screenOrder.OrderStatus?.Status ?? "unknown",
+            OrderDate = screenOrder.OrderDate,
+            AmountPaid = screenOrder.AmountPaid,
+            RemainingBalance = remainingBalance,
+            IsFullyPaid = isFullyPaid
+        };
 
-            if (screenOrder == null)
-            {
-                return Results.NotFound(new { error = $"Order {id} not found" });
-            }
-
-            var totalPrice = screenOrder.Quantity * screenOrder.UnitPrice;
-            var amountPaid = screenOrder.AmountPaid ?? 0;
-            var remainingBalance = Math.Max(0, totalPrice - amountPaid);
-            var isFullyPaid = amountPaid >= totalPrice;
-
-            var response = new OrderStatusResponse
-            {
-                OrderId = screenOrder.Id,
-                Quantity = screenOrder.Quantity,
-                UnitPrice = screenOrder.UnitPrice,
-                TotalPrice = totalPrice,
-                Status = screenOrder.OrderStatus?.Status ?? "unknown",
-                OrderDate = screenOrder.OrderDate,
-                AmountPaid = screenOrder.AmountPaid,
-                RemainingBalance = remainingBalance,
-                IsFullyPaid = isFullyPaid
-            };
-
-            return Results.Ok(response);
-        }
-        catch (Exception ex)
-        {
-            return Results.Problem("An error occurred retrieving the order status");
-        }
+        return Results.Ok(response);
     }
 
     public static async Task<IResult> GetLastPeriodOrdersHandler(
