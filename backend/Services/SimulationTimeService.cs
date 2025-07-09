@@ -202,7 +202,7 @@ public class SimulationTimeService : IDisposable
 
             if (!_bankAccountCreated || !_bankLoanCreated || !_notificationUrlSet)
             {
-                await bankIntegrationService.InitializeAsync(_bankAccountCreated, _bankLoanCreated, _notificationUrlSet);
+                (_bankAccountCreated, _bankLoanCreated, _notificationUrlSet) = await bankIntegrationService.InitializeAsync(_bankAccountCreated, _bankLoanCreated, _notificationUrlSet);
             }
 
             if (!_equipmentParametersInitialized)
