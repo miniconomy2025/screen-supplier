@@ -2,6 +2,7 @@
 using ScreenProducerAPI.Models;
 using ScreenProducerAPI.ScreenDbContext;
 using ScreenProducerAPI.Services;
+using ScreenProducerAPI.Models.Responses;
 
 public class EquipmentService
 {
@@ -9,7 +10,7 @@ public class EquipmentService
     private readonly MaterialService _materialService;
     private readonly ProductService _productService;
 
-    public EquipmentService(ScreenContext context, 
+    public EquipmentService(ScreenContext context,
         MaterialService materialService, ProductService productService)
     {
         _context = context;
@@ -22,7 +23,7 @@ public class EquipmentService
         try
         {
             var equipmentParams = await _context.EquipmentParameters.FirstOrDefaultAsync();
-            
+
             if (equipmentParams == null)
             {
                 return false;
@@ -50,7 +51,7 @@ public class EquipmentService
     public async Task<int> StartProductionAsync()
     {
         int machinesStarted = 0;
-        
+
         try
         {
             var availableEquipment = await _context.Equipment
@@ -126,7 +127,7 @@ public class EquipmentService
 
                 var screensProduced = equipment.EquipmentParameters.OutputScreens;
                 totalScreensProduced += screensProduced;
-                
+
                 equipment.IsProducing = false;
             }
 
@@ -134,10 +135,10 @@ public class EquipmentService
             {
                 // Add produced screens to inventory
                 await _productService.AddScreensAsync(totalScreensProduced);
-                
+
                 // Update unit price based on current material costs
                 await _productService.UpdateUnitPriceAsync();
-                
+
                 await _context.SaveChangesAsync();
             }
 
@@ -215,5 +216,38 @@ public class EquipmentService
             .Include(e => e.EquipmentParameters)
             .Include(e => e.PurchaseOrder)
             .ToListAsync();
+    }
+    
+    public async Task<MachineFailureResponse> ProcessMachineFailureAsync(int failureQty)
+    {
+        var availableMachines = await _context.Equipment
+            .Where(e => e.IsAvailable)
+            .Take(failureQty)
+            .ToListAsync();
+
+        if (!availableMachines.Any())
+        {
+            return new MachineFailureResponse
+            {
+                Success = false,
+                FailedCount = 0,
+                Message = "No available machines found to mark as failed."
+            };
+        }
+
+        foreach (var machine in availableMachines)
+        {
+            machine.IsAvailable = false;
+            machine.IsProducing = false;
+        }
+
+        await _context.SaveChangesAsync();
+
+        return new MachineFailureResponse
+        {
+            Success = true,
+            FailedCount = availableMachines.Count,
+            Message = $"{availableMachines.Count} machines have experienced failuer."
+        };
     }
 }
