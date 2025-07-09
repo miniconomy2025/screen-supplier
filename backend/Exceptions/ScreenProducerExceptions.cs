@@ -64,3 +64,47 @@ public class SystemConfigurationException : BusinessException
     {
     }
 }
+
+public class DataNotFoundException : BusinessException
+{
+    public DataNotFoundException(string dataType)
+        : base("DATA_NOT_FOUND", $"{dataType} not found")
+    {
+    }
+}
+
+public class BankServiceException : ExternalServiceException
+{
+    public BankServiceException(string message)
+        : base("Bank", message) { }
+
+    public BankServiceException(string message, Exception innerException)
+        : base("Bank", message, innerException) { }
+}
+
+public class HandServiceException : ExternalServiceException
+{
+    public HandServiceException(string message)
+        : base("Hand", message) { }
+
+    public HandServiceException(string message, Exception innerException)
+        : base("Hand", message, innerException) { }
+}
+
+public class RecyclerServiceException : ExternalServiceException
+{
+    public RecyclerServiceException(string message)
+        : base("Recycler", message) { }
+
+    public RecyclerServiceException(string message, Exception innerException)
+        : base("Recycler", message, innerException) { }
+}
+
+public class LogisticsServiceException : ExternalServiceException
+{
+    public LogisticsServiceException(string message)
+        : base("Logistics", message) { }
+
+    public LogisticsServiceException(string message, Exception innerException)
+        : base("Logistics", message, innerException) { }
+}

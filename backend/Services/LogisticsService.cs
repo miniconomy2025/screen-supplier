@@ -158,17 +158,17 @@ public class LogisticsService
     }
 
     public async Task<(string PickupRequestId, string BankAccountNumber, int Price)> RequestPickupAsync(
-        string originCompanyId,
-        string destinationCompanyId,
-        string originalExternalOrderId,
-        List<PickupRequestItem> items)
+    string originCompanyId,
+    string destinationCompanyId,
+    string originalExternalOrderId,
+    List<PickupRequestItem> items)
     {
         try
         {
             var bulkLogisticsUrl = _configuration["ExternalServices:BulkLogistics:BaseUrl"];
             if (string.IsNullOrEmpty(bulkLogisticsUrl))
             {
-                throw new InvalidOperationException("Bulk logistics URL not configured");
+                throw new SystemConfigurationException("Bulk logistics URL not configured");
             }
 
             var requestData = new PickupRequestBody
@@ -190,7 +190,7 @@ public class LogisticsService
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-                throw new InvalidOperationException($"Failed to request pickup: {response.StatusCode} - {errorContent}");
+                throw new LogisticsServiceException($"Pickup request failed: {response.StatusCode} - {errorContent}");
             }
 
             var responseContent = await response.Content.ReadAsStringAsync();
@@ -201,18 +201,22 @@ public class LogisticsService
 
             if (pickupResponse?.PickupRequestId == null)
             {
-                throw new InvalidOperationException("Invalid response from bulk logistics service");
+                throw new LogisticsServiceException("Invalid response from bulk logistics service - missing pickup request ID");
             }
 
             return (pickupResponse.PickupRequestId, pickupResponse.bulkLogisticsBankAccountNumber, pickupResponse.Cost);
         }
         catch (HttpRequestException ex)
         {
-            throw new InvalidOperationException("Failed to communicate with bulk logistics service", ex);
+            throw new LogisticsServiceException("Bulk logistics service unavailable", ex);
         }
-        catch (Exception ex)
+        catch (TaskCanceledException ex)
         {
-            throw;
+            throw new LogisticsServiceException("Bulk logistics service timeout", ex);
+        }
+        catch (JsonException ex)
+        {
+            throw new LogisticsServiceException("Invalid response format from bulk logistics service", ex);
         }
     }
 
