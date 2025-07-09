@@ -1,2 +1,2 @@
 
-export const BASE_URL = 'https://screen-supplier-api.projects.bbdgrad.com/';
+export const BASE_URL = 'https://screen-supplier-api.projects.bbdgrad.com';

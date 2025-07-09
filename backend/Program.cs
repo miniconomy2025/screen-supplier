@@ -20,11 +20,23 @@ builder.Services.AddRateLimiter(rateLimiterOptions =>
     });
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("https://screen-supplier.projects.bbdgrad.com")
+        .AllowAnyHeader()
+        .AllowAnyMethod();
+    });
+});
+
 
 builder.Services.AddDbContextPool<ScreenContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")), poolSize: 128);
 
 var app = builder.Build();
+
+app.UseCors("AllowFrontend");
 
 app.ConfigureApp();
 
