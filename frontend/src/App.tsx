@@ -1,23 +1,18 @@
 import React, { useState, useRef } from "react";
 import styles from "./styles/styles";
-import ReportsPage from "./components/reports/ReportsPage";
 import Dashboard from "./Dashboard";
 import GraphsTab from "./GraphsTab";
 import SimulationStatus from "./SimulationStatus";
 import appStyles from "./styles/App.module.scss";
 import { FiMenu } from "react-icons/fi";
 import PurchaseOrdersTab from "./PurchaseOrdersTab";
+import OrdersTab from "./OrdersTab";
 
 export default function ReportingDashboard() {
   // Persist tab in localStorage
   const [activeMainTab, setActiveMainTab] = useState(() => {
     return localStorage.getItem("activeMainTab") || "dashboard";
   });
-
-  const handleTabChange = (tab: string) => {
-    setActiveMainTab(tab);
-    localStorage.setItem("activeMainTab", tab);
-  };
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const toggleSidebar = () => setSidebarOpen((open) => !open);
@@ -162,8 +157,8 @@ export default function ReportingDashboard() {
         <div style={styles.maxWidth}>
           {activeMainTab === "dashboard" && <Dashboard refreshKey={lastStatusRefresh} simulationStatus={simulationStatus} />}
           {activeMainTab === "graphs" && <GraphsTab refreshKey={lastStatusRefresh} />}
-          {activeMainTab === "orders" && <ReportsPage refreshKey={lastStatusRefresh} />}
-          {activeMainTab === "purchases" && <PurchaseOrdersTab />}
+          {activeMainTab === "orders" && <OrdersTab refreshKey={lastStatusRefresh} />}
+          {activeMainTab === "purchases" && <PurchaseOrdersTab refreshKey={lastStatusRefresh} />}
         </div>
       </div>
       {/* Mobile overlay: clicking outside sidebar closes it */}

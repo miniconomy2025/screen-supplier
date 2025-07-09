@@ -49,12 +49,19 @@ public class ProductionHistoryService(ScreenContext context, ILogger<ProductionH
 
             var products = await productService.GetProductsAsync();
 
+            var equipment = await context.Equipment
+                .Where(e => e.IsAvailable || e.IsProducing)
+                .ToListAsync();
+
             var productionHistory = new ProductionHistory
             {
                 RecordDate = simulationTimeProvider.Now,
                 SandStock = materials.Where(materials => materials.Name.ToLower() == "sand").Sum(material => material.Quantity),
                 CopperStock = materials.Where(materials => materials.Name.ToLower() == "copper").Sum(material => material.Quantity),
-                ScreensProduced = screensProduced ?? 0
+                ScreensProduced = screensProduced ?? 0,
+                ScreenStock = products.First()?.Quantity ?? 0,
+                ScreenPrice = products.First()?.Price ?? 0,
+                WorkingEquipment = equipment.Count
             };
 
             if (existingRecord == null)
@@ -68,6 +75,9 @@ public class ProductionHistoryService(ScreenContext context, ILogger<ProductionH
                 existingRecord.SandStock = productionHistory.SandStock;
                 existingRecord.CopperStock = productionHistory.CopperStock;
                 existingRecord.ScreensProduced = productionHistory.ScreensProduced;
+                existingRecord.ScreenStock = productionHistory.ScreenStock;
+                existingRecord.ScreenPrice = productionHistory.ScreenPrice;
+                existingRecord.WorkingEquipment = productionHistory.WorkingEquipment;
             }
             await context.SaveChangesAsync();
 

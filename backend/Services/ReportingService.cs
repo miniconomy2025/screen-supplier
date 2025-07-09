@@ -13,7 +13,7 @@ public class ReportingService(ILogger<ReportingService> logger,
         try
         {
             var productionHistory = await productionHistoryService.GetProductionHistoryByDateAsync(date);
-            var purchaseOrders = await purchaseOrderService.GetActivePurchaseOrdersAsync();
+            var purchaseOrders = await purchaseOrderService.GetOrdersAsync();
             var equipment = (await equipmentService.GetAllEquipmentAsync()).Where(equipment => equipment.IsAvailable || equipment.IsProducing).ToList();
             var screenOrders = await screenOrderService.GetOrdersByDateAsync(date);
 
@@ -45,12 +45,12 @@ public class ReportingService(ILogger<ReportingService> logger,
 
             var sandPurchased = purchaseOrdersOnDate
                 .Where(order => order.RawMaterial != null &&
-                                string.Equals(order.RawMaterial.Name, nameof(Materials.Sand), StringComparison.OrdinalIgnoreCase))
+                                string.Equals(order.RawMaterial.Name, "sand", StringComparison.OrdinalIgnoreCase))
                 .Sum(order => order.Quantity);
 
             var copperPurchased = purchaseOrdersOnDate
                 .Where(order => order.RawMaterial != null &&
-                                string.Equals(order.RawMaterial.Name, nameof(Materials.Copper), StringComparison.OrdinalIgnoreCase))
+                                string.Equals(order.RawMaterial.Name, "copper", StringComparison.OrdinalIgnoreCase))
                 .Sum(order => order.Quantity);
 
             var equipmentParams = equipment.FirstOrDefault()?.EquipmentParameters;
@@ -72,6 +72,9 @@ public class ReportingService(ILogger<ReportingService> logger,
                 WorkingMachines = equipment.Count,
                 ScreensSold = screenOrdersOnDate.Sum(order => order.Quantity),
                 Revenue = screenOrdersOnDate.Sum(order => order.UnitPrice * order.Quantity),
+                ScreenStock = productionHistory.ScreenStock,
+                ScreenPrice = productionHistory.ScreenPrice,
+                WorkingEquipment = productionHistory.WorkingEquipment
             };
 
             return dailyProductionSummary;
