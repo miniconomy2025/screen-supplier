@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using ScreenProducerAPI.Mappers;
 using ScreenProducerAPI.Models.Responses;
 using ScreenProducerAPI.Services;
 
@@ -22,9 +21,16 @@ public static class ProductEndpoints
     {
         var quantity  = await productService.GetAvailableStockAsync();
 
-        var products = await productService.GetProductsAsync();
-        var response = products.Select(product => product.MapToResponse(quantity));
+        var product = await productService.GetProductAsync();
+        var productsResponse = new ProductResponse()
+        {
+            Screens = new Screens()
+            {
+                Quantity = quantity,
+                Price = product.Price
+            }
+        };
 
-        return Results.Ok(response);
+        return Results.Ok(productsResponse);
     }
 }

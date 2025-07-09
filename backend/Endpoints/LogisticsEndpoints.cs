@@ -32,45 +32,17 @@ public static class LogisticsEndpoints
         switch (request.Type.ToUpper())
         {
             case "DELIVERY":
-                var dropoffRequest = new DropoffRequest
-                {
-                    Id = request.Id,
-                    Quantity = request.Items[0].Quantity
-                };
-                var dropoffResult = await logisticsService.HandleDropoffAsync(dropoffRequest);
+                var logisticsResultDelivery = await logisticsService.HandleDropoffAsync(request.Items[0].Quantity, request.Id);
 
-                return Results.Ok(new LogisticsResponse
-                {
-                    Success = dropoffResult.Success,
-                    Id = dropoffResult.ShipmentId,
-                    OrderId = dropoffResult.OrderId,
-                    Quantity = dropoffResult.QuantityReceived,
-                    ItemType = dropoffResult.ItemType,
-                    Message = dropoffResult.Message,
-                    ProcessedAt = dropoffResult.ProcessedAt
-                });
+                return Results.Ok(logisticsResultDelivery);
 
             case "PICKUP":
-                var collectRequest = new CollectRequest
-                {
-                    Id = request.Id,
-                    Quantity = request.Items[0].Quantity
-                };
-                var collectResult = await logisticsService.HandleCollectAsync(collectRequest);
+                var logisticsResultCollection = await logisticsService.HandleCollectAsync(request.Items[0].Quantity, request.Id);
 
-                if (collectResult == null)
+                if (logisticsResultCollection == null)
                     throw new OrderNotFoundException(request.Id);
 
-                return Results.Ok(new LogisticsResponse
-                {
-                    Success = collectResult.Success,
-                    Id = collectResult.OrderId,
-                    OrderId = collectResult.OrderId,
-                    Quantity = collectResult.QuantityCollected,
-                    ItemType = collectResult.ItemType,
-                    Message = collectResult.Status,
-                    ProcessedAt = collectResult.PreparedAt
-                });
+                return Results.Ok(logisticsResultCollection);
 
             default:
                 throw new InvalidRequestException($"Unknown logistics type: {request.Type}. Must be 'DELIVERY' or 'PICKUP'.");

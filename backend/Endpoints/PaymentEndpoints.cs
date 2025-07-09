@@ -25,7 +25,6 @@ public static class PaymentEndpoints
         [FromServices] ScreenOrderService screenOrderService)
     {
         if (notification == null ||
-            string.IsNullOrWhiteSpace(notification.TransactionNumber) ||
             string.IsNullOrWhiteSpace(notification.Description) ||
             notification.Amount <= 0)
         {
@@ -37,14 +36,7 @@ public static class PaymentEndpoints
             throw new InvalidRequestException("Invalid order ID in description");
         }
 
-        var paymentRequest = new PaymentConfirmationRequest
-        {
-            ReferenceId = orderId.ToString(),
-            AccountNumber = notification.To,
-            AmountPaid = notification.Amount
-        };
-
-        var result = await screenOrderService.ProcessPaymentConfirmationAsync(paymentRequest);
+        var result = await screenOrderService.ProcessPaymentConfirmationAsync(notification, orderId.ToString());
 
         if (result?.Success != true)
         {

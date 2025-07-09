@@ -21,16 +21,16 @@ public class ScreenOrderService
         _simulationTimeProvider = simulationTimeProvider;
     }
 
-    public async Task<PaymentConfirmationResponse?> ProcessPaymentConfirmationAsync(PaymentConfirmationRequest request)
+    public async Task<PaymentConfirmationResponse?> ProcessPaymentConfirmationAsync(TransactionNotification notification, string refID)
     {
         try
         {
-            if (!int.TryParse(request.ReferenceId, out int orderId))
+            if (!int.TryParse(refID, out int orderId))
             {
                 return new PaymentConfirmationResponse
                 {
                     Success = false,
-                    OrderId = request.ReferenceId,
+                    OrderId = refID,
                     Message = "Invalid reference ID format",
                     ProcessedAt = _simulationTimeProvider.Now
                 };
@@ -46,7 +46,7 @@ public class ScreenOrderService
                 return new PaymentConfirmationResponse
                 {
                     Success = false,
-                    OrderId = request.ReferenceId,
+                    OrderId = refID,
                     Message = "Order not found",
                     ProcessedAt = _simulationTimeProvider.Now
                 };
@@ -54,7 +54,7 @@ public class ScreenOrderService
 
             var orderTotal = screenOrder.Quantity * screenOrder.UnitPrice;
             var previouslyPaid = screenOrder.AmountPaid ?? 0;
-            var newTotalPaid = previouslyPaid + (int)request.AmountPaid;
+            var newTotalPaid = previouslyPaid + (int)notification.Amount;
             var remainingBalance = Math.Max(0, orderTotal - newTotalPaid);
             var isFullyPaid = newTotalPaid >= orderTotal;
 
@@ -79,7 +79,7 @@ public class ScreenOrderService
             {
                 Success = true,
                 OrderId = orderId.ToString(),
-                AmountReceived = request.AmountPaid,
+                AmountReceived = notification.Amount,
                 TotalPaid = newTotalPaid,
                 OrderTotal = orderTotal,
                 RemainingBalance = remainingBalance,
@@ -94,7 +94,7 @@ public class ScreenOrderService
             return new PaymentConfirmationResponse
             {
                 Success = false,
-                OrderId = request.ReferenceId,
+                OrderId = refID,
                 Message = "Internal error processing payment",
                 ProcessedAt = _simulationTimeProvider.Now
             };

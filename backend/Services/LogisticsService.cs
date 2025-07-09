@@ -44,15 +44,13 @@ public class LogisticsService
         _context = context;
     }
 
-    public async Task<DropoffResponse> HandleDropoffAsync(DropoffRequest request)
+    public async Task<LogisticsResponse> HandleDropoffAsync(int quantityIn, int shipmentId)
     {
-        int shipmentId = request.Id;
-
         var purchaseOrder = await _purchaseOrderService.FindPurchaseOrderByShipmentIdAsync(shipmentId);
         if (purchaseOrder == null)
             throw new OrderNotFoundException(shipmentId);
 
-        int quantity = purchaseOrder.EquipmentOrder == true ? 1 : request.Quantity;
+        int quantity = purchaseOrder.EquipmentOrder == true ? 1 : quantityIn;
 
         var waitingDeliveryStatus = await _context.OrderStatuses
             .FirstOrDefaultAsync(os => os.Status == Status.WaitingForDelivery);
@@ -88,22 +86,20 @@ public class LogisticsService
 
         await _purchaseOrderService.UpdateDeliveryQuantityAsync(purchaseOrder.Id, quantity);
 
-        return new DropoffResponse
+        return new LogisticsResponse
         {
             Success = true,
-            ShipmentId = shipmentId,
+            Id = shipmentId,
             OrderId = purchaseOrder.OrderID,
-            QuantityReceived = quantity,
+            Quantity = quantity,
             ItemType = itemType,
             Message = $"Successfully received {quantity} units of {itemType}",
             ProcessedAt = _simulationTimeProvider.Now,
         };
     }
 
-    public async Task<CollectResponse?> HandleCollectAsync(CollectRequest request)
+    public async Task<LogisticsResponse?> HandleCollectAsync(int quantity, int orderId)
     {
-        int orderId = request.Id;
-        int quantity = request.Quantity;
 
         try
         {
@@ -141,14 +137,14 @@ public class LogisticsService
 
             await _screenOrderService.UpdateQuantityCollectedAsync(screenOrder.Id, quantity);
 
-            return new CollectResponse
+            return new LogisticsResponse
             {
                 Success = true,
                 OrderId = orderId,
-                QuantityCollected = quantity,
+                Quantity = quantity,
                 ItemType = "screens",
-                Status = Status.Collected,
-                PreparedAt = _simulationTimeProvider.Now
+                Message = Status.Collected,
+                ProcessedAt = _simulationTimeProvider.Now
             };
         }
         catch (Exception ex)

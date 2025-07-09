@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using ScreenProducerAPI.Configuration;
 using ScreenProducerAPI.ScreenDbContext;
 using ScreenProducerAPI.Services;

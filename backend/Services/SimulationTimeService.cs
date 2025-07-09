@@ -43,14 +43,6 @@ public class SimulationTimeService : IDisposable
 
         await CleanUpDatabase(context);
 
-        // Initialize bank integration
-        (_bankAccountCreated, _bankLoanCreated, _notificationUrlSet) =
-            await bankIntegrationService.InitializeAsync(_bankAccountCreated, _bankLoanCreated, _notificationUrlSet);
-
-        // Initialize equipment parameters from Hand service
-        
-        _equipmentParametersInitialized = await handService.TryInitializeEquipmentParametersAsync(equipmentService);
-
         _simulationRunning = true;
 
         // Start the timer for daily processing - first tick after 2 minutes
