@@ -21,4 +21,13 @@ public class ProductionHistory
 
     [Column("screens_produced")]
     public int ScreensProduced { get; set; }
+
+    [Column("screen_stock")]
+    public int ScreenStock { get; set; }
+
+    [Column("screen_price")]
+    public int ScreenPrice { get; set; }
+
+    [Column("working_equipment")]
+    public int WorkingEquipment { get; set; }
 }

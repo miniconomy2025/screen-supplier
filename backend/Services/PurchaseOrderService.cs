@@ -208,6 +208,14 @@ public class PurchaseOrderService
             .ToListAsync();
     }
 
+    public async Task<List<PurchaseOrder>> GetOrdersAsync()
+    {
+        return await _context.PurchaseOrders
+            .Include(po => po.OrderStatus)
+            .Include(po => po.RawMaterial)
+            .ToListAsync();
+    }
+
     public async Task<List<PurchaseOrder>> GetPastOrdersAsync(DateTime dateTime)
     {
         var orders = await _context.PurchaseOrders

@@ -13,4 +13,7 @@ public class DailyReport
     public int WorkingMachines { get; set; }
     public int ScreensSold { get; set; }
     public int Revenue { get; set; }
+    public int ScreenStock { get; set; }
+    public int ScreenPrice { get; set; }
+    public int WorkingEquipment { get; set; }
 }

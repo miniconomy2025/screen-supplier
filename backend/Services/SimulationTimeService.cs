@@ -39,9 +39,7 @@ public class SimulationTimeService : IDisposable
         // Initialize all required services
         using var scope = _serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ScreenContext>();
-        var bankIntegrationService = scope.ServiceProvider.GetRequiredService<BankIntegrationService>();
-        var handService = scope.ServiceProvider.GetRequiredService<HandService>();
-        var equipmentService = scope.ServiceProvider.GetRequiredService<EquipmentService>();
+
 
         await CleanUpDatabase(context);
 
