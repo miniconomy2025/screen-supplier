@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
-import { apiClient } from "../src/apiClient";
+import React from "react";
+import { usePurchases } from "./hooks/queries";
 import { Column } from "react-table";
 import styles from "./components/reports/ReportsPage.module.scss";
 import { StatusSummaryCards, DataTable } from "./components/SharedTableComponents";
+import { useDayChangeEffect } from "./hooks/useSimulation";
 
 const STATUS_LABELS: Record<string, string> = {
   waiting_payment: "Waiting Payment",
@@ -27,25 +28,23 @@ function getStatusLabel(status: string): string {
   return STATUS_LABELS[status] || (status.charAt(0).toUpperCase() + status.slice(1));
 }
 
-const PurchaseOrdersTab: React.FC<{ refreshKey?: number }> = ({ refreshKey }) => {
-  const [orders, setOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+const PurchaseOrdersTab: React.FC = () => {
+  const {
+    data: orders = [],
+    isFetching: loading,
+    refetch,
+  } = usePurchases();
 
-  const fetchOrders = async () => {
-    setLoading(true);
-    try {
-      const data = await apiClient.getPurchases();
-      setOrders(data);
-    } catch (e) {
-      // ...existing error handling...
-    } finally {
-      setLoading(false);
-    }
+  // Refetch data when simulation day changes
+  useDayChangeEffect(() => {
+    console.log("PurchaseOrdersTab: Day changed, refetching data");
+    refetch();
+  });
+
+  // Manual refresh handler
+  const handleRefresh = () => {
+    refetch();
   };
-
-  useEffect(() => {
-    fetchOrders();
-  }, [refreshKey]);
 
   // Table columns
   const columns: Column<any>[] = React.useMemo(() => [
@@ -78,7 +77,7 @@ const PurchaseOrdersTab: React.FC<{ refreshKey?: number }> = ({ refreshKey }) =>
         data={orders}
         columns={columns}
         isLoading={loading}
-        onRefresh={fetchOrders}
+        onRefresh={handleRefresh}
         title="Purchase Orders"
         noDataMessage="No purchases found."
         searchPlaceholder="Type to filter purchases..."
