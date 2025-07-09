@@ -20,19 +20,19 @@ public class BankIntegrationService
 
         if (!hasAccount)
         {
-            accountCreated = await _bankService.InitializeBankAccountAsync();
+            accountCreated = await _bankService.TryInitializeBankAccountAsync();
         }
 
         if (!hasLoan)
         {
-            loanTaken = await _bankService.TakeInitialLoanAsync();
+            loanTaken = await _bankService.TryTakeInitialLoanAsync();
         }
 
         if (!hasNotificationUrl)
         {
-            notifcationUrlSet = await _bankService.SetupNotificationUrlAsync();
+            notifcationUrlSet = await _bankService.TrySetupNotificationUrlAsync();
         }
 
-        return (accountCreated, loanTaken, hasNotificationUrl);
+        return (accountCreated, loanTaken, notifcationUrlSet);
     }
 }

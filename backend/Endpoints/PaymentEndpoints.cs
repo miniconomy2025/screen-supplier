@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using ScreenProducerAPI.Exceptions;
 using ScreenProducerAPI.Models.Requests;
 using ScreenProducerAPI.Services;
 
@@ -23,42 +24,33 @@ public static class PaymentEndpoints
         TransactionNotification notification,
         [FromServices] ScreenOrderService screenOrderService)
     {
-        try
+        if (notification == null ||
+            string.IsNullOrWhiteSpace(notification.TransactionNumber) ||
+            string.IsNullOrWhiteSpace(notification.Description) ||
+            notification.Amount <= 0)
         {
-            if (notification == null ||
-                string.IsNullOrWhiteSpace(notification.TransactionNumber) ||
-                string.IsNullOrWhiteSpace(notification.Description) ||
-                notification.Amount <= 0)
-            {
-                return Results.BadRequest(new { error = "Invalid payment notification" });
-            }
-
-            if (!int.TryParse(notification.Description, out int orderId))
-            {
-                return Results.BadRequest(new { error = "Invalid order ID in description" });
-            }
-
-            var paymentRequest = new PaymentConfirmationRequest
-            {
-                ReferenceId = orderId.ToString(),
-                AccountNumber = notification.To,
-                AmountPaid = notification.Amount
-            };
-
-            var result = await screenOrderService.ProcessPaymentConfirmationAsync(paymentRequest);
-
-            if (result?.Success == true)
-            {
-                return Results.Ok(new { success = true });
-            }
-            else
-            {
-                return Results.BadRequest(new { error = result?.Message ?? "Payment processing failed" });
-            }
+            throw new InvalidRequestException("Invalid payment notification");
         }
-        catch (Exception ex)
+
+        if (!int.TryParse(notification.Description, out int orderId))
         {
-            return Results.Problem("An unexpected error occurred processing the payment notification");
+            throw new InvalidRequestException("Invalid order ID in description");
         }
+
+        var paymentRequest = new PaymentConfirmationRequest
+        {
+            ReferenceId = orderId.ToString(),
+            AccountNumber = notification.To,
+            AmountPaid = notification.Amount
+        };
+
+        var result = await screenOrderService.ProcessPaymentConfirmationAsync(paymentRequest);
+
+        if (result?.Success != true)
+        {
+            throw new InvalidOperationException(result?.Message ?? "Payment processing failed");
+        }
+
+        return Results.Ok(new { success = true });
     }
 }

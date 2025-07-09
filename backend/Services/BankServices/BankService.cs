@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using ScreenProducerAPI.Exceptions;
 using ScreenProducerAPI.Models;
 using ScreenProducerAPI.Models.Responses;
 using ScreenProducerAPI.ScreenDbContext;
@@ -49,7 +50,7 @@ public class BankService
             var accountResponse = await CreateBankAccountAsync();
             if (string.IsNullOrEmpty(accountResponse?.AccountNumber))
             {
-                return false;
+                throw new BankServiceException("Failed to create bank account - no account number returned");
             }
 
             var bankDetails = new BankDetails
@@ -61,10 +62,14 @@ public class BankService
 
             return true;
         }
+        catch (BankServiceException)
+        {
+            throw; // Re-throw service exceptions
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to initialize bank account");
-            return false;
+            throw new BankServiceException("Bank account initialization failed", ex);
         }
     }
 
@@ -153,14 +158,22 @@ public class BankService
         {
             var response = await _httpClient.PostAsync($"{_options.Value.BaseUrl}/account",
                 JsonContent.Create(new { }));
-            var rawJson = await response.Content.ReadAsStringAsync();
-            response.EnsureSuccessStatusCode();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new BankServiceException($"Account creation failed: {response.StatusCode} - {errorContent}");
+            }
+
             return await response.Content.ReadFromJsonAsync<BankAccountResponse>(_jsonOptions);
         }
-        catch (Exception ex)
+        catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "Failed to create bank account");
-            return null;
+            throw new BankServiceException("Bank service unavailable for account creation", ex);
+        }
+        catch (TaskCanceledException ex)
+        {
+            throw new BankServiceException("Bank service timeout during account creation", ex);
         }
     }
 
@@ -171,7 +184,7 @@ public class BankService
             var notificationUrl = _configuration["BankSettings:NotificationUrl"];
             if (string.IsNullOrEmpty(notificationUrl))
             {
-                return false;
+                throw new BankServiceException("Notification URL not configured");
             }
 
             var request = new
@@ -184,12 +197,21 @@ public class BankService
                 request,
                 _jsonOptions);
 
-            return response.IsSuccessStatusCode;
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new BankServiceException($"Notification setup failed: {response.StatusCode} - {errorContent}");
+            }
+
+            return true;
         }
-        catch (Exception ex)
+        catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "Failed to setup notification URL");
-            return false;
+            throw new BankServiceException("Bank service unavailable for notification setup");
+        }
+        catch (TaskCanceledException ex)
+        {
+            throw new BankServiceException("Bank service timeout during notification setup", ex);
         }
     }
 
@@ -212,15 +234,23 @@ public class BankService
         try
         {
             var response = await _httpClient.GetAsync($"{_options.Value.BaseUrl}/account/me/balance");
-            response.EnsureSuccessStatusCode();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new BankServiceException($"Balance retrieval failed: {response.StatusCode} - {errorContent}");
+            }
 
             var balanceResponse = await response.Content.ReadFromJsonAsync<BankAccountBalanceResponse>(_jsonOptions);
             return balanceResponse?.Balance ?? 0;
         }
-        catch (Exception ex)
+        catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "Failed to get account balance");
-            return 0;
+            throw new BankServiceException("Bank service unavailable for balance check", ex);
+        }
+        catch (TaskCanceledException ex)
+        {
+            throw new BankServiceException("Bank service timeout during balance check", ex);
         }
     }
 
@@ -241,17 +271,90 @@ public class BankService
                 paymentRequest,
                 _jsonOptions);
 
-            if (response.IsSuccessStatusCode)
+            if (!response.IsSuccessStatusCode)
             {
-                var paymentResponse = await response.Content.ReadFromJsonAsync<PaymentResponse>(_jsonOptions);
-                return paymentResponse?.Success == true;
+                var errorContent = await response.Content.ReadAsStringAsync();
+
+                // Check for insufficient funds specifically
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest &&
+                    errorContent.Contains("insufficient", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InsufficientFundsException(amount, await GetAccountBalanceAsync());
+                }
+
+                throw new BankServiceException($"Payment failed: {response.StatusCode} - {errorContent}");
             }
+
+            var paymentResponse = await response.Content.ReadFromJsonAsync<PaymentResponse>(_jsonOptions);
+            return paymentResponse?.Success == true;
+        }
+        catch (InsufficientFundsException)
+        {
+            throw; // Re-throw business exceptions
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new BankServiceException($"Bank service unavailable for payment to {toAccountNumber}", ex);
+        }
+        catch (TaskCanceledException ex)
+        {
+            throw new BankServiceException($"Bank service timeout during payment to {toAccountNumber}", ex);
+        }
+    }
+
+    public async Task<bool> TryInitializeBankAccountAsync()
+    {
+        try
+        {
+            await InitializeBankAccountAsync();
+            return true;
+        }
+        catch (BankServiceException ex)
+        {
+            _logger.LogWarning("Bank account initialization failed: {Message}. Simulation will continue with degraded functionality.", ex.Message);
+            return false;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Payment failed for amount {Amount} to {Account}", amount, toAccountNumber);
+            _logger.LogError(ex, "Unexpected error during bank account initialization");
+            return false;
         }
-        return false;
+    }
+
+    public async Task<bool> TryTakeInitialLoanAsync()
+    {
+        try
+        {
+            return await TakeInitialLoanAsync();
+        }
+        catch (BankServiceException ex)
+        {
+            _logger.LogWarning("Initial loan failed: {Message}. Simulation will continue with limited funds.", ex.Message);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error during initial loan");
+            return false;
+        }
+    }
+
+    public async Task<bool> TrySetupNotificationUrlAsync()
+    {
+        try
+        {
+            return await SetupNotificationUrlAsync();
+        }
+        catch (BankServiceException ex)
+        {
+            _logger.LogWarning("Notification URL setup failed: {Message}. Payment notifications may not work.", ex.Message);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error during notification URL setup");
+            return false;
+        }
     }
 }
 

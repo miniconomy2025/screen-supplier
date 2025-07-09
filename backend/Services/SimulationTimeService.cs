@@ -51,7 +51,7 @@ public class SimulationTimeService : IDisposable
 
         // Initialize equipment parameters from Hand service
         
-        _equipmentParametersInitialized = await InitializeEquipmentParametersFromHand(handService, equipmentService);
+        _equipmentParametersInitialized = await handService.TryInitializeEquipmentParametersAsync(equipmentService);
 
         _simulationRunning = true;
 
@@ -62,76 +62,6 @@ public class SimulationTimeService : IDisposable
         _ = Task.Run(async () => await TriggerStartOfDay(0));
 
         return true;
-    }
-
-    private async Task<bool> InitializeEquipmentParametersFromHand(HandService handService, EquipmentService equipmentService)
-    {
-        try
-        {
-            _logger.LogInformation("Fetching equipment parameters from Hand service...");
-
-            var machinesResponse = await handService.GetMachinesForSaleAsync();
-            var screenMachine = machinesResponse.Machines.FirstOrDefault(m => m.MachineName == "screen_machine");
-
-            if (screenMachine == null)
-            {
-                _logger.LogError("Screen machine not found in Hand service response");
-                return false;
-            }
-
-            // Parse material ratio (e.g., "sand:copper" or "2:1")
-            var (sandKg, copperKg) = ParseMaterialRatio(screenMachine.MaterialRatio);
-            var outputScreensPerDay = screenMachine.ProductionRate;
-
-            _logger.LogInformation("Found screen machine - Sand: {SandKg}kg, Copper: {CopperKg}kg, Output: {OutputScreens} screens/day",
-                sandKg, copperKg, outputScreensPerDay);
-
-            // Initialize equipment parameters
-            var success = await equipmentService.InitializeEquipmentParametersAsync(sandKg, copperKg, outputScreensPerDay, screenMachine.Weight);
-
-            if (success)
-            {
-                _logger.LogInformation("Equipment parameters successfully initialized from Hand service");
-            }
-            else
-            {
-                _logger.LogError("Failed to save equipment parameters to database");
-            }
-
-            return success;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error initializing equipment parameters from Hand service");
-            return false;
-        }
-    }
-
-    private (int sandKg, int copperKg) ParseMaterialRatio(string materialRatio)
-    {
-        try
-        {
-            // Handle formats like "sand:copper", "2:1", etc.
-            var parts = materialRatio.Split(':');
-            if (parts.Length != 2)
-            {
-                _logger.LogWarning("Invalid material ratio format: {MaterialRatio}. Using default 1:1", materialRatio);
-                return (1, 1);
-            }
-
-            // Try to parse as numbers first (e.g., "2:1")
-            if (int.TryParse(parts[0].Trim(), out int sandRatio) &&
-                int.TryParse(parts[1].Trim(), out int copperRatio))
-            {
-                return (sandRatio, copperRatio);
-            }
-            return (1, 1);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Error parsing material ratio: {MaterialRatio}. Using default 1:1", materialRatio);
-            return (1, 1);
-        }
     }
 
     public int GetCurrentSimulationDay()
@@ -202,13 +132,12 @@ public class SimulationTimeService : IDisposable
 
             if (!_bankAccountCreated || !_bankLoanCreated || !_notificationUrlSet)
             {
-                await bankIntegrationService.InitializeAsync(_bankAccountCreated, _bankLoanCreated, _notificationUrlSet);
+                (_bankAccountCreated, _bankLoanCreated, _notificationUrlSet) = await bankIntegrationService.InitializeAsync(_bankAccountCreated, _bankLoanCreated, _notificationUrlSet);
             }
 
             if (!_equipmentParametersInitialized)
             {
-                _equipmentParametersInitialized = await InitializeEquipmentParametersFromHand(
-                    handService, equipmentService);
+                _equipmentParametersInitialized = await handService.TryInitializeEquipmentParametersAsync(equipmentService);
             }
 
             // Log current inventory status
