@@ -1,4 +1,5 @@
-﻿using ScreenProducerAPI.Endpoints;
+﻿using ScreenProducerAPI.Commands.Queue;
+using ScreenProducerAPI.Endpoints;
 using ScreenProducerAPI.Models.Configuration;
 using ScreenProducerAPI.Services;
 using ScreenProducerAPI.Services.BankServices;
@@ -198,6 +199,8 @@ public static class ApiConfiguration
         services.AddScoped<StockStatisticsService>();
         services.AddScoped<ProductionHistoryService>();
         services.AddScoped<ReportingService>();
+
+        services.AddScoped<IQueueCommandFactory, QueueCommandFactory>();
 
         // Time provider service
         services.AddScoped<SimulationTimeProvider>();

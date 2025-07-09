@@ -1,11 +1,11 @@
-﻿using ScreenProducerAPI.Models;
-using ScreenProducerAPI.Models.Configuration;
-using ScreenProducerAPI.Models.Requests;
-using ScreenProducerAPI.ScreenDbContext;
-using ScreenProducerAPI.Services.BankServices;
-using ScreenProducerAPI.Util;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using ScreenProducerAPI.Commands;
+using ScreenProducerAPI.Commands.Queue;
+using ScreenProducerAPI.Models;
+using ScreenProducerAPI.Models.Configuration;
+using ScreenProducerAPI.ScreenDbContext;
+using ScreenProducerAPI.Util;
 using System.Collections.Concurrent;
 
 namespace ScreenProducerAPI.Services;
@@ -16,18 +16,15 @@ public class PurchaseOrderQueueService
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<PurchaseOrderQueueService> _logger;
     private readonly IOptionsMonitor<QueueSettingsConfig> _queueConfig;
-    private readonly IOptionsMonitor<CompanyInfoConfig> _companyConfig;
 
     public PurchaseOrderQueueService(
         IServiceProvider serviceProvider,
         ILogger<PurchaseOrderQueueService> logger,
-        IOptionsMonitor<QueueSettingsConfig> queueConfig,
-        IOptionsMonitor<CompanyInfoConfig> companyConfig)
+        IOptionsMonitor<QueueSettingsConfig> queueConfig)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
         _queueConfig = queueConfig;
-        _companyConfig = companyConfig;
     }
 
     public void EnqueuePurchaseOrder(int purchaseOrderId)
@@ -49,7 +46,6 @@ public class PurchaseOrderQueueService
 
         _logger.LogInformation("Processing purchase order queue. Items in queue: {QueueCount}", _queue.Count);
 
-        // Process all items currently in queue
         var itemsToProcess = new List<QueueItem>();
         while (_queue.TryDequeue(out var item))
         {
@@ -74,53 +70,29 @@ public class PurchaseOrderQueueService
                     continue;
                 }
 
-                var processed = await ProcessPurchaseOrderAsync(scope.ServiceProvider, purchaseOrder, item);
+                var result = await ProcessPurchaseOrderAsync(scope.ServiceProvider, purchaseOrder);
 
-                if (processed)
+                if (result.Success)
                 {
                     processedCount++;
                     _logger.LogInformation("Successfully processed purchase order {PurchaseOrderId} in status {Status}",
                         purchaseOrder.Id, purchaseOrder.OrderStatus.Status);
+
+                    // Re-enqueue for next step if not terminal
+                    if (ShouldContinueProcessing(purchaseOrder.OrderStatus.Status))
+                    {
+                        EnqueuePurchaseOrder(purchaseOrder.Id);
+                    }
                 }
                 else
                 {
-                    // Processing failed, handle retry
-                    item.RetryCount++;
-                    item.LastProcessed = DateTime.UtcNow;
-
-                    if (item.RetryCount >= maxRetries)
-                    {
-                        _logger.LogWarning("Purchase order {PurchaseOrderId} exceeded max retries ({MaxRetries}), abandoning",
-                            item.PurchaseOrderId, maxRetries);
-
-                        await AbandonPurchaseOrderAsync(scope.ServiceProvider, purchaseOrder);
-                    }
-                    else
-                    {
-                        _logger.LogInformation("Purchase order {PurchaseOrderId} failed processing, retry {RetryCount}/{MaxRetries}",
-                            item.PurchaseOrderId, item.RetryCount, maxRetries);
-
-                        // Add back to queue for retry
-                        _queue.Enqueue(item);
-                    }
+                    HandleFailedProcessing(item, result, maxRetries);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error processing queue item for purchase order {PurchaseOrderId}", item.PurchaseOrderId);
-
-                item.RetryCount++;
-                item.LastError = ex.Message;
-                item.LastProcessed = DateTime.UtcNow;
-
-                if (item.RetryCount < maxRetries)
-                {
-                    _queue.Enqueue(item);
-                }
-                else
-                {
-                    _logger.LogError("Purchase order {PurchaseOrderId} exceeded max retries due to errors, abandoning", item.PurchaseOrderId);
-                }
+                HandleException(item, ex, maxRetries);
             }
         }
 
@@ -131,200 +103,73 @@ public class PurchaseOrderQueueService
         }
     }
 
-    private async Task<bool> ProcessPurchaseOrderAsync(IServiceProvider serviceProvider, PurchaseOrder purchaseOrder, QueueItem queueItem)
+    private async Task<CommandResult> ProcessPurchaseOrderAsync(IServiceProvider serviceProvider, PurchaseOrder purchaseOrder)
     {
-        var status = purchaseOrder.OrderStatus.Status;
+        var commandFactory = serviceProvider.GetRequiredService<IQueueCommandFactory>();
+        var command = commandFactory.CreateCommand(purchaseOrder);
+        return await command.ExecuteAsync();
+    }
 
-        switch (status)
+    private void HandleFailedProcessing(QueueItem item, CommandResult result, int maxRetries)
+    {
+        item.RetryCount++;
+        item.LastError = result.ErrorMessage ?? "Unknown error";
+        item.LastProcessed = DateTime.UtcNow;
+
+        if (result.ShouldRetry && item.RetryCount < maxRetries)
         {
-            case Status.RequiresPaymentToSupplier:
-                return await ProcessSupplierPaymentAsync(serviceProvider, purchaseOrder, queueItem);
-
-            case Status.RequiresDelivery:
-                return await ProcessShippingRequestAsync(serviceProvider, purchaseOrder, queueItem);
-
-            case Status.RequiresPaymentToLogistics:
-                return await ProcessLogisticsPaymentAsync(serviceProvider, purchaseOrder, queueItem);
-
-            case Status.WaitingForDelivery:
-                _logger.LogInformation("Purchase order {PurchaseOrderId} is waiting for delivery, removing from queue", purchaseOrder.Id);
-                return true;
-
-            case Status.Delivered:
-            case Status.Abandoned:
-                _logger.LogInformation("Purchase order {PurchaseOrderId} is in terminal state {Status}, removing from queue",
-                    purchaseOrder.Id, status);
-                return true;
-
-            default:
-                _logger.LogWarning("Purchase order {PurchaseOrderId} has unexpected status {Status}, removing from queue",
-                    purchaseOrder.Id, status);
-                return true;
+            _logger.LogInformation("Purchase order {PurchaseOrderId} failed processing, retry {RetryCount}/{MaxRetries}",
+                item.PurchaseOrderId, item.RetryCount, maxRetries);
+            _queue.Enqueue(item);
+        }
+        else
+        {
+            _logger.LogWarning("Purchase order {PurchaseOrderId} exceeded max retries or marked as no-retry, abandoning",
+                item.PurchaseOrderId);
+            _ = Task.Run(async () => await AbandonPurchaseOrderAsync(item.PurchaseOrderId));
         }
     }
 
-    private async Task<bool> ProcessSupplierPaymentAsync(IServiceProvider serviceProvider, PurchaseOrder purchaseOrder, QueueItem queueItem)
+    private void HandleException(QueueItem item, Exception ex, int maxRetries)
     {
-        try
+        item.RetryCount++;
+        item.LastError = ex.Message;
+        item.LastProcessed = DateTime.UtcNow;
+
+        if (item.RetryCount < maxRetries)
         {
-            _logger.LogInformation("Processing supplier payment for purchase order {PurchaseOrderId}", purchaseOrder.Id);
-
-            var bankService = serviceProvider.GetRequiredService<BankService>();
-            var purchaseOrderService = serviceProvider.GetRequiredService<PurchaseOrderService>();
-
-            var totalAmount = purchaseOrder.Quantity * purchaseOrder.UnitPrice;
-            var description = purchaseOrder.OrderID.ToString(); // Use OrderID as description
-
-            var paymentSuccess = await bankService.MakePaymentAsync(
-                purchaseOrder.BankAccountNumber,
-                "commercial-bank", // Use enum value from bank API
-                totalAmount,
-                description);
-
-            if (paymentSuccess)
-            {
-                // Update status to requires_delivery
-                await purchaseOrderService.UpdateStatusAsync(purchaseOrder.Id, Status.RequiresDelivery);
-
-                // Add back to queue for next step
-                EnqueuePurchaseOrder(purchaseOrder.Id);
-
-                _logger.LogInformation("Supplier payment successful for purchase order {PurchaseOrderId}, amount {Amount}",
-                    purchaseOrder.Id, totalAmount);
-                return true;
-            }
-            else
-            {
-                queueItem.LastError = "Supplier payment failed";
-                _logger.LogWarning("Supplier payment failed for purchase order {PurchaseOrderId}", purchaseOrder.Id);
-                return false;
-            }
+            _queue.Enqueue(item);
         }
-        catch (Exception ex)
+        else
         {
-            queueItem.LastError = ex.Message;
-            _logger.LogError(ex, "Error processing supplier payment for purchase order {PurchaseOrderId}", purchaseOrder.Id);
-            return false;
+            _logger.LogError("Purchase order {PurchaseOrderId} exceeded max retries due to errors, abandoning", item.PurchaseOrderId);
+            _ = Task.Run(async () => await AbandonPurchaseOrderAsync(item.PurchaseOrderId));
         }
     }
 
-    private async Task<bool> ProcessShippingRequestAsync(IServiceProvider serviceProvider, PurchaseOrder purchaseOrder, QueueItem queueItem)
+    private static bool ShouldContinueProcessing(string status)
     {
-        try
+        return status switch
         {
-            _logger.LogInformation("Processing shipping request for purchase order {PurchaseOrderId}", purchaseOrder.Id);
-
-            var logisticsService = serviceProvider.GetRequiredService<LogisticsService>();
-            var purchaseOrderService = serviceProvider.GetRequiredService<PurchaseOrderService>();
-            var equipmentParamService = serviceProvider.GetRequiredService<EquipmentService>();
-            var companyInfo = _companyConfig.CurrentValue;
-
-            // Create pickup items based on order type
-            var pickupItems = new List<PickupRequestItem>();
-
-            var equipmentToGet = await equipmentParamService.GetEquipmentParametersAsync();
-            if (equipmentToGet == null)
-            {
-                _logger.LogError("Failed to get weight of machine for request");
-                return false;
-            }
-
-            if (purchaseOrder.EquipmentOrder == true)
-            {
-                // Treated as weight here...
-                pickupItems = LogisticsService.CreatePickupItems("equipment", equipmentToGet.EquipmentWeight, true);
-            }
-            else if (purchaseOrder.RawMaterial != null)
-            {
-                pickupItems = LogisticsService.CreatePickupItems(purchaseOrder.RawMaterial.Name, purchaseOrder.Quantity, false);
-            }
-            else
-            {
-                queueItem.LastError = "Invalid purchase order configuration";
-                _logger.LogError("Purchase order {PurchaseOrderId} has invalid configuration", purchaseOrder.Id);
-                return false;
-            }
-
-            var (pickupRequestId, logisticsBankAccount, shippingPrice) = await logisticsService.RequestPickupAsync(
-                purchaseOrder.Origin,
-                companyInfo.CompanyId,
-                purchaseOrder.OrderID.ToString(),
-                pickupItems
-            );
-
-            // Update shipment ID and status
-            await purchaseOrderService.UpdateShipmentIdAsync(purchaseOrder.Id, int.Parse(pickupRequestId));
-            await purchaseOrderService.UpdateStatusAsync(purchaseOrder.Id, Status.RequiresPaymentToLogistics);
-            await purchaseOrderService.UpdateOrderShippingDetailsAsync(purchaseOrder.Id, logisticsBankAccount, shippingPrice);
-
-            // Add back to queue for logistics payment
-            EnqueuePurchaseOrder(purchaseOrder.Id);
-
-            _logger.LogInformation("Shipping request successful for purchase order {PurchaseOrderId}, pickup request {PickupRequestId}",
-                purchaseOrder.Id, pickupRequestId);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            queueItem.LastError = ex.Message;
-            _logger.LogError(ex, "Error processing shipping request for purchase order {PurchaseOrderId}", purchaseOrder.Id);
-            return false;
-        }
+            Status.RequiresPaymentToSupplier => true,
+            Status.RequiresDelivery => true,
+            Status.RequiresPaymentToLogistics => true,
+            _ => false
+        };
     }
 
-    private async Task<bool> ProcessLogisticsPaymentAsync(IServiceProvider serviceProvider, PurchaseOrder purchaseOrder, QueueItem queueItem)
+    private async Task AbandonPurchaseOrderAsync(int purchaseOrderId)
     {
         try
         {
-            _logger.LogInformation("Processing logistics payment for purchase order {PurchaseOrderId}", purchaseOrder.Id);
-
-            var bankService = serviceProvider.GetRequiredService<BankService>();
-            var purchaseOrderService = serviceProvider.GetRequiredService<PurchaseOrderService>();
-
-            var description = $"{purchaseOrder.ShipmentID}";
-
-            var paymentSuccess = await bankService.MakePaymentAsync(
-                purchaseOrder.ShipperBankAccout,
-                "commercial-bank",
-                purchaseOrder.OrderShippingPrice,
-                description);
-
-            if (paymentSuccess)
-            {
-                // Update status to waiting_delivery
-                await purchaseOrderService.UpdateStatusAsync(purchaseOrder.Id, Status.WaitingForDelivery);
-
-                _logger.LogInformation("Logistics payment successful for purchase order {PurchaseOrderId}, amount {Amount}",
-                    purchaseOrder.Id, purchaseOrder.OrderShippingPrice);
-                return true;
-            }
-            else
-            {
-                queueItem.LastError = "Logistics payment failed";
-                _logger.LogWarning("Logistics payment failed for purchase order {PurchaseOrderId}", purchaseOrder.Id);
-                return false;
-            }
+            using var scope = _serviceProvider.CreateScope();
+            var purchaseOrderService = scope.ServiceProvider.GetRequiredService<PurchaseOrderService>();
+            await purchaseOrderService.UpdateStatusAsync(purchaseOrderId, Status.Abandoned);
+            _logger.LogWarning("Purchase order {PurchaseOrderId} has been abandoned", purchaseOrderId);
         }
         catch (Exception ex)
         {
-            queueItem.LastError = ex.Message;
-            _logger.LogError(ex, "Error processing logistics payment for purchase order {PurchaseOrderId}", purchaseOrder.Id);
-            return false;
-        }
-    }
-
-    private async Task AbandonPurchaseOrderAsync(IServiceProvider serviceProvider, PurchaseOrder purchaseOrder)
-    {
-        try
-        {
-            var purchaseOrderService = serviceProvider.GetRequiredService<PurchaseOrderService>();
-            await purchaseOrderService.UpdateStatusAsync(purchaseOrder.Id, Status.Abandoned);
-
-            _logger.LogWarning("Purchase order {PurchaseOrderId} has been abandoned after max retries", purchaseOrder.Id);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error abandoning purchase order {PurchaseOrderId}", purchaseOrder.Id);
+            _logger.LogError(ex, "Error abandoning purchase order {PurchaseOrderId}", purchaseOrderId);
         }
     }
 
@@ -362,8 +207,5 @@ public class PurchaseOrderQueueService
         }
     }
 
-    public int GetQueueCount()
-    {
-        return _queue.Count;
-    }
+    public int GetQueueCount() => _queue.Count;
 }

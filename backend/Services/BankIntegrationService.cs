@@ -33,6 +33,6 @@ public class BankIntegrationService
             notifcationUrlSet = await _bankService.SetupNotificationUrlAsync();
         }
 
-        return (accountCreated, loanTaken, hasNotificationUrl);
+        return (accountCreated, loanTaken, notifcationUrlSet);
     }
 }
