@@ -1,8 +1,8 @@
 import DashboardCharts from "./components/dashboard/DashboardCharts";
 import DashboardTimeSelector from "./components/dashboard/DashboardTimeSelector";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import RefreshButton from "./components/RefreshButton";
-import { usePeriodReport } from "./hooks/queries";
+import { usePeriodReport, useOrdersPeriod, usePurchases } from "./hooks/queries";
 import { useDayChangeEffect } from "./hooks/useSimulation";
 
 export default function GraphsTab() {
@@ -14,15 +14,29 @@ export default function GraphsTab() {
     refetch,
   } = usePeriodReport(days);
 
+  const {
+    data: ordersData,
+    refetch: refetchOrders,
+  } = useOrdersPeriod();
+
+  const {
+    data: purchasesData,
+    refetch: refetchPurchases,
+  } = usePurchases();
+
   // Refetch data when simulation day changes
   useDayChangeEffect(() => {
     console.log("GraphsTab: Day changed, refetching data");
     refetch();
+    refetchOrders();
+    refetchPurchases();
   });
 
   // Manual refresh handler
   const handleRefresh = () => {
     refetch();
+    refetchOrders();
+    refetchPurchases();
   };
 
   const handleDateRangeChange = (newDays: number) => {
@@ -42,7 +56,81 @@ export default function GraphsTab() {
     { key: "screenPrice", label: "Screen Price", color: "#ff7043" },
   ];
 
-  const chartData = Array.isArray(data) ? [...data].sort((a, b) => a.date.localeCompare(b.date)) : [];
+  // Calculate daily totals from orders data
+  const ordersDailyTotals = useMemo(() => {
+    if (!ordersData || !Array.isArray(ordersData)) return {};
+    
+    const dailyTotals: Record<string, { screensSold: number; revenue: number }> = {};
+    
+    ordersData.forEach(order => {
+      // Only count orders that have been paid (amountPaid exists and > 0)
+      if (order.amountPaid && order.amountPaid > 0) {
+        const orderDate = new Date(order.orderDate).toISOString().split('T')[0];
+        
+        if (!dailyTotals[orderDate]) {
+          dailyTotals[orderDate] = { screensSold: 0, revenue: 0 };
+        }
+        
+        dailyTotals[orderDate].screensSold += order.quantity;
+        dailyTotals[orderDate].revenue += order.amountPaid;
+      }
+    });
+    
+    return dailyTotals;
+  }, [ordersData]);
+
+  // Calculate daily totals from purchases data
+  const purchasesDailyTotals = useMemo(() => {
+    if (!purchasesData || !Array.isArray(purchasesData)) return {};
+    
+    const dailyTotals: Record<string, { sandPurchased: number; copperPurchased: number }> = {};
+    
+    purchasesData.forEach((purchase) => {
+      // Count all purchases with raw materials (regardless of delivery status)
+      if (purchase.rawMaterial) {
+        const orderDate = new Date(purchase.orderDate).toISOString().split('T')[0];
+        
+        if (!dailyTotals[orderDate]) {
+          dailyTotals[orderDate] = { sandPurchased: 0, copperPurchased: 0 };
+        }
+        
+        const materialName = purchase.rawMaterial.name?.toLowerCase();
+        
+        if (materialName === 'sand') {
+          dailyTotals[orderDate].sandPurchased += purchase.quantity;
+        } else if (materialName === 'copper') {
+          dailyTotals[orderDate].copperPurchased += purchase.quantity;
+        }
+      }
+    });
+    
+    return dailyTotals;
+  }, [purchasesData]);
+
+  // Merge report data with orders and purchases data
+  const chartData = useMemo(() => {
+    if (!Array.isArray(data)) return [];
+    
+    return [...data]
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map(report => {
+        // Normalize report date to match purchase date format (YYYY-MM-DD)
+        const reportDateNormalized = new Date(report.date).toISOString().split('T')[0];
+        
+        const orderTotals = ordersDailyTotals[reportDateNormalized];
+        const purchaseTotals = purchasesDailyTotals[reportDateNormalized];
+        
+        return {
+          ...report,
+          // Override revenue and screensSold with orders data if available
+          revenue: orderTotals?.revenue ?? report.revenue,
+          screensSold: orderTotals?.screensSold ?? report.screensSold,
+          // Override sand and copper purchased with purchases data if available
+          sandPurchased: purchaseTotals?.sandPurchased ?? report.sandPurchased,
+          copperPurchased: purchaseTotals?.copperPurchased ?? report.copperPurchased,
+        };
+      });
+  }, [data, ordersDailyTotals, purchasesDailyTotals]);
 
   return (
     <div>

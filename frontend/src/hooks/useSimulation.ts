@@ -24,8 +24,12 @@ export function useDayChangeEffect(callback: () => void) {
   useEffect(() => {
     // Subscribe to day changes
     const unsubscribe = simulationService.onDayChange((newDay) => {
-      console.log(`Day changed to ${newDay}, triggering callback`);
-      callback();
+      console.log(`Day changed to ${newDay}, waiting 5 seconds before triggering callback`);
+      // Add 5-second delay before refetching data
+      setTimeout(() => {
+        console.log(`5 seconds elapsed, now triggering callback for day ${newDay}`);
+        callback();
+      }, 5000);
     });
 
     return unsubscribe;
