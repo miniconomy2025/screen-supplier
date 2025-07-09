@@ -215,7 +215,7 @@ public class HandService
                 return false;
             }
 
-            var (sandKg, copperKg) = ParseMaterialRatio(screenMachine.MaterialRatio);
+            var (sandKg, copperKg) = (screenMachine.InputRatio.Sand, screenMachine.InputRatio.Copper);
             var outputScreensPerDay = screenMachine.ProductionRate;
 
             _logger.LogInformation("Found screen machine - Sand: {SandKg}kg, Copper: {CopperKg}kg, Output: {OutputScreens} screens/day",
@@ -232,31 +232,6 @@ public class HandService
         {
             _logger.LogError(ex, "Unexpected error initializing equipment parameters.");
             return false;
-        }
-    }
-
-    private (int sandKg, int copperKg) ParseMaterialRatio(string materialRatio)
-    {
-        try
-        {
-            var parts = materialRatio.Split(':');
-            if (parts.Length != 2)
-            {
-                _logger.LogWarning("Invalid material ratio format: {MaterialRatio}. Using default 1:1", materialRatio);
-                return (1, 1);
-            }
-
-            if (int.TryParse(parts[0].Trim(), out int sandRatio) &&
-                int.TryParse(parts[1].Trim(), out int copperRatio))
-            {
-                return (sandRatio, copperRatio);
-            }
-            return (1, 1);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Error parsing material ratio: {MaterialRatio}. Using default 1:1", materialRatio);
-            return (1, 1);
         }
     }
 }
