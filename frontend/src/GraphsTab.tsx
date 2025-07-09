@@ -1,18 +1,33 @@
 import DashboardCharts from "./components/dashboard/DashboardCharts";
 import DashboardTimeSelector from "./components/dashboard/DashboardTimeSelector";
-import { useEffect, useState } from "react";
-import { apiClient, PeriodReport } from "./apiClient";
+import { useState } from "react";
 import RefreshButton from "./components/RefreshButton";
+import { usePeriodReport } from "./hooks/queries";
+import { useDayChangeEffect } from "./hooks/useSimulation";
 
-interface GraphsTabProps {
-  refreshKey?: number;
-}
-
-export default function GraphsTab({ refreshKey }: GraphsTabProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [history, setHistory] = useState<PeriodReport[]>([]);
+export default function GraphsTab() {
   const [days, setDays] = useState(30);
-  const [screensHistory, setScreensHistory] = useState<{ quantity: number; price: number; date?: string }[]>([]);
+
+  const {
+    data,
+    isFetching: isLoading,
+    refetch,
+  } = usePeriodReport(days);
+
+  // Refetch data when simulation day changes
+  useDayChangeEffect(() => {
+    console.log("GraphsTab: Day changed, refetching data");
+    refetch();
+  });
+
+  // Manual refresh handler
+  const handleRefresh = () => {
+    refetch();
+  };
+
+  const handleDateRangeChange = (newDays: number) => {
+    setDays(newDays);
+  };
 
   const metrics = [
     { key: "screensProduced", label: "Screens Produced", color: "#007bff" },
@@ -27,51 +42,12 @@ export default function GraphsTab({ refreshKey }: GraphsTabProps) {
     { key: "screenPrice", label: "Screen Price", color: "#ff7043" },
   ];
 
-  const handleDateRangeChange = async (newDays: number) => {
-    setDays(newDays);
-    setIsLoading(true);
-    try {
-      const reports = await apiClient.getPeriodReport(newDays);
-      setHistory(reports);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      const reports = await apiClient.getPeriodReport(days);
-      setHistory(reports);
-      // Fetch screens history for extra graphs
-      const screens = await apiClient.getScreensHistory();
-      // Use the real date for charting
-      const screensWithDate = screens.map((item) => ({
-        ...item.screens,
-        date: item.date,
-      }));
-      // Sort by date ascending
-      screensWithDate.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-      setScreensHistory(screensWithDate);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, [refreshKey, days]);
-
-  const chartData = [...history].sort((a, b) => a.date.localeCompare(b.date));
+  const chartData = Array.isArray(data) ? [...data].sort((a, b) => a.date.localeCompare(b.date)) : [];
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 16 }}>
-        <RefreshButton onClick={loadData} disabled={isLoading} />
+        <RefreshButton onClick={handleRefresh} disabled={isLoading} />
       </div>
       <h2 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 16px 0' }}>Performance over time</h2>
       <DashboardTimeSelector value={days} onChange={handleDateRangeChange} />

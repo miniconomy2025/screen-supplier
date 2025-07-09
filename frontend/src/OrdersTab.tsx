@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { apiClient, ScreenOrder } from "./apiClient";
+import React from "react";
+import { ScreenOrder } from "./apiClient";
 import { Column } from "react-table";
 import styles from './components/reports/ReportsPage.module.scss';
 import { StatusSummaryCards, DataTable } from "./components/SharedTableComponents";
+import { useOrdersPeriod } from "./hooks/queries";
+import { useDayChangeEffect } from "./hooks/useSimulation";
 
 const STATUS_LABELS: Record<string, string> = {
   waiting_payment: 'Waiting Payment',
@@ -29,31 +31,24 @@ function getStatusLabel(status: string): string {
   return STATUS_LABELS[status] || (status.charAt(0).toUpperCase() + status.slice(1));
 }
 
-interface OrdersTabProps {
-  refreshKey?: number;
-}
+const OrdersTab: React.FC = () => {
+  const {
+    data: orders = [],
+    isFetching: isLoading,
+    refetch,
+    error,
+  } = useOrdersPeriod();
 
-const OrdersTab: React.FC<OrdersTabProps> = ({ refreshKey }) => {
-  const [orders, setOrders] = useState<ScreenOrder[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Refetch data when simulation day changes
+  useDayChangeEffect(() => {
+    console.log("OrdersTab: Day changed, refetching data");
+    refetch();
+  });
 
-  const fetchOrders = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await apiClient.getOrdersPeriod(90);
-      setOrders(data);
-    } catch (err: any) {
-      setError(err.message || "Failed to fetch orders");
-    } finally {
-      setIsLoading(false);
-    }
+  // Manual refresh handler
+  const handleRefresh = () => {
+    refetch();
   };
-
-  useEffect(() => {
-    fetchOrders();
-  }, [refreshKey]);
 
   // Table columns
   const columns: Column<ScreenOrder>[] = React.useMemo(() => [
@@ -74,13 +69,13 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ refreshKey }) => {
         getOrderStatus={getOrderStatus}
       />
       {isLoading && <p className={styles['loading-message']}>Loading...</p>}
-      {error && <p className={styles['error-message']}>{error}</p>}
+      {error && <p className={styles['error-message']}>{(error as Error).message}</p>}
       {!isLoading && !error && (
         <DataTable
           data={orders}
           columns={columns}
           isLoading={isLoading}
-          onRefresh={fetchOrders}
+          onRefresh={handleRefresh}
           title="Orders"
           noDataMessage="No orders found for the last 90 days."
           searchPlaceholder="Type to filter orders..."

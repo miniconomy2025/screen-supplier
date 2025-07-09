@@ -1,45 +1,37 @@
 import { useEffect, useState } from "react";
 import DashboardCards from "./components/dashboard/DashboardCards";
-import { apiClient, PeriodReport } from "./apiClient";
+import { usePeriodReport } from "./hooks/queries";
 import RefreshButton from "./components/RefreshButton";
+import { useDayChangeEffect, useSimulationStatus } from "./hooks/useSimulation";
 
-interface DashboardProps {
-  refreshKey?: number;
-  simulationStatus?: any;
-}
-
-export default function Dashboard({ refreshKey, simulationStatus }: DashboardProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [data, setData] = useState<PeriodReport | null>(null);
+export default function Dashboard() {
   const [days] = useState(30);
-  const [simulationDay, setSimulationDay] = useState<number | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
+  const simulationStatus = useSimulationStatus();
 
-  const loadData = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const reports = await apiClient.getPeriodReport(days);
-      const latest = reports.length > 0 ? reports[reports.length - 1] : null;
-      setData(latest);
-    } catch (error) {
-      setError('Error fetching dashboard data. Please try again.');
-      setData(null);
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setIsLoading(false);
-    }
+  const {
+    data,
+    isFetching: isLoading,
+    refetch,
+    error: queryError,
+  } = usePeriodReport(days);
+
+  // Refetch data when simulation day changes
+  useDayChangeEffect(() => {
+    console.log("Dashboard: Day changed, refetching data");
+    refetch();
+  });
+
+  useEffect(() => {
+    if (queryError) setError('Error fetching dashboard data. Please try again.');
+  }, [queryError]);
+
+  // Manual refresh handler
+  const handleRefresh = () => {
+    refetch();
   };
 
-  useEffect(() => {
-    loadData();
-  }, [refreshKey, days]);
-
-  useEffect(() => {
-    if (simulationStatus && typeof simulationStatus.currentDay === 'number') {
-      setSimulationDay(simulationStatus.currentDay);
-    }
-  }, [simulationStatus]);
+  const latest = Array.isArray(data) && data.length > 0 ? data[data.length - 1] : null;
 
   return (
     <div>
@@ -55,10 +47,10 @@ export default function Dashboard({ refreshKey, simulationStatus }: DashboardPro
         </div>
       ) : (
         <DashboardCards
-          data={data}
+          data={latest}
           isLoading={isLoading}
-          currentDay={simulationDay}
-          onRefresh={loadData}
+          currentDay={simulationStatus?.currentDay}
+          onRefresh={handleRefresh}
           RefreshButtonComponent={RefreshButton}
         />
       )}

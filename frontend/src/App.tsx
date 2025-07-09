@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "./styles/styles";
 import Dashboard from "./Dashboard";
 import GraphsTab from "./GraphsTab";
@@ -7,8 +7,23 @@ import appStyles from "./styles/App.module.scss";
 import { FiMenu } from "react-icons/fi";
 import PurchaseOrdersTab from "./PurchaseOrdersTab";
 import OrdersTab from "./OrdersTab";
+import { simulationService } from "./services/SimulationService";
 
 export default function ReportingDashboard() {
+  useEffect(() => {
+    // Start the simulation service when the app starts
+    simulationService.start();
+    
+    // Cleanup when app unmounts
+    return () => {
+      simulationService.stop();
+    };
+  }, []);
+
+  return <ReportingDashboardContent />;
+}
+
+function ReportingDashboardContent() {
   // Persist tab in localStorage
   const [activeMainTab, setActiveMainTab] = useState(() => {
     return localStorage.getItem("activeMainTab") || "dashboard";
@@ -31,15 +46,6 @@ export default function ReportingDashboard() {
     setActiveMainTab(tab);
     localStorage.setItem("activeMainTab", tab);
     if (isMobile) setSidebarOpen(false);
-  };
-
-  const [lastStatusRefresh, setLastStatusRefresh] = useState<number>(Date.now());
-  const [simulationStatus, setSimulationStatus] = useState<any>(null);
-
-  // Handler for simulation status refresh
-  const handleStatusRefresh = (status: any) => {
-    setLastStatusRefresh(Date.now());
-    setSimulationStatus(status);
   };
 
   return (
@@ -144,7 +150,7 @@ export default function ReportingDashboard() {
               Purchases
             </button>
           </nav>
-          <SimulationStatus onStatusRefresh={handleStatusRefresh} />
+          <SimulationStatus />
         </div>
       </div>
       <div
@@ -155,10 +161,10 @@ export default function ReportingDashboard() {
         style={isMobile && !sidebarOpen ? { paddingTop: 56 } : {}}
       >
         <div style={styles.maxWidth}>
-          {activeMainTab === "dashboard" && <Dashboard refreshKey={lastStatusRefresh} simulationStatus={simulationStatus} />}
-          {activeMainTab === "graphs" && <GraphsTab refreshKey={lastStatusRefresh} />}
-          {activeMainTab === "orders" && <OrdersTab refreshKey={lastStatusRefresh} />}
-          {activeMainTab === "purchases" && <PurchaseOrdersTab refreshKey={lastStatusRefresh} />}
+          {activeMainTab === "dashboard" && <Dashboard />}
+          {activeMainTab === "graphs" && <GraphsTab />}
+          {activeMainTab === "orders" && <OrdersTab />}
+          {activeMainTab === "purchases" && <PurchaseOrdersTab />}
         </div>
       </div>
       {/* Mobile overlay: clicking outside sidebar closes it */}
