@@ -1,4 +1,6 @@
-﻿using ScreenProducerAPI.Endpoints;
+﻿using ScreenProducerAPI.Commands.Queue;
+using ScreenProducerAPI.Endpoints;
+using ScreenProducerAPI.Middleware;
 using ScreenProducerAPI.Models.Configuration;
 using ScreenProducerAPI.Services;
 using ScreenProducerAPI.Services.BankServices;
@@ -27,6 +29,8 @@ public static class ApiConfiguration
 
     public static void ConfigureApp(this WebApplication app)
     {
+        app.UseMiddleware<ExceptionHandlingMiddleware>();
+
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
@@ -198,6 +202,8 @@ public static class ApiConfiguration
         services.AddScoped<StockStatisticsService>();
         services.AddScoped<ProductionHistoryService>();
         services.AddScoped<ReportingService>();
+
+        services.AddScoped<IQueueCommandFactory, QueueCommandFactory>();
 
         // Time provider service
         services.AddScoped<SimulationTimeProvider>();

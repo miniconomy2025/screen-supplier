@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using ScreenProducerAPI.Exceptions;
 using ScreenProducerAPI.Models;
 using ScreenProducerAPI.Services;
 
@@ -35,45 +36,44 @@ public static class ReportingEndpoints
     }
 
     public static async Task<IResult> GetDailyReportHandler(
-        [FromQuery] DateTime? date,
-        [FromServices] ReportingService reportingService, [FromServices] SimulationTimeProvider simulationTimeProvider)
+    [FromQuery] DateTime? date,
+    [FromServices] ReportingService reportingService,
+    [FromServices] SimulationTimeProvider simulationTimeProvider)
     {
         var dailyReport = await reportingService.GetDailyReportAsync(date ?? simulationTimeProvider.Now.Date);
 
         if (dailyReport == null)
-        {
-            return Results.NotFound(new { error = "No report found for the specified date." });
-        }
+            throw new DataNotFoundException("Daily report");
+
         return Results.Ok(dailyReport);
     }
 
     public static async Task<IResult> GetLastPeriodReportsHandler(
         [FromQuery] int pastDaysToInclude,
-        [FromServices] ReportingService reportingService, [FromServices] SimulationTimeProvider simulationTimeProvider)
+        [FromServices] ReportingService reportingService,
+        [FromServices] SimulationTimeProvider simulationTimeProvider)
     {
         if (pastDaysToInclude <= 0 || pastDaysToInclude > 90)
-        {
-            return Results.BadRequest(new { error = "Invalid number of days specified. Please provide a value between 1 and 90." });
-        }
+            throw new InvalidRequestException("Invalid number of days specified. Please provide a value between 1 and 90.");
 
         var reports = await reportingService.GetLastPeriodReportsAsync(pastDaysToInclude, simulationTimeProvider.Now.Date);
 
-        if (reports == null)
-        {
-            return Results.NotFound(new { error = "No reports found for the last seven days." });
-        }
+        if (reports == null || !reports.Any())
+            throw new DataNotFoundException("Reports");
+
         return Results.Ok(reports);
     }
 
     public static async Task<IResult> GetPurchaseOrdersHandler(
         [FromQuery] DateTime? date,
-        [FromServices] PurchaseOrderService purchaseOrderService, [FromServices] SimulationTimeProvider simulationTimeProvider)
+        [FromServices] PurchaseOrderService purchaseOrderService,
+        [FromServices] SimulationTimeProvider simulationTimeProvider)
     {
         var purchaseOrders = await purchaseOrderService.GetPastOrdersAsync(date ?? simulationTimeProvider.Now.Date);
+
         if (purchaseOrders == null || purchaseOrders.Count == 0)
-        {
-            return Results.NotFound(new { error = "No purchase orders found for the specified date." });
-        }
+            throw new DataNotFoundException("Purchase orders");
+
         return Results.Ok(purchaseOrders);
     }
 }

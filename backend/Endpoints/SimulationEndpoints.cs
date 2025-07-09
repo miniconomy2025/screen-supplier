@@ -37,27 +37,20 @@ namespace ScreenProducerAPI.Endpoints
             SimulationStartRequest request,
             [FromServices] SimulationTimeService simulationTimeService)
         {
-            try
+            var requestTime = DateTimeOffset.FromUnixTimeSeconds(request.UnixEpochStart);
+
+            var success = await simulationTimeService.StartSimulationAsync(request.UnixEpochStart);
+
+            var response = new SimulationStartResponse
             {
-                var requestTime = DateTimeOffset.FromUnixTimeSeconds(request.UnixEpochStart);
+                Success = true,
+                Message = "Simulation started successfully with bank integration",
+                StartedAt = requestTime,
+                CurrentDay = simulationTimeService.GetCurrentSimulationDay(),
+                SimulationDateTime = simulationTimeService.GetSimulationDateTime()
+            };
 
-                var success = await simulationTimeService.StartSimulationAsync(request.UnixEpochStart);
-
-                var response = new SimulationStartResponse
-                {
-                    Success = true,
-                    Message = "Simulation started successfully with bank integration",
-                    StartedAt = requestTime,
-                    CurrentDay = simulationTimeService.GetCurrentSimulationDay(),
-                    SimulationDateTime = simulationTimeService.GetSimulationDateTime()
-                };
-
-                return Results.Ok(response);
-            }
-            catch (Exception ex)
-            {
-               return Results.Problem($"Failed to start simulation: {ex.Message}");
-            }
+            return Results.Ok(response);
         }
 
         private static IResult GetSimulationStatusHandler(

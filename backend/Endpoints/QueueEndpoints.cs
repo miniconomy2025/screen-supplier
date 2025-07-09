@@ -23,49 +23,35 @@ public static class QueueEndpoints
     }
 
     private static IResult GetQueueStatusHandler(
-        [FromServices] PurchaseOrderQueueService queueService)
+    [FromServices] PurchaseOrderQueueService queueService)
     {
-        try
-        {
-            var queueCount = queueService.GetQueueCount();
+        var queueCount = queueService.GetQueueCount();
 
-            var response = new QueueStatusResponse
-            {
-                QueueCount = queueCount,
-                Timestamp = DateTime.UtcNow
-            };
-
-            return Results.Ok(response);
-        }
-        catch (Exception ex)
+        var response = new QueueStatusResponse
         {
-            return Results.Problem("An error occurred getting queue status");
-        }
+            QueueCount = queueCount,
+            Timestamp = DateTime.UtcNow
+        };
+
+        return Results.Ok(response);
     }
 
     private static async Task<IResult> ProcessQueueHandler(
         [FromServices] PurchaseOrderQueueService queueService)
     {
-        try
-        {
-            var queueCountBefore = queueService.GetQueueCount();
-            await queueService.ProcessQueueAsync();
-            var queueCountAfter = queueService.GetQueueCount();
+        var queueCountBefore = queueService.GetQueueCount();
+        await queueService.ProcessQueueAsync();
+        var queueCountAfter = queueService.GetQueueCount();
 
-            var response = new QueueProcessResponse
-            {
-                Success = true,
-                QueueCountBefore = queueCountBefore,
-                QueueCountAfter = queueCountAfter,
-                ProcessedAt = DateTime.UtcNow
-            };
-
-            return Results.Ok(response);
-        }
-        catch (Exception ex)
+        var response = new QueueProcessResponse
         {
-            return Results.Problem("An error occurred processing the queue");
-        }
+            Success = true,
+            QueueCountBefore = queueCountBefore,
+            QueueCountAfter = queueCountAfter,
+            ProcessedAt = DateTime.UtcNow
+        };
+
+        return Results.Ok(response);
     }
 }
 

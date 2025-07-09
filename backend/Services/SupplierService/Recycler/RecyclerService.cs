@@ -1,41 +1,54 @@
 ﻿using Microsoft.Extensions.Options;
+using ScreenProducerAPI.Exceptions;
+using ScreenProducerAPI.Services.SupplierService;
 using ScreenProducerAPI.Services.SupplierService.Recycler.Models;
 using System.Text.Json;
 
-namespace ScreenProducerAPI.Services.SupplierService.Recycler;
-
 public class RecyclerService
 {
-    private readonly HttpClient httpClient;
-    private readonly IOptions<SupplierServiceOptions> options;
-    private readonly ILogger<RecyclerService> logger;
-    private readonly JsonSerializerOptions jsonSerializerOptions = new()
+    private readonly HttpClient _httpClient;
+    private readonly IOptions<SupplierServiceOptions> _options;
+    private readonly ILogger<RecyclerService> _logger;
+    private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
     };
 
     public RecyclerService(HttpClient httpClient, IOptions<SupplierServiceOptions> options, ILogger<RecyclerService> logger)
     {
-        this.httpClient = httpClient;
-        this.options = options;
-        this.logger = logger;
+        _httpClient = httpClient;
+        _options = options;
+        _logger = logger;
     }
 
     public async Task<RecyclerMaterialsResponse> GetMaterialsAsync()
     {
         try
         {
-            var baseUrl = options?.Value.RecyclerBaseUrl;
+            var baseUrl = _options?.Value.RecyclerBaseUrl;
             var uriBuilder = new UriBuilder($"{baseUrl}/materials");
-            var response = await httpClient.GetAsync(uriBuilder.Uri);
-            response.EnsureSuccessStatusCode();
-            var materialsResponse = await response.Content.ReadFromJsonAsync<RecyclerMaterialsResponse>(jsonSerializerOptions);
+            var response = await _httpClient.GetAsync(uriBuilder.Uri);
 
-            return materialsResponse ?? throw new Exception("Failed to retrieve recycler materials.");
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new RecyclerServiceException($"Failed to retrieve materials: {response.StatusCode} - {errorContent}");
+            }
+
+            var materialsResponse = await response.Content.ReadFromJsonAsync<RecyclerMaterialsResponse>(_jsonOptions);
+
+            if (materialsResponse == null)
+                throw new RecyclerServiceException("Invalid response format for materials data");
+
+            return materialsResponse;
         }
         catch (HttpRequestException ex)
         {
-            throw new Exception("Error retrieving recycler materials", ex);
+            throw new RecyclerServiceException("Recycler service unavailable for materials retrieval", ex);
+        }
+        catch (TaskCanceledException ex)
+        {
+            throw new RecyclerServiceException("Recycler service timeout during materials retrieval", ex);
         }
     }
 
@@ -43,19 +56,42 @@ public class RecyclerService
     {
         try
         {
-            var baseUrl = options?.Value.RecyclerBaseUrl;
+            var baseUrl = _options?.Value.RecyclerBaseUrl;
             var uriBuilder = new UriBuilder($"{baseUrl}/orders");
-            var response = await httpClient.PostAsJsonAsync(uriBuilder.Uri, request);
+            var response = await _httpClient.PostAsJsonAsync(uriBuilder.Uri, request);
 
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
 
-            var orderCreatedResponse = await response.Content.ReadFromJsonAsync<RecyclerOrderCreatedResponse>(jsonSerializerOptions);
+                // Check for insufficient stock
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest &&
+                    errorContent.Contains("insufficient", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InsufficientStockException("recycled materials", 1, 0);
+                }
 
-            return orderCreatedResponse ?? throw new Exception("Failed to create recycler order.");
+                throw new RecyclerServiceException($"Order creation failed: {response.StatusCode} - {errorContent}");
+            }
+
+            var orderCreatedResponse = await response.Content.ReadFromJsonAsync<RecyclerOrderCreatedResponse>(_jsonOptions);
+
+            if (orderCreatedResponse == null)
+                throw new RecyclerServiceException("Invalid response format for order creation");
+
+            return orderCreatedResponse;
+        }
+        catch (InsufficientStockException)
+        {
+            throw; // Re-throw business exceptions
         }
         catch (HttpRequestException ex)
         {
-            throw new Exception("Error creating recycler order", ex);
+            throw new RecyclerServiceException("Recycler service unavailable for order creation", ex);
+        }
+        catch (TaskCanceledException ex)
+        {
+            throw new RecyclerServiceException("Recycler service timeout during order creation", ex);
         }
     }
 
@@ -63,19 +99,30 @@ public class RecyclerService
     {
         try
         {
-            var baseUrl = options?.Value.RecyclerBaseUrl;
+            var baseUrl = _options?.Value.RecyclerBaseUrl;
             var uriBuilder = new UriBuilder($"{baseUrl}/orders");
-            var response = await httpClient.GetAsync(uriBuilder.Uri);
+            var response = await _httpClient.GetAsync(uriBuilder.Uri);
 
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new RecyclerServiceException($"Failed to retrieve orders: {response.StatusCode} - {errorContent}");
+            }
 
-            var ordersResponse = await response.Content.ReadFromJsonAsync<List<RecyclerOrderSummaryResponse>>(jsonSerializerOptions);
+            var ordersResponse = await response.Content.ReadFromJsonAsync<List<RecyclerOrderSummaryResponse>>(_jsonOptions);
 
-            return ordersResponse ?? throw new Exception("Failed to retrieve recycler orders.");
+            if (ordersResponse == null)
+                throw new RecyclerServiceException("Invalid response format for orders data");
+
+            return ordersResponse;
         }
         catch (HttpRequestException ex)
         {
-            throw new Exception("Error retrieving recycler orders", ex);
+            throw new RecyclerServiceException("Recycler service unavailable for orders retrieval", ex);
+        }
+        catch (TaskCanceledException ex)
+        {
+            throw new RecyclerServiceException("Recycler service timeout during orders retrieval", ex);
         }
     }
 
@@ -83,19 +130,37 @@ public class RecyclerService
     {
         try
         {
-            var baseUrl = options?.Value.RecyclerBaseUrl;
+            var baseUrl = _options?.Value.RecyclerBaseUrl;
             var uriBuilder = new UriBuilder($"{baseUrl}/orders/{orderNumber}");
-            var response = await httpClient.GetAsync(uriBuilder.Uri);
+            var response = await _httpClient.GetAsync(uriBuilder.Uri);
 
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode)
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    throw new DataNotFoundException($"Recycler order {orderNumber}");
 
-            var orderDetailResponse = await response.Content.ReadFromJsonAsync<RecyclerOrderDetailResponse>(jsonSerializerOptions);
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new RecyclerServiceException($"Failed to retrieve order {orderNumber}: {response.StatusCode} - {errorContent}");
+            }
 
-            return orderDetailResponse ?? throw new Exception($"Failed to retrieve recycler order {orderNumber}.");
+            var orderDetailResponse = await response.Content.ReadFromJsonAsync<RecyclerOrderDetailResponse>(_jsonOptions);
+
+            if (orderDetailResponse == null)
+                throw new RecyclerServiceException($"Invalid response format for order {orderNumber}");
+
+            return orderDetailResponse;
+        }
+        catch (DataNotFoundException)
+        {
+            throw; // Re-throw business exceptions
         }
         catch (HttpRequestException ex)
         {
-            throw new Exception($"Error retrieving recycler order {orderNumber}", ex);
+            throw new RecyclerServiceException($"Recycler service unavailable for order {orderNumber} retrieval", ex);
+        }
+        catch (TaskCanceledException ex)
+        {
+            throw new RecyclerServiceException($"Recycler service timeout during order {orderNumber} retrieval", ex);
         }
     }
 }

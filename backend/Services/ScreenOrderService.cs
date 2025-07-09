@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using ScreenProducerAPI.Exceptions;
 using ScreenProducerAPI.Models;
 using ScreenProducerAPI.Models.Requests;
 using ScreenProducerAPI.Models.Responses;
@@ -100,67 +101,54 @@ public class ScreenOrderService
         }
     }
 
-    public async Task<ScreenOrder?> CreateOrderAsync(int quantity, string? customerInfo = null)
+
+            public async Task<ScreenOrder> CreateOrderAsync(int quantity, string? customerInfo = null)
+            {
+                if (quantity <= 0)
+                    throw new InvalidRequestException("Quantity must be positive");
+
+                var product = await _productService.GetProductAsync();
+                if (product == null)
+                    throw new SystemConfigurationException("No product available");
+
+                var availableStock = await _productService.GetAvailableStockAsync();
+                if (availableStock < quantity)
+                    throw new InsufficientStockException("screens", quantity, availableStock);
+
+                var waitingPaymentStatus = await _context.OrderStatuses
+                    .FirstOrDefaultAsync(os => os.Status == Status.WaitingForPayment);
+
+                if (waitingPaymentStatus == null)
+                    throw new SystemConfigurationException("Order status not properly configured");
+
+                var screenOrder = new ScreenOrder
+                {
+                    Quantity = quantity,
+                    OrderDate = _simulationTimeProvider.Now,
+                    UnitPrice = product.Price,
+                    OrderStatusId = waitingPaymentStatus.Id,
+                    ProductId = product.Id,
+                    QuantityCollected = 0,
+                    AmountPaid = 0
+                };
+
+                _context.ScreenOrders.Add(screenOrder);
+                await _context.SaveChangesAsync();
+
+                return screenOrder;
+            }
+
+    public async Task<ScreenOrder> FindScreenOrderByIdAsync(int orderId)
     {
-        try
-        {
-            var product = await _productService.GetProductAsync();
-            if (product == null)
-            {
-                return null;
-            }
+        var screenOrder = await _context.ScreenOrders
+            .Include(so => so.OrderStatus)
+            .Include(so => so.Product)
+            .FirstOrDefaultAsync(so => so.Id == orderId);
 
-            var availableStock = await _productService.GetAvailableStockAsync();
-            if (availableStock < quantity)
-            {
-                return null;
-            }
+        if (screenOrder == null)
+            throw new OrderNotFoundException(orderId);
 
-            var waitingPaymentStatus = await _context.OrderStatuses
-                .FirstOrDefaultAsync(os => os.Status == Status.WaitingForPayment);
-
-            if (waitingPaymentStatus == null)
-            {
-                return null;
-            }
-
-            var screenOrder = new ScreenOrder
-            {
-                Quantity = quantity,
-                OrderDate = _simulationTimeProvider.Now,
-                UnitPrice = product.Price,
-                OrderStatusId = waitingPaymentStatus.Id,
-                ProductId = product.Id,
-                QuantityCollected = 0,
-                AmountPaid = 0
-            };
-
-            _context.ScreenOrders.Add(screenOrder);
-            await _context.SaveChangesAsync();
-
-            return screenOrder;
-        }
-        catch (Exception ex)
-        {
-            return null;
-        }
-    }
-
-    public async Task<ScreenOrder?> FindScreenOrderByIdAsync(int orderId)
-    {
-        try
-        {
-            var screenOrder = await _context.ScreenOrders
-                .Include(so => so.OrderStatus)
-                .Include(so => so.Product)
-                .FirstOrDefaultAsync(so => so.Id == orderId);
-
-            return screenOrder;
-        }
-        catch (Exception ex)
-        {
-            return null;
-        }
+        return screenOrder;
     }
 
     public async Task<bool> UpdateStatusAsync(int orderId, string statusName)
