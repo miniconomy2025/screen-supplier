@@ -192,20 +192,16 @@ public static class ApiConfiguration
 
     private static X509Certificate2 CreatePfx()
     {
-        try
-        {
-            string certPem = File.ReadAllText(@"../screen-supplier-client.crt");
-            string keyPem = File.ReadAllText(@"../screen-supplier-client.key");
+       
+        string certPem = File.ReadAllText(@"../screen-supplier-client.crt");
+        Console.WriteLine(certPem);    
+        string keyPem = File.ReadAllText(@"../screen-supplier-client.key");
+        Console.WriteLine(keyPem);
+        X509Certificate2 cert = X509Certificate2.CreateFromPem(certPem, keyPem);
 
-            X509Certificate2 cert = X509Certificate2.CreateFromPem(certPem, keyPem);
+        var pfxCertificate = new X509Certificate2(cert.Export(X509ContentType.Pfx));
 
-            var pfxCertificate = new X509Certificate2(cert.Export(X509ContentType.Pfx));
-
-            return pfxCertificate;
-        }
-        catch (Exception ex)
-        {
-            return new X509Certificate2();
-        }
+        return pfxCertificate;
+        
     }
 }
