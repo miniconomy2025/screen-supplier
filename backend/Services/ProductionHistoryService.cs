@@ -21,7 +21,6 @@ public class ProductionHistoryService(ScreenContext context, ILogger<ProductionH
 
         if (productionHistory == null)
         {
-            logger.LogWarning("No production history found in the database, querying and saving now.");
             return null;
         }
 
@@ -72,12 +71,10 @@ public class ProductionHistoryService(ScreenContext context, ILogger<ProductionH
 
             if (existingRecord == null)
             {
-                logger.LogInformation("Saving production history");
                 context.ProductionHistory.Add(productionHistory);
             }
             else
             {
-                logger.LogInformation("Production history for today already exists. Overwriting.");
                 existingRecord.SandStock = productionHistory.SandStock;
                 existingRecord.CopperStock = productionHistory.CopperStock;
                 existingRecord.ScreensProduced = productionHistory.ScreensProduced;
@@ -91,7 +88,6 @@ public class ProductionHistoryService(ScreenContext context, ILogger<ProductionH
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error storing daily production history");
             throw;
         }
     }

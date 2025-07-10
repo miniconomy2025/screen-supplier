@@ -130,23 +130,22 @@ public class ReorderService
         }
 
         // Check equipment reorder with smart capital management
-        if (status.Equipment.NeedsReorder)
+
+        if (await ShouldOrderNewMachine(workingMachines))
         {
-            if (await ShouldOrderNewMachine(workingMachines))
+            var equipmentOrder = await CreateEquipmentReorderAsync(config.Equipment.OrderQuantity);
+            if (equipmentOrder != null)
             {
-                var equipmentOrder = await CreateEquipmentReorderAsync(config.Equipment.OrderQuantity);
-                if (equipmentOrder != null)
-                {
-                    result.EquipmentOrderCreated = true;
-                    result.EquipmentOrderId = equipmentOrder.Id;
-                    _logger.LogInformation("Equipment order created: {OrderId} - passed all material and financial checks", equipmentOrder.Id);
-                }
-            }
-            else
-            {
-                _logger.LogInformation("Skipping equipment order - insufficient materials or capital for sustainable operation");
+                result.EquipmentOrderCreated = true;
+                result.EquipmentOrderId = equipmentOrder.Id;
+                _logger.LogInformation("Equipment order created: {OrderId} - passed all material and financial checks", equipmentOrder.Id);
             }
         }
+        else
+        {
+            _logger.LogInformation("Skipping equipment order - insufficient materials or capital for sustainable operation");
+        }
+
 
         return result;
     }

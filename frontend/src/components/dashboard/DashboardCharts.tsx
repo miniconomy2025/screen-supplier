@@ -7,7 +7,10 @@ interface DashboardChartsProps {
 }
 
 const DashboardCharts: React.FC<DashboardChartsProps> = ({ chartData, metrics }) => {
-
+  console.debug("DashboardCharts: Rendering with chartData:", chartData);
+  if (chartData[chartData.length - 1]?.revenue === 0 && chartData[chartData.length - 2]?.revenue !== 0) {
+    chartData.pop();
+  }
     return (
       <div
         style={{

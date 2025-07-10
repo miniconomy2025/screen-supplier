@@ -130,8 +130,8 @@ public class ProductService
             var materialCostPerScreen = sandCostPerScreen + copperCostPerScreen + machineCostPerScreen;
 
             // Add margin (e.g., 25% markup)
-            var margin = 0.25m;
-            var unitPrice = materialCostPerScreen * (1 + margin);
+            var margin = 5.25m;
+            var unitPrice = Math.Min(materialCostPerScreen * (1 + margin), sandCostPerKg + copperCostPerKg);
 
             product.Price = (int)Math.Ceiling(unitPrice);
             await _context.SaveChangesAsync();
