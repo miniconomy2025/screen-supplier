@@ -17,7 +17,7 @@ function getCurrentUnixTimestamp() {
 
 
 // Get machines for sale
-app.get('/simulation/machines', (req, res) => {
+app.get('/machines', (req, res) => {
     const machines = [
         {
             machineName: "screen_machine",
@@ -39,16 +39,16 @@ app.get('/simulation/machines', (req, res) => {
 });
 
 // Get raw materials for sale
-app.get('/simulation/raw-materials', (req, res) => {
+app.get('/raw-materials', (req, res) => {
     const materials = [
         {
             rawMaterialName: "sand",
-            pricePerKg: 45.0,
+            pricePerKg: 46.0,
             quantityAvailable: 10000
         },
         {
             rawMaterialName: "copper",
-            pricePerKg: 85.0,
+            pricePerKg: 86.0,
             quantityAvailable: 8000
         }
     ];
@@ -57,7 +57,7 @@ app.get('/simulation/raw-materials', (req, res) => {
 });
 
 // Purchase machine
-app.post('/simulation/purchase-machine', (req, res) => {
+app.post('/machine', (req, res) => {
     try {
         const { machineName, quantity } = req.body;
 
@@ -137,7 +137,7 @@ app.post('/simulation/purchase-machine', (req, res) => {
 });
 
 // Purchase raw material
-app.post('/simulation/purchase-raw-material', (req, res) => {
+app.post('/raw-materials', (req, res) => {
     try {
         const { materialName, weightQuantity } = req.body;
 

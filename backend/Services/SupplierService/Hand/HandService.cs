@@ -26,7 +26,7 @@ public class HandService
         try
         {
             var baseUrl = _options?.Value.HandBaseUrl;
-            var uriBuilder = new UriBuilder($"{baseUrl}/simulation/machines");
+            var uriBuilder = new UriBuilder($"{baseUrl}/machines");
             var response = await _httpClient.GetAsync(uriBuilder.Uri);
 
             if (!response.IsSuccessStatusCode)
@@ -57,7 +57,7 @@ public class HandService
         try
         {
             var baseUrl = _options?.Value.HandBaseUrl;
-            var uriBuilder = new UriBuilder($"{baseUrl}/simulation/raw-materials");
+            var uriBuilder = new UriBuilder($"{baseUrl}/raw-materials");
             var response = await _httpClient.GetAsync(uriBuilder.Uri);
 
             if (!response.IsSuccessStatusCode)
@@ -88,7 +88,7 @@ public class HandService
         try
         {
             var baseUrl = _options?.Value.HandBaseUrl;
-            var uriBuilder = new UriBuilder($"{baseUrl}/simulation/purchase-machine");
+            var uriBuilder = new UriBuilder($"{baseUrl}/machine");
             var response = await _httpClient.PostAsJsonAsync(uriBuilder.Uri, request);
 
             if (!response.IsSuccessStatusCode)
@@ -131,7 +131,7 @@ public class HandService
         try
         {
             var baseUrl = _options?.Value.HandBaseUrl;
-            var uriBuilder = new UriBuilder($"{baseUrl}/simulation/purchase-raw-material");
+            var uriBuilder = new UriBuilder($"{baseUrl}/raw-materials");
             var response = await _httpClient.PostAsJsonAsync(uriBuilder.Uri, request);
 
             if (!response.IsSuccessStatusCode)

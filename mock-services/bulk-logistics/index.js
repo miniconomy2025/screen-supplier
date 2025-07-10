@@ -11,7 +11,7 @@ function generateShipmentId() {
 }
 
 // Create Pickup Request
-app.post('/pickup-request', (req, res) => {
+app.post('/api/pickup-request', (req, res) => {
     try {
         const { originCompanyId, destinationCompanyId, originalExternalOrderId, items } = req.body;
 

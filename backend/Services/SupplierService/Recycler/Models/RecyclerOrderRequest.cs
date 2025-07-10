@@ -4,6 +4,6 @@ namespace ScreenProducerAPI.Services.SupplierService.Recycler.Models;
 
 public class RecyclerOrderRequest
 {
-    public int SupplierId { get; set; }
+    public string CompanyName { get; set; }
     public List<RecyclerOrderItem> Items { get; set; } = [];
 }
