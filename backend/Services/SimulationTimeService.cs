@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ScreenProducerAPI.ScreenDbContext;
 using ScreenProducerAPI.Services.BankServices;
-using ScreenProducerAPI.Services.SupplierService.Hand;
 
 namespace ScreenProducerAPI.Services;
 

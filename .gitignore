@@ -87,6 +87,9 @@ csx/
 # Windows Store app package directory
 AppPackages/
 
+.crt
+.key
+
 # Others
 sql/
 *.Cache
