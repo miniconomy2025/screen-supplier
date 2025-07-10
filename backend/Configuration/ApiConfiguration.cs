@@ -35,27 +35,6 @@ public static class ApiConfiguration
             app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ScreenProducerAPI v1"));
         }
 
-        app.Use(async (context, next) =>
-        {
-            //Does grab the request and returns a 401 if there isn't a cert, validation to be done later
-
-            X509Certificate2 clientCertificate = context.Connection.ClientCertificate;
-
-            if (clientCertificate == null || !clientCertificate.Verify())
-            {
-                //context.Response.StatusCode = 401;
-                //await context.Response.CompleteAsync();
-                //return;
-            }
-
-            //Cert validation
-
-            await next.Invoke();
-        });
-
-        app.UseSwagger();
-        app.UseSwaggerUI();
-
         app.UseHttpsRedirection();
 
         app.AddEndpoints();

@@ -166,7 +166,7 @@ public class SimulationTimeService : IDisposable
             // Stop production and collect output
             var screensProduced = await equipmentService.StopProductionAsync();
 
-            _ = productionHistoryService.StoreDailyProductionHistory(screensProduced);
+            _ = productionHistoryService.StoreDailyProductionHistory(screensProduced, null);
 
             if (screensProduced > 0)
             {

@@ -7,10 +7,11 @@ interface DashboardChartsProps {
 }
 
 const DashboardCharts: React.FC<DashboardChartsProps> = ({ chartData, metrics }) => {
-  return (
-    <div
-      style={{
-        marginBottom: 32,
+
+    return (
+      <div
+        style={{
+          marginBottom: 32,
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
         gap: 24,
@@ -37,7 +38,13 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ chartData, metrics })
               <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <XAxis dataKey="date" tickFormatter={() => ''} />
                 <YAxis tickFormatter={(v: any) => v.toLocaleString()} />
-                <Tooltip formatter={(v: any) => v.toLocaleString()} labelFormatter={() => ''} />
+                <Tooltip 
+                  formatter={(v: any) => v.toLocaleString()} 
+                  labelFormatter={(label: string) => {
+                    const date = new Date(label);
+                    return date.toLocaleDateString();
+                  }}
+                />
                 <Legend />
                 <Line type="monotone" dataKey={metric.key} stroke={metric.color} dot={false} />
               </LineChart>
