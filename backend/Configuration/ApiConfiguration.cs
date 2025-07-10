@@ -6,7 +6,6 @@ using ScreenProducerAPI.Services;
 using ScreenProducerAPI.Services.BankServices;
 using ScreenProducerAPI.Services.SupplierService;
 using System.Net.Security;
-using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 
 namespace ScreenProducerAPI.Configuration;
@@ -54,7 +53,6 @@ public static class ApiConfiguration
             var handler = new HttpClientHandler
             {
                 ClientCertificateOptions = ClientCertificateOption.Manual,
-                SslProtocols = SslProtocols.Tls12,
                 ServerCertificateCustomValidationCallback = ValidateServerCertificate,
                 ClientCertificates = { clientCertificate }
             };
@@ -65,7 +63,6 @@ public static class ApiConfiguration
             new HttpClientHandler
             {
                 ClientCertificateOptions = ClientCertificateOption.Manual,
-                SslProtocols = SslProtocols.Tls12,
                 ServerCertificateCustomValidationCallback = ValidateServerCertificate,
                 ClientCertificates = { clientCertificate }
             });
@@ -78,7 +75,6 @@ public static class ApiConfiguration
             new HttpClientHandler
             {
                 ClientCertificateOptions = ClientCertificateOption.Manual,
-                SslProtocols = SslProtocols.Tls12,
                 ServerCertificateCustomValidationCallback = ValidateServerCertificate,
                 ClientCertificates = { clientCertificate }
             });
@@ -87,7 +83,6 @@ public static class ApiConfiguration
             var handler = new HttpClientHandler
             {
                 ClientCertificateOptions = ClientCertificateOption.Manual,
-                SslProtocols = SslProtocols.Tls12,
                 ServerCertificateCustomValidationCallback = ValidateServerCertificate,
                 ClientCertificates = { clientCertificate }
             };
@@ -98,7 +93,6 @@ public static class ApiConfiguration
             new HttpClientHandler
             {
                 ClientCertificateOptions = ClientCertificateOption.Manual,
-                SslProtocols = SslProtocols.Tls12,
                 ServerCertificateCustomValidationCallback = ValidateServerCertificate,
                 ClientCertificates = { clientCertificate }
             });
@@ -112,7 +106,6 @@ public static class ApiConfiguration
             new HttpClientHandler
             {
                 ClientCertificateOptions = ClientCertificateOption.Manual,
-                SslProtocols = SslProtocols.Tls12,
                 ServerCertificateCustomValidationCallback = ValidateServerCertificate,
                 ClientCertificates = { clientCertificate }
             });
@@ -192,16 +185,14 @@ public static class ApiConfiguration
 
     private static X509Certificate2 CreatePfx()
     {
-       
+
         string certPem = File.ReadAllText(@"../screen-supplier-client.crt");
-        Console.WriteLine(certPem);    
         string keyPem = File.ReadAllText(@"../screen-supplier-client.key");
-        Console.WriteLine(keyPem);
         X509Certificate2 cert = X509Certificate2.CreateFromPem(certPem, keyPem);
 
         var pfxCertificate = new X509Certificate2(cert.Export(X509ContentType.Pfx));
 
         return pfxCertificate;
-        
+
     }
 }
