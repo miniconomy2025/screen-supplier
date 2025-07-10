@@ -187,9 +187,7 @@ public static class ApiConfiguration
     {
 
         string certPem = File.ReadAllText(@"../screen-supplier-client.crt");
-        Console.WriteLine(certPem);
         string keyPem = File.ReadAllText(@"../screen-supplier-client.key");
-        Console.WriteLine(keyPem);
         X509Certificate2 cert = X509Certificate2.CreateFromPem(certPem, keyPem);
 
         var pfxCertificate = new X509Certificate2(cert.Export(X509ContentType.Pfx));
