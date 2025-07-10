@@ -5,8 +5,6 @@ using ScreenProducerAPI.Models.Configuration;
 using ScreenProducerAPI.Services;
 using ScreenProducerAPI.Services.BankServices;
 using ScreenProducerAPI.Services.SupplierService;
-using ScreenProducerAPI.Services.SupplierService.Hand;
-using ScreenProducerAPI.Services.SupplierService.Recycler;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -70,7 +68,7 @@ public static class ApiConfiguration
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
 
-        X509Certificate2 clientCertificate = new X509Certificate2("../test-file-dont-panic.pfx", "YourPassword");
+        X509Certificate2 clientCertificate = CreatePfx();
 
         // HTTP Clients
         services.AddHttpClient<LogisticsService>(client =>
@@ -212,5 +210,17 @@ public static class ApiConfiguration
     private static bool ValidateServerCertificate(HttpRequestMessage message, X509Certificate2? certificate, X509Chain? chain, SslPolicyErrors errors)
     {
         return true;
+    }
+
+    private static X509Certificate2 CreatePfx()
+    {
+        string certPem = File.ReadAllText(@"../screen-supplier-client.crt");
+        string keyPem = File.ReadAllText(@"../screen-supplier-client.key");
+
+        X509Certificate2 cert = X509Certificate2.CreateFromPem(certPem, keyPem);
+
+        var pfxCertificate = new X509Certificate2(cert.Export(X509ContentType.Pfx));
+
+        return pfxCertificate;
     }
 }
