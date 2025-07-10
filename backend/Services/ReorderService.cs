@@ -1,10 +1,12 @@
 ﻿using Microsoft.Extensions.Options;
+using ScreenProducerAPI.Exceptions;
 using ScreenProducerAPI.Models;
 using ScreenProducerAPI.Models.Configuration;
 using ScreenProducerAPI.Services.BankServices;
 using ScreenProducerAPI.Services.SupplierService.Hand;
 using ScreenProducerAPI.Services.SupplierService.Hand.Models;
 using ScreenProducerAPI.Services.SupplierService.Recycler;
+using ScreenProducerAPI.Services.SupplierService.Recycler.Models;
 
 namespace ScreenProducerAPI.Services;
 
@@ -194,14 +196,32 @@ public class ReorderService
 
     private async Task<(decimal price, string supplier, string bankAccount, int orderId)> GetBestMaterialPriceAsync(string materialName, int quantity)
     {
+        List<RawMaterialForSale> handMaterials = null;
+        List<RecyclerMaterial> recyclerMaterials = null;
+        RecyclerMaterial recyclerMaterial = null;
+        RawMaterialForSale handMaterial = null;
         try
         {
             // Get pricing from Hand service
-            var handMaterials = await _handService.GetRawMaterialsForSaleAsync();
-            var handMaterial = handMaterials.FirstOrDefault(m =>
+            try
+            {
+                handMaterials = await _handService.GetRawMaterialsForSaleAsync();
+                handMaterial = handMaterials.FirstOrDefault(m =>
                 m.RawMaterialName.Equals(materialName, StringComparison.OrdinalIgnoreCase));
+            }
+            catch (Exception ex) { };
+            try
+            {
+                recyclerMaterials = await _recyclerService.GetMaterialsAsync();
+                recyclerMaterial = recyclerMaterials.FirstOrDefault(m =>
+                m.Name.Equals(materialName, StringComparison.OrdinalIgnoreCase));
+            }
+            catch (Exception ex) { };
+            
+            var bothAvailable = handMaterial != null && recyclerMaterial != null;
 
-            if (handMaterial != null)
+
+            if (handMaterial != null && (bothAvailable ? handMaterial.PricePerKg<=(decimal)recyclerMaterial.Price : true))
             {
                 var totalCost = (int)(handMaterial.PricePerKg * quantity);
 
@@ -219,7 +239,36 @@ public class ReorderService
 
                     return ((int)Math.Ceiling(purchaseResponse.Price / quantity), "hand", purchaseResponse.BankAccount, purchaseResponse.OrderId);
                 }
+            } 
+            
+            if (recyclerMaterial != null)
+            {
+                var totalCost = (int)(recyclerMaterial.Price * quantity);
+
+                // Check if we have sufficient balance including safety margin
+                if (await _bankService.HasSufficientBalanceAsync(totalCost))
+                {
+                    // Make purchase request to get order details
+                    var purchaseRequest = new RecyclerOrderRequest
+                    {
+                        CompanyName = "screen-supplier",
+                        Items = new List<RecyclerOrderItem>
+                        {
+                            new RecyclerOrderItem
+                            {
+                                RawMaterialName = materialName,
+                                QuantityInKg = quantity
+                            }
+                        }
+                    };
+
+                    var purchaseResponse = await _recyclerService.CreateOrderAsync(purchaseRequest);
+
+                    return ((purchaseResponse.data.OrderItems[0].pricePerKg), "recycler", purchaseResponse.data.AccountNumber, purchaseResponse.data.OrderId);
+                }
             }
+
+            throw new ExternalServiceException("Hand + Recycler is down.", "Its down");
         }
         catch (Exception ex)
         {

@@ -21,7 +21,7 @@ public class RecyclerService
         _logger = logger;
     }
 
-    public async Task<RecyclerMaterialsResponse> GetMaterialsAsync()
+    public async Task<List<RecyclerMaterial>> GetMaterialsAsync()
     {
         try
         {
@@ -35,7 +35,7 @@ public class RecyclerService
                 throw new RecyclerServiceException($"Failed to retrieve materials: {response.StatusCode} - {errorContent}");
             }
 
-            var materialsResponse = await response.Content.ReadFromJsonAsync<RecyclerMaterialsResponse>(_jsonOptions);
+            var materialsResponse = await response.Content.ReadFromJsonAsync<List<RecyclerMaterial>>(_jsonOptions);
 
             if (materialsResponse == null)
                 throw new RecyclerServiceException("Invalid response format for materials data");
