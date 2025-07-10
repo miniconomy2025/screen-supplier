@@ -3,9 +3,7 @@ using ScreenProducerAPI.Exceptions;
 using ScreenProducerAPI.Models;
 using ScreenProducerAPI.Models.Configuration;
 using ScreenProducerAPI.Services.BankServices;
-using ScreenProducerAPI.Services.SupplierService.Hand;
 using ScreenProducerAPI.Services.SupplierService.Hand.Models;
-using ScreenProducerAPI.Services.SupplierService.Recycler;
 using ScreenProducerAPI.Services.SupplierService.Recycler.Models;
 
 namespace ScreenProducerAPI.Services;
@@ -209,19 +207,21 @@ public class ReorderService
                 handMaterial = handMaterials.FirstOrDefault(m =>
                 m.RawMaterialName.Equals(materialName, StringComparison.OrdinalIgnoreCase));
             }
-            catch (Exception ex) { };
+            catch (Exception ex) { }
+            ;
             try
             {
                 recyclerMaterials = await _recyclerService.GetMaterialsAsync();
                 recyclerMaterial = recyclerMaterials.FirstOrDefault(m =>
                 m.Name.Equals(materialName, StringComparison.OrdinalIgnoreCase));
             }
-            catch (Exception ex) { };
-            
+            catch (Exception ex) { }
+            ;
+
             var bothAvailable = handMaterial != null && recyclerMaterial != null;
 
 
-            if (handMaterial != null && (bothAvailable ? handMaterial.PricePerKg<=(decimal)recyclerMaterial.Price : true))
+            if (handMaterial != null && (bothAvailable ? handMaterial.PricePerKg <= (decimal)recyclerMaterial.Price : true))
             {
                 var totalCost = (int)(handMaterial.PricePerKg * quantity);
 
@@ -237,10 +237,10 @@ public class ReorderService
 
                     var purchaseResponse = await _handService.PurchaseRawMaterialAsync(purchaseRequest);
 
-                    return ((int)Math.Ceiling(purchaseResponse.Price / quantity), "hand", purchaseResponse.BankAccount, purchaseResponse.OrderId);
+                    return ((int)Math.Ceiling(purchaseResponse.Price / quantity), "thoh", purchaseResponse.BankAccount, purchaseResponse.OrderId);
                 }
-            } 
-            
+            }
+
             if (recyclerMaterial != null)
             {
                 var totalCost = (int)(recyclerMaterial.Price * quantity);
@@ -296,7 +296,7 @@ public class ReorderService
                 quantity,
                 (int)equipmentPrice,
                 bankAccount,
-                "hand",
+                "thoh",
                 null,
                 true
             );
@@ -455,4 +455,4 @@ public class ReorderService
         public int? CopperOrderId { get; set; }
         public int? EquipmentOrderId { get; set; }
     }
-}   
+}

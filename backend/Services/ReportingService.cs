@@ -19,8 +19,7 @@ public class ReportingService(ILogger<ReportingService> logger,
 
             if (productionHistory == null)
             {
-                logger.LogWarning("No production history found for the specified date: {Date}", date);
-                return null;
+                productionHistory = await productionHistoryService.StoreDailyProductionHistory(0, date);
             }
 
             List<PurchaseOrder> purchaseOrdersOnDate = [];

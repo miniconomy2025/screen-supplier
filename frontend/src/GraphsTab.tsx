@@ -61,8 +61,15 @@ export default function GraphsTab() {
     if (!ordersData || !Array.isArray(ordersData)) return {};
     
     const dailyTotals: Record<string, { screensSold: number; revenue: number }> = {};
+    const processedOrderIds = new Set<number>();
     
     ordersData.forEach(order => {
+      // Skip duplicate orders (same ID)
+      if (processedOrderIds.has(order.id)) {
+        return;
+      }
+      processedOrderIds.add(order.id);
+      
       // Only count orders that have been paid (amountPaid exists and > 0)
       if (order.amountPaid && order.amountPaid > 0) {
         const orderDate = new Date(order.orderDate).toISOString().split('T')[0];
@@ -75,7 +82,6 @@ export default function GraphsTab() {
         dailyTotals[orderDate].revenue += order.amountPaid;
       }
     });
-    
     return dailyTotals;
   }, [ordersData]);
 
@@ -84,8 +90,15 @@ export default function GraphsTab() {
     if (!purchasesData || !Array.isArray(purchasesData)) return {};
     
     const dailyTotals: Record<string, { sandPurchased: number; copperPurchased: number }> = {};
+    const processedPurchaseIds = new Set<number>();
     
     purchasesData.forEach((purchase) => {
+      // Skip duplicate purchases (same ID)
+      if (processedPurchaseIds.has(purchase.id)) {
+        return;
+      }
+      processedPurchaseIds.add(purchase.id);
+      
       // Count all purchases with raw materials (regardless of delivery status)
       if (purchase.rawMaterial) {
         const orderDate = new Date(purchase.orderDate).toISOString().split('T')[0];
@@ -111,7 +124,7 @@ export default function GraphsTab() {
   const chartData = useMemo(() => {
     if (!Array.isArray(data)) return [];
     
-    return [...data]
+    const result = [...data]
       .sort((a, b) => a.date.localeCompare(b.date))
       .map(report => {
         // Normalize report date to match purchase date format (YYYY-MM-DD)
@@ -122,14 +135,23 @@ export default function GraphsTab() {
         
         return {
           ...report,
-          // Override revenue and screensSold with orders data if available
-          revenue: orderTotals?.revenue ?? report.revenue,
-          screensSold: orderTotals?.screensSold ?? report.screensSold,
+          // Always use orders data for revenue and screensSold (0 if no orders for that date)
+          revenue: orderTotals?.revenue ?? 0,
+          screensSold: orderTotals?.screensSold ?? 0,
           // Override sand and copper purchased with purchases data if available
-          sandPurchased: purchaseTotals?.sandPurchased ?? report.sandPurchased,
-          copperPurchased: purchaseTotals?.copperPurchased ?? report.copperPurchased,
+          sandPurchased: purchaseTotals?.sandPurchased ?? 0,
+          copperPurchased: purchaseTotals?.copperPurchased ?? 0,
         };
       });
+
+    // Log some debug info
+    console.log('Order daily totals:', ordersDailyTotals);
+    const revenueData = result.filter(r => r.revenue > 0);
+    const screensData = result.filter(r => r.screensSold > 0);
+    console.log('Data points with revenue > 0:', revenueData.length, revenueData.map(r => ({ date: new Date(r.date).toISOString().split('T')[0], revenue: r.revenue })));
+    console.log('Data points with screensSold > 0:', screensData.length, screensData.map(r => ({ date: new Date(r.date).toISOString().split('T')[0], screensSold: r.screensSold })));
+
+    return result;
   }, [data, ordersDailyTotals, purchasesDailyTotals]);
 
   return (
