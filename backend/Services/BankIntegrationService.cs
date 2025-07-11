@@ -28,11 +28,11 @@ public class BankIntegrationService
             loanTaken = await _bankService.TryTakeInitialLoanAsync();
         }
 
-        if (!hasNotificationUrl)
-        {
-            notifcationUrlSet = await _bankService.TrySetupNotificationUrlAsync();
-        }
+        //if (!hasNotificationUrl)
+        //{
+        //    notifcationUrlSet = await _bankService.TrySetupNotificationUrlAsync();
+        //}
 
-        return (accountCreated, loanTaken, notifcationUrlSet);
+        return (accountCreated, loanTaken, true);
     }
 }
