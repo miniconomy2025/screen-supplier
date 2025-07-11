@@ -249,7 +249,7 @@ public class BankService
             }
 
             var balanceResponse = await response.Content.ReadFromJsonAsync<BankAccountBalanceResponse>(_jsonOptions);
-            return balanceResponse?.Balance ?? 0;
+            return int.Parse(balanceResponse?.Balance ?? "0");
         }
         catch (HttpRequestException ex)
         {
