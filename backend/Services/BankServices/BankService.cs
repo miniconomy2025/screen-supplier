@@ -158,8 +158,13 @@ public class BankService
     {
         try
         {
-            var response = await _httpClient.PostAsync($"{_options.Value.BaseUrl}/account",
-                JsonContent.Create(new { }));
+            var accountCreationRequest = new
+            {
+                notificationUrl = "https://screen-supplier-api.projects.bbdgrad.com/payment"
+            };
+
+            var response = await _httpClient.PostAsJsonAsync($"{_options.Value.BaseUrl}/account",
+                accountCreationRequest, _jsonOptions);
 
             if (!response.IsSuccessStatusCode)
             {
