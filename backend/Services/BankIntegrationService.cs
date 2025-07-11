@@ -14,9 +14,9 @@ public class BankIntegrationService
 
     public async Task<(bool,bool,bool)> InitializeAsync(bool hasAccount, bool hasLoan, bool hasNotificationUrl)
     {
-        bool loanTaken = false;
-        bool accountCreated = false;
-        bool notifcationUrlSet = false;
+        bool loanTaken = hasLoan;
+        bool accountCreated = hasAccount;
+        bool notifcationUrlSet = hasNotificationUrl;
 
         if (!hasAccount)
         {
