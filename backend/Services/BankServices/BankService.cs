@@ -80,7 +80,6 @@ public class BankService
     {
         try
         {
-            var initialLoanAmount = _configuration.GetValue<int>("BankSettings:InitialLoanAmount", 50000);
             const int minimumLoanAmount = 1000;
             const decimal decreasePercentage = 0.75m; // 25% decrease each retry
 
