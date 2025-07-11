@@ -79,13 +79,13 @@ public class ProductService
             // These are considered "reserved" and unavailable for new orders
             var reservedScreens = await _context.ScreenOrders
                 .Include(so => so.OrderStatus)
-                .Where(so => so.OrderStatus.Status == Status.WaitingForPayment || 
+                .Where(so => so.OrderStatus.Status == Status.WaitingForPayment ||
                            so.OrderStatus.Status == Status.WaitingForCollection)
                 .SumAsync(so => so.Quantity);
 
             var availableStock = totalProduced - reservedScreens;
 
-            return Math.Max(0, availableStock); 
+            return Math.Max(0, availableStock);
         }
         catch (Exception ex)
         {
@@ -125,13 +125,13 @@ public class ProductService
             // Calculate cost per screen based on material requirement
             var sandCostPerScreen = sandCostPerKg * equipmentParams.InputSandKg / equipmentParams.OutputScreens;
             var copperCostPerScreen = copperCostPerKg * equipmentParams.InputCopperKg / equipmentParams.OutputScreens;
-            double machineCostPerScreen = machinesCost / (screensInStock + totalScreensPurchase + 1);
-            
-            var materialCostPerScreen = sandCostPerScreen + copperCostPerScreen + (decimal)machineCostPerScreen;
-            
+            var machineCostPerScreen = (decimal)machinesCost / (screensInStock + totalScreensPurchase + 1);
+
+            var materialCostPerScreen = sandCostPerScreen + copperCostPerScreen + machineCostPerScreen;
+
             // Add margin (e.g., 25% markup)
-            var margin = 0.25m;
-            var unitPrice = materialCostPerScreen * (1 + margin);
+            var margin = 5.25m;
+            var unitPrice = Math.Min(materialCostPerScreen * (1 + margin), sandCostPerKg + copperCostPerKg);
 
             product.Price = (int)Math.Ceiling(unitPrice);
             await _context.SaveChangesAsync();
@@ -163,7 +163,7 @@ public class ProductService
 
             var reservedScreens = await _context.ScreenOrders
                 .Include(so => so.OrderStatus)
-                .Where(so => so.OrderStatus.Status == Status.WaitingForPayment || 
+                .Where(so => so.OrderStatus.Status == Status.WaitingForPayment ||
                            so.OrderStatus.Status == Status.WaitingForCollection)
                 .SumAsync(so => so.Quantity);
 

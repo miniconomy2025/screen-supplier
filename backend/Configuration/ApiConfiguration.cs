@@ -6,7 +6,6 @@ using ScreenProducerAPI.Services;
 using ScreenProducerAPI.Services.BankServices;
 using ScreenProducerAPI.Services.SupplierService;
 using System.Net.Security;
-using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 
 namespace ScreenProducerAPI.Configuration;
@@ -29,32 +28,10 @@ public static class ApiConfiguration
     {
         app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-        if (app.Environment.IsDevelopment())
-        {
-            app.UseSwagger();
-            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ScreenProducerAPI v1"));
-        }
-
-        app.Use(async (context, next) =>
-        {
-            //Does grab the request and returns a 401 if there isn't a cert, validation to be done later
-
-            X509Certificate2 clientCertificate = context.Connection.ClientCertificate;
-
-            if (clientCertificate == null || !clientCertificate.Verify())
-            {
-                //context.Response.StatusCode = 401;
-                //await context.Response.CompleteAsync();
-                //return;
-            }
-
-            //Cert validation
-
-            await next.Invoke();
-        });
 
         app.UseSwagger();
-        app.UseSwaggerUI();
+        app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ScreenProducerAPI v1"));
+
 
         app.UseHttpsRedirection();
 
@@ -76,7 +53,6 @@ public static class ApiConfiguration
             var handler = new HttpClientHandler
             {
                 ClientCertificateOptions = ClientCertificateOption.Manual,
-                SslProtocols = SslProtocols.Tls12,
                 ServerCertificateCustomValidationCallback = ValidateServerCertificate,
                 ClientCertificates = { clientCertificate }
             };
@@ -87,7 +63,6 @@ public static class ApiConfiguration
             new HttpClientHandler
             {
                 ClientCertificateOptions = ClientCertificateOption.Manual,
-                SslProtocols = SslProtocols.Tls12,
                 ServerCertificateCustomValidationCallback = ValidateServerCertificate,
                 ClientCertificates = { clientCertificate }
             });
@@ -100,7 +75,6 @@ public static class ApiConfiguration
             new HttpClientHandler
             {
                 ClientCertificateOptions = ClientCertificateOption.Manual,
-                SslProtocols = SslProtocols.Tls12,
                 ServerCertificateCustomValidationCallback = ValidateServerCertificate,
                 ClientCertificates = { clientCertificate }
             });
@@ -109,7 +83,6 @@ public static class ApiConfiguration
             var handler = new HttpClientHandler
             {
                 ClientCertificateOptions = ClientCertificateOption.Manual,
-                SslProtocols = SslProtocols.Tls12,
                 ServerCertificateCustomValidationCallback = ValidateServerCertificate,
                 ClientCertificates = { clientCertificate }
             };
@@ -120,7 +93,6 @@ public static class ApiConfiguration
             new HttpClientHandler
             {
                 ClientCertificateOptions = ClientCertificateOption.Manual,
-                SslProtocols = SslProtocols.Tls12,
                 ServerCertificateCustomValidationCallback = ValidateServerCertificate,
                 ClientCertificates = { clientCertificate }
             });
@@ -134,7 +106,6 @@ public static class ApiConfiguration
             new HttpClientHandler
             {
                 ClientCertificateOptions = ClientCertificateOption.Manual,
-                SslProtocols = SslProtocols.Tls12,
                 ServerCertificateCustomValidationCallback = ValidateServerCertificate,
                 ClientCertificates = { clientCertificate }
             });
@@ -214,20 +185,14 @@ public static class ApiConfiguration
 
     private static X509Certificate2 CreatePfx()
     {
-        try
-        {
-            string certPem = File.ReadAllText(@"../screen-supplier-client.crt");
-            string keyPem = File.ReadAllText(@"../screen-supplier-client.key");
 
-            X509Certificate2 cert = X509Certificate2.CreateFromPem(certPem, keyPem);
+        string certPem = File.ReadAllText(@"../screen-supplier-client.crt");
+        string keyPem = File.ReadAllText(@"../screen-supplier-client.key");
+        X509Certificate2 cert = X509Certificate2.CreateFromPem(certPem, keyPem);
 
-            var pfxCertificate = new X509Certificate2(cert.Export(X509ContentType.Pfx));
+        var pfxCertificate = new X509Certificate2(cert.Export(X509ContentType.Pfx));
 
-            return pfxCertificate;
-        }
-        catch (Exception ex)
-        {
-            return new X509Certificate2();
-        }
+        return pfxCertificate;
+
     }
 }

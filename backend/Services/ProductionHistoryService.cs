@@ -4,7 +4,7 @@ using ScreenProducerAPI.ScreenDbContext;
 
 namespace ScreenProducerAPI.Services;
 
-public class ProductionHistoryService(ScreenContext context, ILogger<ProductionHistoryService> logger, MaterialService materialService, ProductService productService, SimulationTimeProvider simulationTimeProvider)
+public class ProductionHistoryService(ScreenContext context, ILogger<ProductionHistoryService> logger, MaterialService materialService, ProductService productService, EquipmentService equipmentService, SimulationTimeProvider simulationTimeProvider)
 {
     public async Task<ProductionHistory?> GetProductionHistoryByDateAsync(DateTime date)
     {
@@ -21,24 +21,29 @@ public class ProductionHistoryService(ScreenContext context, ILogger<ProductionH
 
         if (productionHistory == null)
         {
-            logger.LogWarning("No production history found in the database, querying and saving now.");
             return null;
         }
 
         return productionHistory;
     }
 
-    public async Task<ProductionHistory> StoreDailyProductionHistory(int? screensProduced)
+    public async Task<ProductionHistory> StoreDailyProductionHistory(int? screensProduced, DateTime? inputDate)
     {
+        var date = inputDate ?? simulationTimeProvider.Now.Date;
+
         try
         {
-            screensProduced ??= 0;
+            if (screensProduced == null || screensProduced == 0)
+            {
+                var activeEquipment = await equipmentService.GetActiveEquipmentAsync();
+                screensProduced = activeEquipment.Sum(e => e.EquipmentParameters?.OutputScreens ?? 0);
+            }
 
             ProductionHistory existingRecord = null;
 
             foreach (var item in context.ProductionHistory)
             {
-                if (item.RecordDate == simulationTimeProvider.Now)
+                if (item.RecordDate == date)
                 {
                     existingRecord = item;
                     break;
@@ -55,7 +60,7 @@ public class ProductionHistoryService(ScreenContext context, ILogger<ProductionH
 
             var productionHistory = new ProductionHistory
             {
-                RecordDate = simulationTimeProvider.Now,
+                RecordDate = date,
                 SandStock = materials.Where(materials => materials.Name.ToLower() == "sand").Sum(material => material.Quantity),
                 CopperStock = materials.Where(materials => materials.Name.ToLower() == "copper").Sum(material => material.Quantity),
                 ScreensProduced = screensProduced ?? 0,
@@ -66,12 +71,10 @@ public class ProductionHistoryService(ScreenContext context, ILogger<ProductionH
 
             if (existingRecord == null)
             {
-                logger.LogInformation("Saving production history");
                 context.ProductionHistory.Add(productionHistory);
             }
             else
             {
-                logger.LogInformation("Production history for today already exists. Overwriting.");
                 existingRecord.SandStock = productionHistory.SandStock;
                 existingRecord.CopperStock = productionHistory.CopperStock;
                 existingRecord.ScreensProduced = productionHistory.ScreensProduced;
@@ -85,7 +88,6 @@ public class ProductionHistoryService(ScreenContext context, ILogger<ProductionH
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error storing daily production history");
             throw;
         }
     }

@@ -16,6 +16,7 @@ public class BankService
     private readonly IOptions<BankServiceOptions> _options;
     private readonly IConfiguration _configuration;
     private readonly ILogger<BankService> _logger;
+    private readonly HandService _handService;
 
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
@@ -28,13 +29,15 @@ public class BankService
         ScreenContext context,
         IOptions<BankServiceOptions> options,
         IConfiguration configuration,
-        ILogger<BankService> logger)
+        ILogger<BankService> logger,
+        HandService handService)
     {
         _httpClient = httpClient;
         _context = context;
         _options = options;
         _configuration = configuration;
         _logger = logger;
+        _handService = handService;
     }
 
     public async Task<bool> InitializeBankAccountAsync()
@@ -73,7 +76,7 @@ public class BankService
         }
     }
 
-    public async Task<bool> TakeInitialLoanAsync()
+    public async Task<bool> TakeInitialLoanAsync(int initialLoanAmount)
     {
         try
         {
@@ -330,7 +333,33 @@ public class BankService
     {
         try
         {
-            return await TakeInitialLoanAsync();
+            var initialLoanAmount = _configuration.GetValue<int>("BankSettings:InitialLoanAmount", 500000);
+
+            try
+            {
+                var sandTarget = _configuration.GetValue<int>("TargetQuantities:Sand:target", 1000);
+                var copperTarget = _configuration.GetValue<int>("TargetQuantities:Copper:target", 1000);
+                var equipmentTarget = _configuration.GetValue<int>("TargetQuantities:Equipment:target", 1000);
+
+                var machinesResponse = await _handService.GetMachinesForSaleAsync();
+
+                var screenMachine = machinesResponse.Machines.FirstOrDefault(m => m.MachineName == "screen_machine");
+
+                var handMaterials = await _handService.GetRawMaterialsForSaleAsync();
+                var sandMaterial = handMaterials?.FirstOrDefault(m => m.RawMaterialName.Equals("sand", StringComparison.OrdinalIgnoreCase));
+                var copperMaterial = handMaterials?.FirstOrDefault(m => m.RawMaterialName.Equals("copper", StringComparison.OrdinalIgnoreCase));
+
+                if (screenMachine != null && sandMaterial != null && copperMaterial != null)
+                {
+                    initialLoanAmount = 2 * (int)Math.Ceiling((screenMachine.Price * equipmentTarget) + (sandMaterial.PricePerKg * sandTarget) + (copperMaterial.PricePerKg * copperTarget));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to calculate initial loan amount based on targets. Using default value.");
+            }
+
+            return await TakeInitialLoanAsync(initialLoanAmount);
         }
         catch (BankServiceException ex)
         {

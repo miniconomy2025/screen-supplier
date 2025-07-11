@@ -2,5 +2,5 @@
 
 public class SimulationStartRequest
 {
-    public long UnixEpochStart { get; set; }
+    public long EpochStartTime { get; set; }
 }

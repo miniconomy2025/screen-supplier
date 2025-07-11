@@ -2,76 +2,74 @@
 using ScreenProducerAPI.Models.Requests;
 using ScreenProducerAPI.Models.Responses;
 using ScreenProducerAPI.Services;
-using System.Threading.Tasks;
 
-namespace ScreenProducerAPI.Endpoints
+namespace ScreenProducerAPI.Endpoints;
+
+public static class SimulationEndpoints
 {
-    public static class SimulationEndpoints
+    public static IEndpointRouteBuilder AddSimulationEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        public static IEndpointRouteBuilder AddSimulationEndpoints(this IEndpointRouteBuilder endpoints)
+        endpoints.MapPost("/simulation", StartSimulationHandler)
+            .Accepts<SimulationStartRequest>("application/json")
+            .Produces<SimulationStartResponse>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status400BadRequest)
+            .WithTags("Simulation")
+            .WithName("StartSimulation")
+            .WithSummary("Start the simulation with Unix epoch timestamp");
+
+        endpoints.MapGet("/simulation", GetSimulationStatusHandler)
+            .Produces<SimulationStatusResponse>(StatusCodes.Status200OK)
+            .WithTags("Simulation")
+            .WithName("GetSimulationStatus")
+            .WithSummary("Get current simulation status and time");
+
+        endpoints.MapDelete("/simulation", StopSimulationHandler)
+            .Produces(StatusCodes.Status200OK)
+            .WithTags("Simulation")
+            .WithName("StopSimulation")
+            .WithSummary("Stop the simulation running, and clear database");
+
+        return endpoints;
+    }
+
+    private static async Task<IResult> StartSimulationHandler(
+        SimulationStartRequest request,
+        [FromServices] SimulationTimeService simulationTimeService)
+    {
+        var requestTime = DateTimeOffset.FromUnixTimeSeconds(request.EpochStartTime);
+
+        var success = await simulationTimeService.StartSimulationAsync(request.EpochStartTime);
+
+        var response = new SimulationStartResponse
         {
-            endpoints.MapPost("/simulation", StartSimulationHandler)
-                .Accepts<SimulationStartRequest>("application/json")
-                .Produces<SimulationStartResponse>(StatusCodes.Status200OK)
-                .Produces(StatusCodes.Status400BadRequest)
-                .WithTags("Simulation")
-                .WithName("StartSimulation")
-                .WithSummary("Start the simulation with Unix epoch timestamp");
+            Success = true,
+            Message = "Simulation started successfully with bank integration",
+            StartedAt = requestTime,
+            CurrentDay = simulationTimeService.GetCurrentSimulationDay(),
+            SimulationDateTime = simulationTimeService.GetSimulationDateTime()
+        };
 
-            endpoints.MapGet("/simulation", GetSimulationStatusHandler)
-                .Produces<SimulationStatusResponse>(StatusCodes.Status200OK)
-                .WithTags("Simulation")
-                .WithName("GetSimulationStatus")
-                .WithSummary("Get current simulation status and time");
+        return Results.Ok(response);
+    }
 
-            endpoints.MapDelete("/simulation", StopSimulationHandler)
-                .Produces(StatusCodes.Status200OK)
-                .WithTags("Simulation")
-                .WithName("StopSimulation")
-                .WithSummary("Stop the simulation running, and clear database");
-
-            return endpoints;
-        }
-
-        private static async Task<IResult> StartSimulationHandler(
-            SimulationStartRequest request,
-            [FromServices] SimulationTimeService simulationTimeService)
+    private static IResult GetSimulationStatusHandler(
+        [FromServices] SimulationTimeService simulationTimeService)
+    {
+        var response = new SimulationStatusResponse
         {
-            var requestTime = DateTimeOffset.FromUnixTimeSeconds(request.UnixEpochStart);
+            IsRunning = simulationTimeService.IsSimulationRunning(),
+            CurrentDay = simulationTimeService.GetCurrentSimulationDay(),
+            SimulationDateTime = simulationTimeService.GetSimulationDateTime(),
+            TimeUntilNextDay = simulationTimeService.GetTimeUntilNextDay()
+        };
 
-            var success = await simulationTimeService.StartSimulationAsync(request.UnixEpochStart);
+        return Results.Ok(response);
+    }
 
-            var response = new SimulationStartResponse
-            {
-                Success = true,
-                Message = "Simulation started successfully with bank integration",
-                StartedAt = requestTime,
-                CurrentDay = simulationTimeService.GetCurrentSimulationDay(),
-                SimulationDateTime = simulationTimeService.GetSimulationDateTime()
-            };
-
-            return Results.Ok(response);
-        }
-
-        private static IResult GetSimulationStatusHandler(
-            [FromServices] SimulationTimeService simulationTimeService)
-        {
-            var response = new SimulationStatusResponse
-            {
-                IsRunning = simulationTimeService.IsSimulationRunning(),
-                CurrentDay = simulationTimeService.GetCurrentSimulationDay(),
-                SimulationDateTime = simulationTimeService.GetSimulationDateTime(),
-                TimeUntilNextDay = simulationTimeService.GetTimeUntilNextDay()
-            };
-
-            return Results.Ok(response);
-        }
-
-        private static async Task<IResult> StopSimulationHandler(
-            [FromServices] SimulationTimeService simulationTimeService)
-        {
-            await simulationTimeService.DestroySimulation();
-            return Results.Ok();
-        }
+    private static async Task<IResult> StopSimulationHandler(
+        [FromServices] SimulationTimeService simulationTimeService)
+    {
+        await simulationTimeService.DestroySimulation();
+        return Results.Ok();
     }
 }
