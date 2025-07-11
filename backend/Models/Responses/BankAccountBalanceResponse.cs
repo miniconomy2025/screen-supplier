@@ -1,6 +1,9 @@
-﻿namespace ScreenProducerAPI.Models.Responses;
+﻿using System.Text.Json.Serialization;
+
+namespace ScreenProducerAPI.Models.Responses;
 
 public class BankAccountBalanceResponse
 {
+    [JsonPropertyName("net_balance")]
     public int Balance { get; set; }
 }
