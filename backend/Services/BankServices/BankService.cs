@@ -78,7 +78,7 @@ public class BankService
         try
         {
             var initialLoanAmount = _configuration.GetValue<int>("BankSettings:InitialLoanAmount", 50000);
-            const int minimumLoanAmount = 5000;
+            const int minimumLoanAmount = 1000;
             const decimal decreasePercentage = 0.75m; // 25% decrease each retry
 
             var currentAttemptAmount = initialLoanAmount;
@@ -238,7 +238,7 @@ public class BankService
     {
         try
         {
-            var response = await _httpClient.GetAsync($"{_options.Value.BaseUrl}/account/me/balance");
+            var response = await _httpClient.GetAsync($"{_options.Value.BaseUrl}/account");
 
             if (!response.IsSuccessStatusCode)
             {

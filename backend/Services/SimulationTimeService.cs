@@ -13,7 +13,7 @@ public class SimulationTimeService : IDisposable
     private bool _simulationRunning;
     private bool _bankAccountCreated = false;
     private bool _bankLoanCreated = false;
-    private bool _notificationUrlSet = false;
+    private bool _notificationUrlSet = true; // Bank changed how it works, so we send this with account creation
     private bool _equipmentParametersInitialized = false;
     private Timer? _dayTimer;
 
