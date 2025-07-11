@@ -200,6 +200,55 @@ public class HandService
         }
     }
 
+    public async Task<HandSimulationStatus> GetSimulationStatusAsync()
+    {
+        try
+        {
+            var baseUrl = _options?.Value.HandBaseUrl;
+            var uriBuilder = new UriBuilder($"{baseUrl}/simulation/unix-epoch-start-time");
+            var response = await _httpClient.GetAsync(uriBuilder.Uri);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+            }
+
+            var timeResponse = await response.Content.ReadAsStringAsync();
+
+            if (timeResponse == null)
+            {
+                return new HandSimulationStatus
+                {
+                    IsRunning = false,
+                    EpochStartTime = 0
+                };
+            }
+
+            if (long.TryParse(timeResponse, out long startTime))
+            {
+                return new HandSimulationStatus
+                {
+                    IsRunning = true,
+                    EpochStartTime = startTime
+                };
+            }
+
+            return new HandSimulationStatus
+            {
+                IsRunning = false,
+                EpochStartTime = 0
+            };
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new HandServiceException("Hand service unavailable for simulation time retrieval", ex);
+        }
+        catch (TaskCanceledException ex)
+        {
+            throw new HandServiceException("Hand service timeout during simulation time retrieval", ex);
+        }
+    }
+
     public async Task<bool> TryInitializeEquipmentParametersAsync(EquipmentService equipmentService)
     {
         try
