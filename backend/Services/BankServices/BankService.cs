@@ -52,9 +52,9 @@ public class BankService
                     AccountNumber = liveAccount.AccountNumber,
                 };
 
-                if (int.TryParse(liveAccount.Balance, out int res))
+                if (decimal.TryParse(liveAccount.Balance, out decimal res))
                 {
-                    details.EstimatedBalance = res;
+                    details.EstimatedBalance = (int)res;
                 }
                 else
                 {
@@ -105,7 +105,10 @@ public class BankService
         {
 
             var existingLoans = await GetLoansOutstanding();
-            if (existingLoans != null && existingLoans.loans.Sum((x) => x.InitialAmount) > 0)
+            if (existingLoans != null &&
+            existingLoans.loans
+                .Select(x => Decimal.TryParse(x.InitialAmount, out var val) ? val : 0)
+                .Sum() > 0)
             {
                 return true;
             }
@@ -136,7 +139,8 @@ public class BankService
                     {
                         _logger.LogInformation("Loan successful for amount: {Amount}", currentAttemptAmount);
                         var LocalAccount = await _context.BankDetails.FirstAsync();
-                        LocalAccount.EstimatedBalance += loanRequest.amount;
+                        LocalAccount.EstimatedBalance = LocalAccount.EstimatedBalance + loanRequest.amount;
+                        _logger.LogInformation("Local account added: {Amount}", LocalAccount.EstimatedBalance);
                         await _context.SaveChangesAsync();
                         return true;
                     }
@@ -163,12 +167,15 @@ public class BankService
         try
         {
             var existingLoans = await GetLoansOutstanding();
-            if (existingLoans != null && existingLoans.loans.Sum((x) => x.InitialAmount) > 0)
+            if (existingLoans?.loans != null)
             {
-                int amountLoaned = existingLoans.loans.Sum((x) => x.InitialAmount);
+                decimal amountLoaned = existingLoans.loans
+                    .Select(x => decimal.TryParse(x.InitialAmount, out var val) ? val : 0)
+                    .Sum();
+
                 if (amountLoaned > 0)
                 {
-                    return (int)Math.Ceiling(0.1 * amountLoaned);
+                    return (int)Math.Ceiling(0.1m * amountLoaned);
                 }
             }
             return 2000;
@@ -291,7 +298,7 @@ public class BankService
             }
 
             var balanceResponse = await response.Content.ReadFromJsonAsync<BankAccountBalanceResponse>(_jsonOptions);
-            return int.Parse(balanceResponse?.Balance ?? "0");
+            return (int)Math.Floor(decimal.Parse(balanceResponse?.Balance ?? "0"));
         }
         catch (HttpRequestException ex)
         {
@@ -465,7 +472,7 @@ public class BankService
     {
         try
         {
-            var response = await _httpClient.GetAsync($"{_options.Value.BaseUrl}/loans");
+            var response = await _httpClient.GetAsync($"{_options.Value.BaseUrl}/loan");
 
             if (!response.IsSuccessStatusCode)
             {

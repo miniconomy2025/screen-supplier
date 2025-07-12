@@ -6,7 +6,7 @@ namespace ScreenProducerAPI.Models.Responses
     {
         public bool Success { get; set; }
         [JsonPropertyName("total_outstanding_amount")]
-        public int TotalOutstandingAmount { get; set; }
+        public string TotalOutstandingAmount { get; set; }
         public List<Loan> loans { get; set; }
     }
 
@@ -16,15 +16,15 @@ namespace ScreenProducerAPI.Models.Responses
         public string LoanNumber { get; set; }
 
         [JsonPropertyName("initial_amount")]
-        public int InitialAmount { get; set; }
+        public string InitialAmount { get; set; }
         
         [JsonPropertyName("interest_rate")]
-        public int InterestRate { get; set; }
+        public string InterestRate { get; set; }
         
         [JsonPropertyName("write_off")]
         public Boolean WriteOff { get; set; }
         
         [JsonPropertyName("outstanding_amount")]
-        public int OutstandingAmount { get; set; }
+        public string OutstandingAmount { get; set; }
     }
 }

@@ -60,9 +60,9 @@ public class SimulationTimeService : IDisposable
     {
         if (!_simulationRunning) return 0;
 
-        var currentUnixTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var currentUnixTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var elapsedRealSeconds = currentUnixTime - _simulationStartUnixEpoch;
-        var elapsedSimDays = (int)(elapsedRealSeconds / 120); // 120 seconds = 1 sim day
+        var elapsedSimDays = (int)(elapsedRealSeconds / (120*1000)); // 120 seconds = 1 sim day
 
         return Math.Max(0, elapsedSimDays);
     }
