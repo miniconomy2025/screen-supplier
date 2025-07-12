@@ -202,7 +202,7 @@ public class BankService
         {
             var accountCreationRequest = new
             {
-                notificationUrl = "https://screen-supplier-api.projects.bbdgrad.com/payment"
+                notification_url = "https://screen-supplier-api.projects.bbdgrad.com/payment"
             };
 
             var response = await _httpClient.PostAsJsonAsync($"{_options.Value.BaseUrl}/account",
