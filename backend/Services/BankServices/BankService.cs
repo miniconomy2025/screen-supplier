@@ -44,6 +44,28 @@ public class BankService
     {
         try
         {
+            var liveAccount = await GetLiveAccountInformation();
+            if (liveAccount != null)
+            {
+                var details = new BankDetails
+                {
+                    AccountNumber = liveAccount.AccountNumber,
+                };
+
+                if (int.TryParse(liveAccount.Balance, out int res))
+                {
+                    details.EstimatedBalance = res;
+                }
+                else
+                {
+                    details.EstimatedBalance = 0;
+                }
+
+                _context.BankDetails.Add(details);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+
             var existingAccount = await _context.BankDetails.FirstOrDefaultAsync();
             if (existingAccount != null)
             {
@@ -58,7 +80,8 @@ public class BankService
 
             var bankDetails = new BankDetails
             {
-                AccountNumber = accountResponse.AccountNumber
+                AccountNumber = accountResponse.AccountNumber,
+                EstimatedBalance = 0
             };
             _context.BankDetails.Add(bankDetails);
             await _context.SaveChangesAsync();
@@ -80,7 +103,14 @@ public class BankService
     {
         try
         {
-            const int minimumLoanAmount = 1000;
+
+            var existingLoans = await GetLoansOutstanding();
+            if (existingLoans != null && existingLoans.loans.Sum((x) => x.InitialAmount) > 0)
+            {
+                return true;
+            }
+
+            const int minimumLoanAmount = 500;
             const decimal decreasePercentage = 0.75m; // 25% decrease each retry
 
             var currentAttemptAmount = initialLoanAmount;
@@ -105,6 +135,9 @@ public class BankService
                     if (loanResponse?.Success == true)
                     {
                         _logger.LogInformation("Loan successful for amount: {Amount}", currentAttemptAmount);
+                        var LocalAccount = await _context.BankDetails.FirstAsync();
+                        LocalAccount.EstimatedBalance += loanRequest.amount;
+                        await _context.SaveChangesAsync();
                         return true;
                     }
                 }
@@ -124,16 +157,25 @@ public class BankService
         }
     }
 
+    //todo check loans
     public async Task<int> GetSafetyBalance()
     {
         try
         {
-            var initialLoanAmount = _configuration.GetValue<int>("BankSettings:InitialLoanAmount", 50000);
-            return (int)(initialLoanAmount * 0.20m); // 20% of loan as safety
+            var existingLoans = await GetLoansOutstanding();
+            if (existingLoans != null && existingLoans.loans.Sum((x) => x.InitialAmount) > 0)
+            {
+                int amountLoaned = existingLoans.loans.Sum((x) => x.InitialAmount);
+                if (amountLoaned > 0)
+                {
+                    return (int)Math.Ceiling(0.1 * amountLoaned);
+                }
+            }
+            return 2000;
         }
         catch
         {
-            return 10000; // Fallback safety amount
+            return 2000; // Fallback safety amount
         }
     }
 
@@ -149,8 +191,8 @@ public class BankService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error checking balance sufficiency");
-            return false;
+            var localAccount = await _context.BankDetails.FirstAsync();
+            return (localAccount.EstimatedBalance - 2000 >= requiredAmount);
         }
     }
 
@@ -261,6 +303,30 @@ public class BankService
         }
     }
 
+    public async Task<BankAccountBalanceResponse?> GetLiveAccountInformation()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"{_options.Value.BaseUrl}/account");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var balanceResponse = await response.Content.ReadFromJsonAsync<BankAccountBalanceResponse>(_jsonOptions);
+            return balanceResponse;
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new BankServiceException("Bank service unavailable for balance check", ex);
+        }
+        catch (TaskCanceledException ex)
+        {
+            throw new BankServiceException("Bank service timeout during balance check", ex);
+        }
+    }
+
     public async Task<bool> MakePaymentAsync(string toAccountNumber, string toBankName, int amount, string description)
     {
         try
@@ -293,6 +359,11 @@ public class BankService
             }
 
             var paymentResponse = await response.Content.ReadFromJsonAsync<PaymentResponse>(_jsonOptions);
+
+            var LocalAccount = await _context.BankDetails.FirstAsync();
+            LocalAccount.EstimatedBalance -= amount;
+            await _context.SaveChangesAsync();
+
             return paymentResponse?.Success == true;
         }
         catch (InsufficientFundsException)
@@ -332,7 +403,7 @@ public class BankService
     {
         try
         {
-            var initialLoanAmount = _configuration.GetValue<int>("BankSettings:InitialLoanAmount", 500000);
+            var initialLoanAmount = _configuration.GetValue<int>("BankSettings:InitialLoanAmount", 100000);
 
             try
             {
@@ -387,6 +458,30 @@ public class BankService
         {
             _logger.LogError(ex, "Unexpected error during notification URL setup");
             return false;
+        }
+    }
+
+    public async Task<BankAccountLoanResponse?> GetLoansOutstanding()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"{_options.Value.BaseUrl}/loans");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var loanResponse = await response.Content.ReadFromJsonAsync<BankAccountLoanResponse>(_jsonOptions);
+            return loanResponse;
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new BankServiceException("Bank service unavailable for loans check", ex);
+        }
+        catch (TaskCanceledException ex)
+        {
+            throw new BankServiceException("Bank service timeout during loans check", ex);
         }
     }
 }

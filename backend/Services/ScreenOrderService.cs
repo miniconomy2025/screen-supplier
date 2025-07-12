@@ -36,6 +36,9 @@ public class ScreenOrderService
                 };
             }
 
+            var localAccount = await _context.BankDetails.FirstAsync();
+            localAccount.EstimatedBalance += notification.Amount;
+
             var screenOrder = await _context.ScreenOrders
                 .Include(so => so.OrderStatus)
                 .Include(so => so.Product)
