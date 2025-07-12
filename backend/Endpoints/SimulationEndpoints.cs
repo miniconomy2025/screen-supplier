@@ -38,7 +38,7 @@ public static class SimulationEndpoints
     {
         var requestTime = DateTimeOffset.FromUnixTimeSeconds(request.EpochStartTime);
 
-        var success = await simulationTimeService.StartSimulationAsync(request.EpochStartTime);
+        var success = await simulationTimeService.StartSimulationAsync(request.EpochStartTime, isResuming: false);
 
         var response = new SimulationStartResponse
         {

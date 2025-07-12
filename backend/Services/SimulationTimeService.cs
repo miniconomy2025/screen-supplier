@@ -26,7 +26,7 @@ public class SimulationTimeService : IDisposable
         _serviceProvider = serviceProvider;
     }
 
-    public async Task<bool> StartSimulationAsync(long unixEpochStart)
+    public async Task<bool> StartSimulationAsync(long unixEpochStart, bool isResuming)
     {
         if (_simulationRunning)
         {
@@ -40,7 +40,10 @@ public class SimulationTimeService : IDisposable
         var context = scope.ServiceProvider.GetRequiredService<ScreenContext>();
 
 
-        await CleanUpDatabase(context);
+        if (!isResuming)
+        {
+            await CleanUpDatabase(context);
+        }
 
         _simulationRunning = true;
 

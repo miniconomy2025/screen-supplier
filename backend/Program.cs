@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using ScreenProducerAPI.Configuration;
 using ScreenProducerAPI.ScreenDbContext;
 using ScreenProducerAPI.Services;
@@ -42,6 +41,18 @@ app.UseCors("AllowFrontend");
 app.ConfigureApp();
 
 var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+lifetime.ApplicationStarted.Register(async () =>
+{
+    var simulationService = app.Services.GetRequiredService<SimulationTimeService>();
+    var handService = app.Services.GetRequiredService<HandService>();
+
+    var simulationStatus = await handService.GetSimulationStatusAsync();
+
+    if (simulationStatus.IsRunning)
+    {
+        await simulationService.StartSimulationAsync(simulationStatus.EpochStartTime, isResuming: true);
+    }
+});
 lifetime.ApplicationStopping.Register(() =>
 {
     var simulationService = app.Services.GetRequiredService<SimulationTimeService>();
