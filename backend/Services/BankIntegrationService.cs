@@ -23,7 +23,7 @@ public class BankIntegrationService
             accountCreated = await _bankService.TryInitializeBankAccountAsync();
         }
 
-        if (!hasLoan)
+        if (!hasLoan && accountCreated)
         {
             loanTaken = await _bankService.TryTakeInitialLoanAsync();
         }
