@@ -173,7 +173,7 @@ public class BankService
 
                 if (amountLoaned > 0)
                 {
-                    return (int)Math.Ceiling(0.1m * amountLoaned);
+                    return (int)Math.Ceiling(0.05m * amountLoaned);
                 }
             }
             return 2000;
