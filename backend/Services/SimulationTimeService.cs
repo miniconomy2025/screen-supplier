@@ -84,7 +84,7 @@ public class SimulationTimeService : IDisposable
         var secondsIntoCurrentDay = elapsedRealSeconds % (120*1000);
         var secondsUntilNextDay = (120*1000) - secondsIntoCurrentDay;
 
-        return TimeSpan.FromMilliseconds(secondsUntilNextDay);
+        return TimeSpan.FromSeconds(secondsUntilNextDay/1000);
     }
 
     private async void ProcessDayTransition(object? state)
