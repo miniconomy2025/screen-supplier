@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 using ScreenProducerAPI.Exceptions;
+using ScreenProducerAPI.Models.Requests;
 using ScreenProducerAPI.Services.SupplierService;
 using ScreenProducerAPI.Services.SupplierService.Hand.Models;
 using System.Text.Json;
@@ -88,7 +89,7 @@ public class HandService
         try
         {
             var baseUrl = _options?.Value.HandBaseUrl;
-            var uriBuilder = new UriBuilder($"{baseUrl}/machine");
+            var uriBuilder = new UriBuilder($"{baseUrl}/machines");
             var response = await _httpClient.PostAsJsonAsync(uriBuilder.Uri, request);
 
             if (!response.IsSuccessStatusCode)
@@ -213,7 +214,7 @@ public class HandService
                 var errorContent = await response.Content.ReadAsStringAsync();
             }
 
-            var timeResponse = await response.Content.ReadAsStringAsync();
+            var timeResponse = await response.Content.ReadFromJsonAsync<SimulationStartRequest>(_jsonOptions);
 
             if (timeResponse == null)
             {
@@ -224,12 +225,12 @@ public class HandService
                 };
             }
 
-            if (long.TryParse(timeResponse, out long startTime))
+            if (timeResponse?.EpochStartTime != null)
             {
                 return new HandSimulationStatus
                 {
                     IsRunning = true,
-                    EpochStartTime = startTime
+                    EpochStartTime = timeResponse.EpochStartTime
                 };
             }
 
