@@ -341,7 +341,7 @@ public class ReorderService
 
                 var purchaseResponse = await _handService.PurchaseMachineAsync(purchaseRequest);
 
-                return ((int)Math.Ceiling(purchaseResponse.Price / quantity), purchaseResponse.BankAccount, purchaseResponse.OrderId);
+                return ((int)Math.Ceiling(purchaseResponse.TotalPrice / quantity), purchaseResponse.BankAccount, purchaseResponse.OrderId);
             }
         }
         catch (Exception ex)
