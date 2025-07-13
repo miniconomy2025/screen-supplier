@@ -160,8 +160,6 @@ public class BankService
             return false;
         }
     }
-
-    //todo check loans
     public async Task<int> GetSafetyBalance()
     {
         try
@@ -188,9 +186,17 @@ public class BankService
 
     public async Task<bool> HasSufficientBalanceAsync(int requiredAmount)
     {
+        var localAccount = await _context.BankDetails.FirstAsync();
         try
         {
             var currentBalance = await GetAccountBalanceAsync();
+
+            if (currentBalance != localAccount.EstimatedBalance)
+            {
+                localAccount.EstimatedBalance = currentBalance;
+                await _context.SaveChangesAsync();
+            }
+
             var safetyBalance = await GetSafetyBalance();
             var availableBalance = currentBalance - safetyBalance;
 
@@ -198,7 +204,6 @@ public class BankService
         }
         catch (Exception ex)
         {
-            var localAccount = await _context.BankDetails.FirstAsync();
             return (localAccount.EstimatedBalance - 2000 >= requiredAmount);
         }
     }
