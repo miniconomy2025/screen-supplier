@@ -84,11 +84,12 @@ public class ProductionHistoryService(ScreenContext context, ILogger<ProductionH
             }
             await context.SaveChangesAsync();
 
+
             return existingRecord ?? productionHistory;
         }
         catch (Exception ex)
         {
-            throw;
+
         }
     }
 }

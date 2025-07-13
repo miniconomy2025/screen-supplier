@@ -80,7 +80,6 @@ public class ReportingService(ILogger<ReportingService> logger,
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving recent production history");
             return null;
         }
     }
