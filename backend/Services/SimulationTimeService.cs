@@ -79,12 +79,12 @@ public class SimulationTimeService : IDisposable
     {
         if (!_simulationRunning) return TimeSpan.Zero;
 
-        var currentUnixTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var currentUnixTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var elapsedRealSeconds = currentUnixTime - _simulationStartUnixEpoch;
-        var secondsIntoCurrentDay = elapsedRealSeconds % 120;
-        var secondsUntilNextDay = 120 - secondsIntoCurrentDay;
+        var secondsIntoCurrentDay = elapsedRealSeconds % (120*1000);
+        var secondsUntilNextDay = (120*1000) - secondsIntoCurrentDay;
 
-        return TimeSpan.FromSeconds(secondsUntilNextDay);
+        return TimeSpan.FromMilliseconds(secondsUntilNextDay);
     }
 
     private async void ProcessDayTransition(object? state)
