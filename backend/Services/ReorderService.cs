@@ -251,7 +251,7 @@ public class ReorderService
                     var purchaseRequest = new RecyclerOrderRequest
                     {
                         CompanyName = "screen-supplier",
-                        Items = new List<RecyclerOrderItem>
+                        OrderItems = new List<RecyclerOrderItem>
                         {
                             new RecyclerOrderItem
                             {
