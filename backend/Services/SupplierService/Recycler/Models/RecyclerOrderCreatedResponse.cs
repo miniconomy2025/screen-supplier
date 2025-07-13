@@ -10,12 +10,12 @@ public class Data
 {
     public int OrderId { get; set; }
     public string AccountNumber { get; set; }
-    public List<ItemsInPurchase> OrderItems { get; set; }
+    public List<OrderItem> OrderItems { get; set; }
 }
 
 
-public class ItemsInPurchase
+public class OrderItem
 {
-    public int quantityInKg { get; set; }
-    public int pricePerKg { get; set; }
+    public int QuantityInKg { get; set; }
+    public decimal PricePerKg { get; set; }
 }

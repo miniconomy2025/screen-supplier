@@ -220,7 +220,7 @@ public class ReorderService
             var bothAvailable = handMaterial != null && recyclerMaterial != null;
 
 
-            if (handMaterial != null && (bothAvailable ? handMaterial.PricePerKg <= (decimal)recyclerMaterial.Price : true) || recyclerMaterial?.Price == 0 || recyclerMaterial?.Price == null)
+            if (handMaterial != null && (bothAvailable ? handMaterial.PricePerKg <= (decimal)recyclerMaterial.PricePerKg : true) || recyclerMaterial?.PricePerKg == 0 || recyclerMaterial?.PricePerKg == null || recyclerMaterial?.AvailableQuantityInKg <= 1000)
             {
                 var totalCost = (int)(handMaterial.PricePerKg * quantity);
 
@@ -240,9 +240,9 @@ public class ReorderService
                 }
             }
 
-            if (recyclerMaterial != null)
+            else if (recyclerMaterial != null)
             {
-                var totalCost = (int)(recyclerMaterial.Price * quantity);
+                var totalCost = (int)(recyclerMaterial.PricePerKg * quantity);
 
                 // Check if we have sufficient balance including safety margin
                 if (await _bankService.HasSufficientBalanceAsync(totalCost))
@@ -263,7 +263,7 @@ public class ReorderService
 
                     var purchaseResponse = await _recyclerService.CreateOrderAsync(purchaseRequest);
 
-                    return ((purchaseResponse.data.OrderItems[0].pricePerKg), "recycler", purchaseResponse.data.AccountNumber, purchaseResponse.data.OrderId);
+                    return ((purchaseResponse.data.OrderItems[0].PricePerKg), "recycler", purchaseResponse.data.AccountNumber, purchaseResponse.data.OrderId);
                 }
             }
 

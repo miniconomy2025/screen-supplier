@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace ScreenProducerAPI.Services.SupplierService.Recycler.Models;
 
 public class RecyclerOrderRequest
