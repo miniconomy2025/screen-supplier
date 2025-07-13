@@ -37,7 +37,7 @@ public class ScreenOrderService
             }
 
             var localAccount = await _context.BankDetails.FirstAsync();
-            localAccount.EstimatedBalance += notification.Amount;
+            localAccount.EstimatedBalance +=(int)Math.Ceiling(notification.Amount);
 
             var screenOrder = await _context.ScreenOrders
                 .Include(so => so.OrderStatus)
