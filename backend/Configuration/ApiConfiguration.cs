@@ -50,13 +50,6 @@ public static class ApiConfiguration
         // HTTP Clients
         services.AddHttpClient<LogisticsService>(client =>
         {
-            var handler = new HttpClientHandler
-            {
-                ClientCertificateOptions = ClientCertificateOption.Manual,
-                ServerCertificateCustomValidationCallback = ValidateServerCertificate,
-                ClientCertificates = { clientCertificate }
-            };
-
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
         }).ConfigurePrimaryHttpMessageHandler(() =>

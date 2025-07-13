@@ -343,6 +343,11 @@ public class BankService
     {
         try
         {
+            if (amount <= 0)
+            {
+                amount = 1;
+            }
+
             if (toAccountNumber == "TREASURY_ACCOUNT")
             {
                 toBankName = "thoh";
