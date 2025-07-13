@@ -294,7 +294,7 @@ public class BankService
     {
         try
         {
-            var response = await _httpClient.GetAsync($"{_options.Value.BaseUrl}/account");
+            var response = await _httpClient.GetAsync($"{_options.Value.BaseUrl}/account/me");
 
             if (!response.IsSuccessStatusCode)
             {
@@ -319,7 +319,7 @@ public class BankService
     {
         try
         {
-            var response = await _httpClient.GetAsync($"{_options.Value.BaseUrl}/account");
+            var response = await _httpClient.GetAsync($"{_options.Value.BaseUrl}/account/me");
 
             if (!response.IsSuccessStatusCode)
             {
