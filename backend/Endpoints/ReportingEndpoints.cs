@@ -58,10 +58,7 @@ public static class ReportingEndpoints
 
         var reports = await reportingService.GetLastPeriodReportsAsync(pastDaysToInclude, simulationTimeProvider.Now.Date);
 
-        if (reports == null || !reports.Any())
-            throw new DataNotFoundException("Reports");
-
-        return Results.Ok(reports);
+        return Results.Ok(reports ?? []);
     }
 
     public static async Task<IResult> GetPurchaseOrdersHandler(
