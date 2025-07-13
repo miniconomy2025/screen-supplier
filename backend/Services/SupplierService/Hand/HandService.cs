@@ -239,13 +239,14 @@ public class HandService
                 EpochStartTime = 0
             };
         }
-        catch (HttpRequestException ex)
+        catch (Exception ex)
         {
-            throw new HandServiceException("Hand service unavailable for simulation time retrieval", ex);
-        }
-        catch (TaskCanceledException ex)
-        {
-            throw new HandServiceException("Hand service timeout during simulation time retrieval", ex);
+            _logger.LogWarning("Hand not returning response on /time.");
+            return new HandSimulationStatus
+            {
+                IsRunning = false,
+                EpochStartTime = 0
+            };
         }
     }
 
