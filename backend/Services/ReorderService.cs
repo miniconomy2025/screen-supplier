@@ -220,7 +220,7 @@ public class ReorderService
             var bothAvailable = handMaterial != null && recyclerMaterial != null;
 
 
-            if (handMaterial != null && (bothAvailable ? handMaterial.PricePerKg <= (decimal)recyclerMaterial.Price : true))
+            if (handMaterial != null && (bothAvailable ? handMaterial.PricePerKg <= (decimal)recyclerMaterial.Price : true) || recyclerMaterial?.Price == 0 || recyclerMaterial?.Price == null)
             {
                 var totalCost = (int)(handMaterial.PricePerKg * quantity);
 
