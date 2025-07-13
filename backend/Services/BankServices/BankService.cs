@@ -294,7 +294,7 @@ public class BankService
     {
         try
         {
-            var response = await _httpClient.GetAsync($"{_options.Value.BaseUrl}/account/me");
+            var response = await _httpClient.GetAsync($"{_options.Value.BaseUrl}/account/me/balance");
 
             if (!response.IsSuccessStatusCode)
             {
@@ -327,6 +327,16 @@ public class BankService
             }
 
             var balanceResponse = await response.Content.ReadFromJsonAsync<BankAccountBalanceResponse>(_jsonOptions);
+
+            if (balanceResponse == null || string.IsNullOrEmpty(balanceResponse.AccountNumber))
+            {
+                return null;
+            }
+
+            var balance = await GetAccountBalanceAsync();
+
+            balanceResponse.Balance = balance.ToString();
+
             return balanceResponse;
         }
         catch (HttpRequestException ex)
