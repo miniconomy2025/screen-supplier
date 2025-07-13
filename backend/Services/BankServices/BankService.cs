@@ -107,7 +107,7 @@ public class BankService
             var existingLoans = await GetLoansOutstanding();
             if (existingLoans != null &&
             existingLoans.loans
-                .Select(x => x.InitialAmount)
+                .Select(x => decimal.TryParse(x.InitialAmount, out var val) ? val : 0)
                 .Sum() > 0)
             {
                 return true;
@@ -168,7 +168,7 @@ public class BankService
             if (existingLoans?.loans != null)
             {
                 decimal amountLoaned = existingLoans.loans
-                    .Select(x => x.InitialAmount)
+                    .Select(x => decimal.TryParse(x.InitialAmount, out var val) ? val : 0)
                     .Sum();
 
                 if (amountLoaned > 0)
