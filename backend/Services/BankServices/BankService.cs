@@ -44,6 +44,12 @@ public class BankService
     {
         try
         {
+            var existingAccount = await _context.BankDetails.FirstOrDefaultAsync();
+            if (existingAccount != null)
+            {
+                return true;
+            }
+
             var liveAccount = await GetLiveAccountInformation();
             if (liveAccount != null)
             {
@@ -63,12 +69,6 @@ public class BankService
 
                 _context.BankDetails.Add(details);
                 await _context.SaveChangesAsync();
-                return true;
-            }
-
-            var existingAccount = await _context.BankDetails.FirstOrDefaultAsync();
-            if (existingAccount != null)
-            {
                 return true;
             }
 
