@@ -89,7 +89,7 @@ public class ProductionHistoryService(ScreenContext context, ILogger<ProductionH
         }
         catch (Exception ex)
         {
-
+            throw new Exception("Error saving production history");
         }
     }
 }
