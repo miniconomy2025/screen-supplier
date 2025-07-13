@@ -71,10 +71,7 @@ public static class ReportingEndpoints
     {
         var purchaseOrders = await purchaseOrderService.GetPastOrdersAsync(date ?? simulationTimeProvider.Now.Date);
 
-        if (purchaseOrders == null || purchaseOrders.Count == 0)
-            throw new DataNotFoundException("Purchase orders");
-
-        return Results.Ok(purchaseOrders);
+        return Results.Ok(purchaseOrders ?? []);
     }
 }
 
