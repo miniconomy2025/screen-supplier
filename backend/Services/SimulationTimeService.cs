@@ -62,7 +62,7 @@ public class SimulationTimeService : IDisposable
 
         var currentUnixTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var elapsedRealSeconds = currentUnixTime - _simulationStartUnixEpoch;
-        var elapsedSimDays = (int)(elapsedRealSeconds / (120*1000)); // 120 seconds = 1 sim day
+        var elapsedSimDays = (int)(elapsedRealSeconds / (120 * 1000)); // 120 seconds = 1 sim day
 
         return Math.Max(0, elapsedSimDays);
     }
@@ -81,10 +81,10 @@ public class SimulationTimeService : IDisposable
 
         var currentUnixTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var elapsedRealSeconds = currentUnixTime - _simulationStartUnixEpoch;
-        var secondsIntoCurrentDay = elapsedRealSeconds % (120*1000);
-        var secondsUntilNextDay = (120*1000) - secondsIntoCurrentDay;
+        var secondsIntoCurrentDay = elapsedRealSeconds % (120 * 1000);
+        var secondsUntilNextDay = (120 * 1000) - secondsIntoCurrentDay;
 
-        return TimeSpan.FromSeconds(secondsUntilNextDay/1000);
+        return TimeSpan.FromSeconds(secondsUntilNextDay / 1000);
     }
 
     private async void ProcessDayTransition(object? state)

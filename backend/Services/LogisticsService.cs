@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using ScreenProducerAPI.Exceptions;
-using ScreenProducerAPI.Models;
 using ScreenProducerAPI.Models.Requests;
 using ScreenProducerAPI.Models.Responses;
 using ScreenProducerAPI.ScreenDbContext;
@@ -40,7 +39,7 @@ public class LogisticsService
         _materialService = materialService;
         _equipmentService = equipmentService;
         _productService = productService;
-        _simulationTimeProvider = simulationTimeProvider;   
+        _simulationTimeProvider = simulationTimeProvider;
         _context = context;
     }
 
@@ -169,8 +168,8 @@ public class LogisticsService
 
             var requestData = new PickupRequestBody
             {
-                OriginCompanyId = originCompanyId,
-                DestinationCompanyId = destinationCompanyId,
+                OriginCompany = originCompanyId,
+                DestinationCompany = destinationCompanyId,
                 OriginalExternalOrderId = originalExternalOrderId,
                 Items = items
             };
@@ -200,7 +199,7 @@ public class LogisticsService
                 throw new LogisticsServiceException("Invalid response from bulk logistics service - missing pickup request ID");
             }
 
-            return (pickupResponse.PickupRequestId, pickupResponse.bulkLogisticsBankAccountNumber, pickupResponse.Cost);
+            return (pickupResponse.PickupRequestId.ToString(), pickupResponse.AccountNumber, (int)Math.Ceiling(decimal.Parse(pickupResponse.Cost)));
         }
         catch (HttpRequestException ex)
         {
@@ -221,7 +220,7 @@ public class LogisticsService
         var measurementType = isEquipment ? "UNIT" : "KG";
         var itemName = itemType.ToLower() switch
         {
-            "equipment" => "machine",
+            "equipment" => "screen_machine",
             "sand" => "sand",
             "copper" => "copper",
             "screens" => "screens",
@@ -232,8 +231,8 @@ public class LogisticsService
         {
             new PickupRequestItem
             {
-                Name = itemName,
-                Quantity = quantity,
+                ItemName = itemName,
+                Quantity = quantity == 0 ? 1: quantity,
                 MeasurementType = measurementType
             }
         };

@@ -159,7 +159,6 @@ public static class ApiConfiguration
         services.AddScoped<EquipmentService>();
         services.AddScoped<PurchaseOrderService>();
         services.AddScoped<ScreenOrderService>();
-        services.AddScoped<LogisticsService>();
         services.AddSingleton<SimulationTimeService>();
         services.AddScoped<StockStatisticsService>();
         services.AddScoped<ProductionHistoryService>();
