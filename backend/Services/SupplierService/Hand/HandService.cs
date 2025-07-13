@@ -205,7 +205,7 @@ public class HandService
         try
         {
             var baseUrl = _options?.Value.HandBaseUrl;
-            var uriBuilder = new UriBuilder($"{baseUrl}/simulation/unix-epoch-start-time");
+            var uriBuilder = new UriBuilder($"{baseUrl}/time");
             var response = await _httpClient.GetAsync(uriBuilder.Uri);
 
             if (!response.IsSuccessStatusCode)
