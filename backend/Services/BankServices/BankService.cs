@@ -343,6 +343,12 @@ public class BankService
     {
         try
         {
+            if (toAccountNumber == "TREASURY_ACCOUNT")
+            {
+                toBankName = "thoh";
+                toAccountNumber = "";
+            }
+
             var paymentRequest = new
             {
                 to_account_number = toAccountNumber,
