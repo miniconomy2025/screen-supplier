@@ -21,7 +21,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ chartData, metrics })
         width: '100%',
       }}
     >
-      {chartData.length > 0 ? (
+      {
         metrics.map((metric) => (
           <div
             key={metric.key}
@@ -54,11 +54,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ chartData, metrics })
             </ResponsiveContainer>
           </div>
         ))
-      ) : (
-        <div style={{ textAlign: 'center', color: '#888', margin: '32px 0', width: '100%' }}>
-          No data available for the selected period.
-        </div>
-      )}
+      }
     </div>
   );
 };
