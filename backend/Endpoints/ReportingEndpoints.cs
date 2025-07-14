@@ -32,6 +32,12 @@ public static class ReportingEndpoints
             .Produces<IEnumerable<PurchaseOrder>>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status404NotFound);
 
+        endpoints.MapGet("/report/hand-simulation-status", GetHandSimulationStatusHandler)
+            .WithTags("Reporting")
+            .WithName("GetHandSimulationStatus")
+            .WithSummary("Get Hand simulation status (ThoH API)")
+            .Produces<object>(StatusCodes.Status200OK);
+
         return endpoints;
     }
 
@@ -69,6 +75,15 @@ public static class ReportingEndpoints
         var purchaseOrders = await purchaseOrderService.GetPastOrdersAsync(date ?? simulationTimeProvider.Now.Date);
 
         return Results.Ok(purchaseOrders ?? []);
+    }
+
+    public static async Task<IResult> GetHandSimulationStatusHandler(
+        [FromServices] HandService handService)
+    {
+        var status = await handService.GetSimulationStatusAsync();
+
+
+        return Results.Ok(status);
     }
 }
 
