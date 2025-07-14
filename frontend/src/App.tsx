@@ -3,20 +3,26 @@ import styles from "./styles/styles";
 import Dashboard from "./Dashboard";
 import GraphsTab from "./GraphsTab";
 import SimulationStatus from "./SimulationStatus";
+import ThoHSimulationStatus from "./ThoHSimulationStatus";
 import appStyles from "./styles/App.module.scss";
 import { FiMenu } from "react-icons/fi";
 import PurchaseOrdersTab from "./PurchaseOrdersTab";
 import OrdersTab from "./OrdersTab";
 import { simulationService } from "./services/SimulationService";
+import { thoHSimulationService } from "./services/ThoHSimulationService";
 
 export default function ReportingDashboard() {
   useEffect(() => {
     // Start the simulation service when the app starts
     simulationService.start();
     
+    // Start the ThoH simulation service when the app starts
+    thoHSimulationService.start();
+    
     // Cleanup when app unmounts
     return () => {
       simulationService.stop();
+      thoHSimulationService.stop();
     };
   }, []);
 
@@ -151,6 +157,7 @@ function ReportingDashboardContent() {
             </button>
           </nav>
           <SimulationStatus />
+          <ThoHSimulationStatus />
         </div>
       </div>
       <div
