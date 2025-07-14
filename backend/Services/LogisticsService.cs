@@ -227,6 +227,11 @@ public class LogisticsService
             _ => itemType.ToLower()
         };
 
+        if (itemName == "screen_machine")
+        {
+            quantity = 1;
+        }
+
         return new List<PickupRequestItem>
         {
             new PickupRequestItem
