@@ -48,7 +48,7 @@ lifetime.ApplicationStarted.Register(async () =>
 
     var simulationStatus = await handService.GetSimulationStatusAsync();
 
-    if (simulationStatus.IsRunning)
+    if (simulationStatus != null && simulationStatus.IsRunning)
     {
         await simulationService.StartSimulationAsync(simulationStatus.EpochStartTime, isResuming: true);
     }

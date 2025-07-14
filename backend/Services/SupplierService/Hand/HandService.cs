@@ -201,7 +201,7 @@ public class HandService
         }
     }
 
-    public async Task<HandSimulationStatus> GetSimulationStatusAsync()
+    public async Task<HandSimulationStatus?> GetSimulationStatusAsync()
     {
         try
         {
@@ -212,17 +212,14 @@ public class HandService
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
+                return null;
             }
 
             var timeResponse = await response.Content.ReadFromJsonAsync<SimulationStartRequest>(_jsonOptions);
 
             if (timeResponse == null)
             {
-                return new HandSimulationStatus
-                {
-                    IsRunning = false,
-                    EpochStartTime = 0
-                };
+                return null;
             }
 
             if (timeResponse?.EpochStartTime != null)
