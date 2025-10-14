@@ -108,8 +108,6 @@ public static class ApiConfiguration
             .BindConfiguration($"ExternalServices:{BankServiceOptions.Section}")
             .ValidateDataAnnotations();
 
-        // Register IBankService interface
-        services.AddScoped<IBankService, BankService>();
         services.AddScoped<BankIntegrationService>();
 
         // Bank Settings
@@ -161,7 +159,6 @@ public static class ApiConfiguration
         services.AddScoped<EquipmentService>();
         services.AddScoped<PurchaseOrderService>();
         services.AddScoped<ScreenOrderService>();
-        services.AddSingleton<ISimulationTimeService, SimulationTimeService>();
         services.AddSingleton<SimulationTimeService>();
         services.AddScoped<StockStatisticsService>();
         services.AddScoped<ProductionHistoryService>();
