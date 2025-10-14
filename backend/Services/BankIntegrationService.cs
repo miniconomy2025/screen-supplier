@@ -4,10 +4,10 @@ namespace ScreenProducerAPI.Services;
 
 public class BankIntegrationService
 {
-    private readonly BankService _bankService;
+    private readonly IBankService _bankService;
 
     public BankIntegrationService(
-        BankService bankService)
+        IBankService bankService)
     {
         _bankService = bankService;
     }

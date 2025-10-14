@@ -9,7 +9,7 @@ using System.Text.Json.Serialization;
 
 namespace ScreenProducerAPI.Services.BankServices;
 
-public class BankService
+public class BankService : IBankService
 {
     private readonly HttpClient _httpClient;
     private readonly ScreenContext _context;
