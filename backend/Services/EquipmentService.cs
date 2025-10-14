@@ -247,7 +247,7 @@ public class EquipmentService
         {
             Success = true,
             FailedCount = availableMachines.Count,
-            Message = $"{availableMachines.Count} machines have experienced failuer."
+            Message = $"{availableMachines.Count} machines have experienced failure."
         };
     }
 }
