@@ -9,7 +9,7 @@ terraform {
   required_version = ">= 1.2.0"
 
   backend "s3" {
-    bucket         = "terraform-state-bucket-screen-supplier-grp-1"
+    bucket         = "terraform-state-bucket-screen-supplier-grp-2"
     key            = "env/prod/terraform.tfstate"
     region         = "af-south-1"
     encrypt        = true
@@ -19,7 +19,7 @@ terraform {
 data "terraform_remote_state" "bootstrap" {
   backend = "s3"
   config = {
-    bucket = "terraform-state-bucket-screen-supplier-grp-1"
+    bucket = "terraform-state-bucket-screen-supplier-grp-2"
     key    = "bootstrap/terraform.tfstate"  
     region = "af-south-1"
   }
