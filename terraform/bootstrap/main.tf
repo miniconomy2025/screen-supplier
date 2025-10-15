@@ -7,7 +7,7 @@ terraform {
   }
   required_version = ">= 1.2.0"
   backend "s3" {
-    bucket = "terraform-state-bucket-screen-supplier-grp"
+    bucket = "terraform-state-bucket-screen-supplier-grp-1"
     key    = "bootstrap/terraform.tfstate"
     region = "af-south-1"
   }
@@ -18,7 +18,7 @@ provider "aws" {
 }
 
 resource "aws_s3_bucket" "terraform_state" {
-  bucket = "terraform-state-bucket-screen-supplier-grp"  
+  bucket = "terraform-state-bucket-screen-supplier-grp-1"  
   tags = {
     Name        = "Terraform State Bucket"
     Environment = "prod"
