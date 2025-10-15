@@ -16,7 +16,6 @@ terraform {
   }
 }
 
-
 data "terraform_remote_state" "bootstrap" {
   backend = "s3"
   config = {
@@ -40,11 +39,6 @@ locals {
 
 provider "aws" {
   region  = "af-south-1"
-}
-
-provider "aws" {
-  alias  = "us_east_1"
-  region = "us-east-1"
 }
 
 data "aws_ami" "ubuntu" {
@@ -84,7 +78,7 @@ resource "aws_subnet" "private_2" {
 resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "10.0.0.0/24"
-  availability_zone = "af-south-1a"
+  availability_zone       = "af-south-1a"
   map_public_ip_on_launch = true
 }
 
@@ -139,14 +133,8 @@ resource "aws_security_group" "ec2-security-group" {
   description = "Allow API and web traffic"
   vpc_id      = aws_vpc.main.id
 
-  ingress{
-    from_port = 5000
-    to_port = 5000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  
-  }
-
   ingress {
+    description = "HTTP from anywhere"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -154,6 +142,7 @@ resource "aws_security_group" "ec2-security-group" {
   }
 
   ingress {
+    description = "HTTPS from anywhere"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
@@ -165,7 +154,7 @@ resource "aws_security_group" "ec2-security-group" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] 
+    cidr_blocks = ["0.0.0.0/0"]  # Consider restricting this to your IP
   }
 
   egress {
@@ -174,31 +163,49 @@ resource "aws_security_group" "ec2-security-group" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags = {
+    Name = "screen-supplier-ec2-sg"
+  }
 }
 
 resource "aws_security_group" "rds-security-group" {
-    name = "screen-supplier-rds"
-    description = "Allow EC2 to talk to RDS"
-    vpc_id      = aws_vpc.main.id
-    ingress{
-        from_port = 5432
-        to_port = 5432
-        protocol = "tcp"
-        cidr_blocks = ["0.0.0.0/0"] 
-    }
+  name        = "screen-supplier-rds"
+  description = "Allow EC2 to talk to RDS"
+  vpc_id      = aws_vpc.main.id
+  
+  ingress {
+    description     = "PostgreSQL from EC2"
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ec2-security-group.id]
+  }
+
+  ingress {
+    description = "PostgreSQL from anywhere (remove after setup)"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "screen-supplier-rds-sg"
+  }
 }
 
 resource "aws_db_instance" "postgres" {
-  allocated_storage    = 20
-  engine               = "postgres"
-  engine_version       = "15"
-  instance_class       = "db.t3.micro"
-  publicly_accessible = true
-  username             = local.secret_data.db_username
-  password             = local.secret_data.db_password
-  parameter_group_name = "default.postgres15"
-  skip_final_snapshot  = true
-  db_name              = "ScreenProducerDb"
+  allocated_storage      = 20
+  engine                 = "postgres"
+  engine_version         = "15"
+  instance_class         = "db.t3.micro"
+  publicly_accessible    = true
+  username               = local.secret_data.db_username
+  password               = local.secret_data.db_password
+  parameter_group_name   = "default.postgres15"
+  skip_final_snapshot    = true
+  db_name                = "ScreenProducerDb"
   vpc_security_group_ids = [aws_security_group.rds-security-group.id]
   db_subnet_group_name   = aws_db_subnet_group.public-group.name
   
@@ -248,20 +255,24 @@ resource "aws_iam_instance_profile" "ec2_instance_profile" {
 }
 
 resource "aws_instance" "app_server" {
-  ami  = data.aws_ami.ubuntu.id
-  instance_type = "t3.micro"
-  subnet_id = aws_subnet.public.id
-  iam_instance_profile = aws_iam_instance_profile.ec2_instance_profile.name
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = "t3.micro"
+  subnet_id              = aws_subnet.public.id
+  iam_instance_profile   = aws_iam_instance_profile.ec2_instance_profile.name
+  key_name               = "screen-supplier-key"
+  vpc_security_group_ids = [aws_security_group.ec2-security-group.id]
+
   tags = {
     Name = "screen-supplier-backend"
   }
-  key_name = "screen-supplier-key" 
-  vpc_security_group_ids = [aws_security_group.ec2-security-group.id]
 
   user_data = base64encode(<<-EOF
     #!/bin/bash
+    set -e
+    
+    # Update system
     apt-get update -y
-    apt-get install -y nginx awscli
+    apt-get install -y nginx awscli jq
 
     # Install .NET 9 runtime
     wget https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
@@ -276,6 +287,9 @@ server {
     listen 80 default_server;
     listen [::]:80 default_server;
 
+    # Increase buffer sizes for large requests
+    client_max_body_size 10M;
+    
     location / {
         proxy_pass http://localhost:5000;
         proxy_http_version 1.1;
@@ -286,6 +300,11 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
+        
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
     }
 }
 NGINX_EOF
@@ -296,6 +315,8 @@ NGINX_EOF
     # Create app directory
     mkdir -p /home/ubuntu/build
     chown ubuntu:ubuntu /home/ubuntu/build
+    
+    echo "EC2 instance setup completed" > /var/log/user-data.log
   EOF
   )
 }
@@ -310,93 +331,26 @@ resource "aws_secretsmanager_secret_version" "db_credentials_version" {
 }
 
 output "ec2_public_ip" {
-  value = aws_instance.app_server.public_ip
+  description = "EC2 instance public IP"
+  value       = aws_instance.app_server.public_ip
 }
 
-output "api_cloudfront_domain" {
-  description = "CloudFront domain for API"
-  value       = aws_cloudfront_distribution.api.domain_name
+output "ec2_public_dns" {
+  description = "EC2 instance public DNS"
+  value       = aws_instance.app_server.public_dns
+}
+
+output "rds_endpoint" {
+  description = "RDS database endpoint"
+  value       = aws_db_instance.postgres.endpoint
+}
+
+output "api_url" {
+  description = "Backend API URL (use this in your frontend)"
+  value       = "http://${aws_instance.app_server.public_dns}"
 }
 
 output "frontend_cloudfront_domain" {
-  description = "CloudFront domain for frontend"
-  value       = "Get from bootstrap terraform output"
-}
-
-resource "aws_cloudfront_distribution" "api" {
-  origin {
-    domain_name = aws_instance.app_server.public_dns
-    origin_id   = "EC2-${aws_instance.app_server.id}"
-
-    custom_origin_config {
-      http_port              = 80
-      https_port             = 443
-      origin_protocol_policy = "http-only"
-      origin_ssl_protocols   = ["TLSv1.2"]
-    }
-  }
-
-  enabled = true
-
-  # aliases = ["screen-supplier-api.projects.bbdgrad.com"]
-
-  default_cache_behavior {
-    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-    cached_methods   = ["GET", "HEAD", "OPTIONS"]
-    target_origin_id = "EC2-${aws_instance.app_server.id}"
-
-    forwarded_values {
-      query_string = true
-      headers      = ["*"]
-      cookies {
-        forward = "all"
-      }
-    }
-
-    viewer_protocol_policy = "redirect-to-https"
-    min_ttl                = 0
-    default_ttl            = 0     
-    max_ttl                = 0
-    compress               = false
-  }
-
-  ordered_cache_behavior {
-    path_pattern     = "/api/*"
-    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-    cached_methods   = ["GET", "HEAD", "OPTIONS"]
-    target_origin_id = "EC2-${aws_instance.app_server.id}"
-
-    forwarded_values {
-      query_string = true
-      headers      = ["*"]
-      cookies {
-        forward = "all"
-      }
-    }
-
-    viewer_protocol_policy = "redirect-to-https"
-    min_ttl                = 0
-    default_ttl            = 0
-    max_ttl                = 0
-    compress               = false
-  }
-
-  price_class = "PriceClass_100"
-
-  restrictions {
-    geo_restriction {
-      restriction_type = "none"
-    }
-  }
-
-  viewer_certificate {
-    cloudfront_default_certificate = true
-    # Use default certificate for now - add custom domain later
-    # acm_certificate_arn = aws_acm_certificate.main.arn
-    # ssl_support_method  = "sni-only"
-  }
-
-  tags = {
-    Name = "screen-supplier-api"
-  }
+  description = "CloudFront domain for frontend (from bootstrap)"
+  value       = "Get from: terraform output -state=../bootstrap/terraform.tfstate frontend_cloudfront_domain"
 }

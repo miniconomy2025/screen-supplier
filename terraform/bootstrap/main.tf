@@ -17,11 +17,6 @@ provider "aws" {
   region = "af-south-1"
 }
 
-provider "aws" {
-  alias  = "us_east_1"
-  region = "us-east-1"
-}
-
 resource "aws_s3_bucket" "terraform_state" {
   bucket = "terraform-state-bucket-screen-supplier-grp"  
   tags = {
@@ -95,22 +90,6 @@ resource "aws_s3_bucket_policy" "frontend" {
   depends_on = [aws_s3_bucket_public_access_block.frontend]
 }
 
-resource "aws_acm_certificate" "main" {
-  provider                  = aws.us_east_1
-  domain_name              = "screen-supplier.projects.bbdgrad.com"
-  subject_alternative_names = ["screen-supplier-api.projects.bbdgrad.com"]
-  validation_method        = "DNS"
-
-  lifecycle {
-    create_before_destroy = true
-  }
-
-  tags = {
-    Name = "screen-supplier-certificate"
-  }
-}
-
-# CloudFront distribution for frontend
 resource "aws_cloudfront_distribution" "frontend" {
   origin {
     domain_name = aws_s3_bucket.frontend.bucket_regional_domain_name
@@ -125,7 +104,6 @@ resource "aws_cloudfront_distribution" "frontend" {
   is_ipv6_enabled     = true
   default_root_object = "index.html"
 
-  # aliases = ["screen-supplier.projects.bbdgrad.com"]
 
   default_cache_behavior {
     allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
@@ -168,8 +146,6 @@ resource "aws_cloudfront_distribution" "frontend" {
 
   viewer_certificate {
     cloudfront_default_certificate = true
-    # acm_certificate_arn = aws_acm_certificate.main.arn
-    # ssl_support_method  = "sni-only"
   }
 
   tags = {
@@ -208,9 +184,4 @@ output "frontend_bucket_name" {
 output "frontend_cloudfront_domain" {
   description = "CloudFront domain for frontend"
   value       = aws_cloudfront_distribution.frontend.domain_name
-}
-
-output "acm_certificate_arn" {
-  description = "ACM certificate ARN"
-  value       = aws_acm_certificate.main.arn
 }
