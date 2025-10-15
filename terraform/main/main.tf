@@ -134,7 +134,6 @@ resource "aws_security_group" "ec2-security-group" {
   vpc_id      = aws_vpc.main.id
 
   ingress {
-    description = "HTTP from anywhere"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -142,7 +141,6 @@ resource "aws_security_group" "ec2-security-group" {
   }
 
   ingress {
-    description = "HTTPS from anywhere"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
@@ -154,7 +152,7 @@ resource "aws_security_group" "ec2-security-group" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # Consider restricting this to your IP
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
