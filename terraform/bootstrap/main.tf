@@ -7,7 +7,7 @@ terraform {
   }
   required_version = ">= 1.2.0"
   backend "s3" {
-    bucket = "terraform-state-bucket-screen-supplier-grp-1"
+    bucket = "terraform-state-bucket-screen-supplier-grp-2"
     key    = "bootstrap/terraform.tfstate"
     region = "af-south-1"
   }
@@ -18,7 +18,7 @@ provider "aws" {
 }
 
 resource "aws_s3_bucket" "terraform_state" {
-  bucket = "terraform-state-bucket-screen-supplier-grp-1"  
+  bucket = "terraform-state-bucket-screen-supplier-grp-2"  
   tags = {
     Name        = "Terraform State Bucket"
     Environment = "prod"
@@ -50,7 +50,7 @@ resource "aws_s3_bucket_public_access_block" "terraform_state_block" {
 }
 
 resource "aws_s3_bucket" "frontend" {
-  bucket = "screen-supplier-frontend-static"
+  bucket = "screen-supplier-frontend-static-1"
   tags = {
     Name        = "Frontend Static Website"
     Environment = "prod"
