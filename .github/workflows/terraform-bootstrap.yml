@@ -26,7 +26,10 @@ jobs:
       - name: Terraform Init (Bootstrap)
         working-directory: terraform/bootstrap
         run: terraform init
-
+      - name: Import existing S3 bucket
+        working-directory: terraform/bootstrap
+        run: |
+          terraform import aws_s3_bucket.terraform_state terraform-state-bucket-screen-supplier-grp-2 || true
       - name: Terraform Apply (Bootstrap)
         working-directory: terraform/bootstrap
         if: github.ref == 'refs/heads/main'
