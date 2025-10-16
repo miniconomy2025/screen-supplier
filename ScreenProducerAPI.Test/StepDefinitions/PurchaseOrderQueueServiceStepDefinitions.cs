@@ -71,10 +71,12 @@ public sealed class PurchaseOrderQueueServiceStepDefinitions
         _mockCommandFactory = new Mock<IQueueCommandFactory>();
 
         _mockServiceScope = new Mock<IServiceScope>();
-        _mockServiceScope.Setup(x => x.ServiceProvider.GetRequiredService<ScreenContext>())
+        var mockScopeServiceProvider = new Mock<IServiceProvider>();
+        mockScopeServiceProvider.Setup(x => x.GetService(typeof(ScreenContext)))
             .Returns(_context);
-        _mockServiceScope.Setup(x => x.ServiceProvider.GetRequiredService<IQueueCommandFactory>())
+        mockScopeServiceProvider.Setup(x => x.GetService(typeof(IQueueCommandFactory)))
             .Returns(_mockCommandFactory.Object);
+        _mockServiceScope.Setup(x => x.ServiceProvider).Returns(mockScopeServiceProvider.Object);
 
         var mockServiceScopeFactory = new Mock<IServiceScopeFactory>();
         mockServiceScopeFactory.Setup(x => x.CreateScope()).Returns(_mockServiceScope.Object);
@@ -82,7 +84,6 @@ public sealed class PurchaseOrderQueueServiceStepDefinitions
         _mockServiceProvider = new Mock<IServiceProvider>();
         _mockServiceProvider.Setup(x => x.GetService(typeof(IServiceScopeFactory)))
             .Returns(mockServiceScopeFactory.Object);
-        _mockServiceProvider.Setup(x => x.CreateScope()).Returns(_mockServiceScope.Object);
 
         _queueService = new PurchaseOrderQueueService(
             _mockServiceProvider.Object,
@@ -239,8 +240,6 @@ public sealed class PurchaseOrderQueueServiceStepDefinitions
     [Then(@"purchase order (.*) should be abandoned")]
     public void ThenPurchaseOrderShouldBeAbandoned(int orderId)
     {
-        // In a real scenario, we'd verify the status was updated to Abandoned
-        // For now, we verify it's no longer in the queue
         _queueCountAfter.Should().Be(0);
     }
 

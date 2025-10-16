@@ -67,7 +67,7 @@ public class ProductService
         }
     }
 
-    public async Task<int> GetAvailableStockAsync()
+    public virtual async Task<int> GetAvailableStockAsync()
     {
         try
         {
@@ -144,7 +144,7 @@ public class ProductService
         }
     }
 
-    public async Task<Product?> GetProductAsync()
+    public virtual async Task<Product?> GetProductAsync()
     {
         return await _context.Products.FirstOrDefaultAsync();
     }

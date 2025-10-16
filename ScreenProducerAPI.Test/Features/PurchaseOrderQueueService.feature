@@ -17,7 +17,7 @@ Scenario: Enqueue multiple purchase orders
 @Queue
 Scenario: Process queue successfully
 	Given the queue processing is enabled
-	And there is a purchase order with id 1 in status "requires_payment_supplier"
+	And there is a purchase order with id 1 in status "delivered"
 	And the command for purchase order 1 will succeed
 	And purchase order 1 is already in the queue
 	When I process the queue
