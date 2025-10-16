@@ -4,7 +4,7 @@ using ScreenProducerAPI.ScreenDbContext;
 
 namespace ScreenProducerAPI.Services;
 
-public class MaterialService
+public class MaterialService : IMaterialService
 {
     private readonly ScreenContext _context;
 

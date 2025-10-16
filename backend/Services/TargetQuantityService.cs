@@ -6,7 +6,7 @@ using ScreenProducerAPI.Util;
 
 namespace ScreenProducerAPI.Services;
 
-public class TargetQuantityService
+public class TargetQuantityService : ITargetQuantityService
 {
     private readonly ScreenContext _context;
     private readonly IOptionsMonitor<TargetQuantitiesConfig> _targetConfig;

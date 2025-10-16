@@ -4,7 +4,7 @@ using ScreenProducerAPI.ScreenDbContext;
 using ScreenProducerAPI.Services;
 using ScreenProducerAPI.Models.Responses;
 
-public class EquipmentService
+public class EquipmentService : IEquipmentService
 {
     private readonly ScreenContext _context;
     private readonly MaterialService _materialService;

@@ -1,11 +1,12 @@
 ﻿using Microsoft.Extensions.Options;
 using ScreenProducerAPI.Exceptions;
 using ScreenProducerAPI.Models.Requests;
+using ScreenProducerAPI.Services;
 using ScreenProducerAPI.Services.SupplierService;
 using ScreenProducerAPI.Services.SupplierService.Hand.Models;
 using System.Text.Json;
 
-public class HandService
+public class HandService : IHandService
 {
     private readonly HttpClient _httpClient;
     private readonly IOptions<SupplierServiceOptions> _options;
@@ -248,7 +249,7 @@ public class HandService
         }
     }
 
-    public async Task<bool> TryInitializeEquipmentParametersAsync(EquipmentService equipmentService)
+    public async Task<bool> TryInitializeEquipmentParametersAsync(IEquipmentService equipmentService)
     {
         try
         {
