@@ -4,7 +4,7 @@ using ScreenProducerAPI.Services.BankServices;
 
 namespace ScreenProducerAPI.Services;
 
-public class SimulationTimeService : IDisposable
+public class SimulationTimeService : ISimulationTimeService, IDisposable
 {
     private readonly ILogger<SimulationTimeService> _logger;
     private readonly IServiceProvider _serviceProvider;

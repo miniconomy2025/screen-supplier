@@ -32,10 +32,23 @@ jobs:
       - name: Deploy to S3
         working-directory: frontend
         run: |
-          aws s3 sync ./dist/ s3://screen-supplier-frontend-static --delete
+          aws s3 sync ./dist/ s3://screen-supplier-frontend-static-1 --delete
 
       - name: Invalidate CloudFront cache
         run: |
           # Get CloudFront distribution ID for frontend
-          DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Aliases.Items[0]=='screen-supplier.projects.bbdgrad.com'].Id" --output text)
-          aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
+          DISTRIBUTION_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[0].DomainName=='screen-supplier-frontend-static-1.s3.af-south-1.amazonaws.com'].Id" --output text)
+          
+          if [ -n "$DISTRIBUTION_ID" ]; then
+            aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
+            echo "CloudFront cache invalidated for distribution: $DISTRIBUTION_ID"
+          else
+            echo "CloudFront distribution not found"
+            exit 1
+          fi
+          
+      - name: Get CloudFront URL
+        run: |
+          DISTRIBUTION_DOMAIN=$(aws cloudfront list-distributions --query "DistributionList.Items[?Origins.Items[0].DomainName=='screen-supplier-frontend-static-1.s3.af-south-1.amazonaws.com'].DomainName" --output text)
+          echo "Frontend deployed successfully!"
+          echo "Frontend URL: https://$DISTRIBUTION_DOMAIN"

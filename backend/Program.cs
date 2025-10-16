@@ -24,7 +24,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("https://screen-supplier.projects.bbdgrad.com")
+        policy.WithOrigins("https://todosecuritylevelup.com", "https://d3r12293fg8bh4.cloudfront.net")
         .AllowAnyHeader()
         .AllowAnyMethod();
     });

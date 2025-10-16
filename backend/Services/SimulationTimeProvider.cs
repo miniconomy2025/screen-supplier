@@ -14,5 +14,5 @@ public class SimulationTimeProvider
         ? DateTime.SpecifyKind(_simulationTimeService.GetSimulationDateTime(), DateTimeKind.Utc)
         : DateTime.UtcNow;
 
-    public bool IsSimulationRunning => _simulationTimeService.IsSimulationRunning();
+    public virtual bool IsSimulationRunning => _simulationTimeService.IsSimulationRunning();
 }

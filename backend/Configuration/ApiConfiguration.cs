@@ -108,6 +108,8 @@ public static class ApiConfiguration
             .BindConfiguration($"ExternalServices:{BankServiceOptions.Section}")
             .ValidateDataAnnotations();
 
+        // Register IBankService interface
+        services.AddScoped<IBankService, BankService>();
         services.AddScoped<BankIntegrationService>();
 
         // Bank Settings
@@ -165,6 +167,7 @@ public static class ApiConfiguration
         services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
         services.AddScoped<PurchaseOrderService>();
         services.AddScoped<ScreenOrderService>();
+        services.AddSingleton<ISimulationTimeService, SimulationTimeService>();
         services.AddSingleton<SimulationTimeService>();
         services.AddScoped<StockStatisticsService>();
         services.AddScoped<IProductionHistoryService, ProductionHistoryService>();
@@ -189,11 +192,11 @@ public static class ApiConfiguration
     private static X509Certificate2 CreatePfx()
     {
 
-        string certPem = File.ReadAllText(@"../screen-supplier-client.crt");
-        string keyPem = File.ReadAllText(@"../screen-supplier-client.key");
-        X509Certificate2 cert = X509Certificate2.CreateFromPem(certPem, keyPem);
-
-        var pfxCertificate = new X509Certificate2(cert.Export(X509ContentType.Pfx));
+        // string certPem = File.ReadAllText(@"../screen-supplier-client.crt");
+        // string keyPem = File.ReadAllText(@"../screen-supplier-client.key");
+        // X509Certificate2 cert = X509Certificate2.CreateFromPem(certPem, keyPem);
+        // (cert.Export(X509ContentType.Pfx)
+        var pfxCertificate = new X509Certificate2();
 
         return pfxCertificate;
 
