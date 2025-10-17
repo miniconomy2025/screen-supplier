@@ -172,7 +172,8 @@ public static class ApiConfiguration
         services.AddScoped<StockStatisticsService>();
         services.AddScoped<IProductionHistoryService, ProductionHistoryService>();
         services.AddScoped<ProductionHistoryService>();
-        services.AddScoped<ReportingService>();
+        services.AddScoped<IReportingService, ReportingService>();
+        services.AddScoped<SimulationTimeProvider>();
 
         services.AddScoped<IQueueCommandFactory, QueueCommandFactory>();
 
