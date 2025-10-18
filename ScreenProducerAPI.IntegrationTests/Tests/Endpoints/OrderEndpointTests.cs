@@ -8,6 +8,7 @@ using ScreenProducerAPI.Models.Responses;
 using ScreenProducerAPI.ScreenDbContext;
 using Microsoft.Extensions.DependencyInjection;
 using ScreenProducerAPI.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace ScreenProducerAPI.IntegrationTests.Tests.Endpoints;
 
@@ -233,6 +234,17 @@ public class OrderEndpointTests
     {
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ScreenContext>();
+
+        // Seed order statuses if not present (required for order creation)
+        if (!await context.OrderStatuses.AnyAsync())
+        {
+            context.OrderStatuses.AddRange(
+                new Models.OrderStatus { Id = 1, Status = "waiting_payment" },
+                new Models.OrderStatus { Id = 2, Status = "waiting_collection" },
+                new Models.OrderStatus { Id = 3, Status = "collected" }
+            );
+            await context.SaveChangesAsync();
+        }
 
         if (!await context.Products.AnyAsync())
         {

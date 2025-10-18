@@ -8,6 +8,7 @@ using ScreenProducerAPI.Models.Responses;
 using ScreenProducerAPI.ScreenDbContext;
 using Microsoft.Extensions.DependencyInjection;
 using ScreenProducerAPI.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace ScreenProducerAPI.IntegrationTests.Tests.Scenarios;
 
@@ -197,17 +198,36 @@ public class OrderToDeliveryFlowTests
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ScreenContext>();
 
-        if (!await context.Products.AnyAsync())
+        // Seed order statuses if not present (required for order creation)
+        if (!await context.OrderStatuses.AnyAsync())
         {
-            var product = new Product
-            {
-                Price = price,
-                Quantity = quantity
-            };
-
-            context.Products.Add(product);
+            context.OrderStatuses.AddRange(
+                new Models.OrderStatus { Id = 1, Status = "waiting_payment" },
+                new Models.OrderStatus { Id = 2, Status = "waiting_collection" },
+                new Models.OrderStatus { Id = 3, Status = "collected" }
+            );
             await context.SaveChangesAsync();
         }
+
+        // Clear existing products to ensure test isolation
+        var existingProducts = await context.Products.ToListAsync();
+        if (existingProducts.Any())
+        {
+            context.Products.RemoveRange(existingProducts);
+            await context.SaveChangesAsync();
+        }
+
+        var product = new Product
+        {
+            Price = price,
+            Quantity = quantity
+        };
+
+        context.Products.Add(product);
+        await context.SaveChangesAsync();
+
+        // Detach to avoid tracking issues
+        context.ChangeTracker.Clear();
     }
 
     private async Task<CreateOrderResponse> CreateOrderAsync(int quantity)

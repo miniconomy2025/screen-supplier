@@ -20,6 +20,8 @@ namespace ScreenProducerAPI.IntegrationTests.Fixtures;
 /// </summary>
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {
+    private readonly string _databaseName = "IntegrationTestDb_" + Guid.NewGuid();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.ConfigureServices(services =>
@@ -38,9 +40,10 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             }
 
             // Add in-memory database for integration tests (replaces PostgreSQL)
+            // Use a stable database name for this factory instance
             services.AddDbContext<ScreenContext>(options =>
             {
-                options.UseInMemoryDatabase("IntegrationTestDb_" + Guid.NewGuid());
+                options.UseInMemoryDatabase(_databaseName);
             }, ServiceLifetime.Scoped);
 
             // Replace external HTTP service dependencies with mocks
@@ -101,8 +104,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
         // Seed order statuses (required for most tests)
         context.OrderStatuses.AddRange(
-            new Models.OrderStatus { Id = 1, Status = "waiting_for_payment" },
-            new Models.OrderStatus { Id = 2, Status = "waiting_for_collection" },
+            new Models.OrderStatus { Id = 1, Status = "waiting_payment" },
+            new Models.OrderStatus { Id = 2, Status = "waiting_collection" },
             new Models.OrderStatus { Id = 3, Status = "collected" }
         );
 
