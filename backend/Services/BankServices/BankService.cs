@@ -214,7 +214,7 @@ public class BankService : IBankService
         {
             var accountCreationRequest = new
             {
-                notification_url = "https://screen-supplier-api.projects.bbdgrad.com/payment"
+                notification_url = "https://todosecuritylevelup.com/payment"
             };
 
             var response = await _httpClient.PostAsJsonAsync($"{_options.Value.BaseUrl}/account",
