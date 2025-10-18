@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScreenProducerAPI", "Screen
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScreenProducerAPI.Test", "..\ScreenProducerAPI.Test\ScreenProducerAPI.Test.csproj", "{76B864CE-2246-4596-8BFD-9E8E10EB5F8E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScreenProducerAPI.IntegrationTests", "..\ScreenProducerAPI.IntegrationTests\ScreenProducerAPI.IntegrationTests.csproj", "{8A1C9F3D-5E2B-4F9A-A1C3-D7E8F9A0B1C2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{76B864CE-2246-4596-8BFD-9E8E10EB5F8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{76B864CE-2246-4596-8BFD-9E8E10EB5F8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{76B864CE-2246-4596-8BFD-9E8E10EB5F8E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A1C9F3D-5E2B-4F9A-A1C3-D7E8F9A0B1C2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A1C9F3D-5E2B-4F9A-A1C3-D7E8F9A0B1C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A1C9F3D-5E2B-4F9A-A1C3-D7E8F9A0B1C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A1C9F3D-5E2B-4F9A-A1C3-D7E8F9A0B1C2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

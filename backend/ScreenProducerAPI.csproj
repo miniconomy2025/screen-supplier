@@ -10,6 +10,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="ScreenProducerAPI.IntegrationTests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="ScreenProducerAPI.Test\**" />
     <Content Remove="ScreenProducerAPI.Test\**" />
     <EmbeddedResource Remove="ScreenProducerAPI.Test\**" />

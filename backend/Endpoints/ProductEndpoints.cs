@@ -27,7 +27,7 @@ public static class ProductEndpoints
             Screens = new Screens()
             {
                 Quantity = quantity,
-                Price = product.Price
+                Price = product?.Price ?? 0
             }
         };
 

@@ -39,7 +39,7 @@ public static class OrderEndpoints
     private static async Task<IResult> CreateOrderHandler(
         CreateOrderRequest request,
         [FromServices] ScreenOrderService screenOrderService,
-        [FromServices] BankService bankService)
+        [FromServices] IBankService bankService)
     {
         if (request?.Quantity <= 0)
             throw new InvalidRequestException("Invalid order request. Quantity must be positive.");
