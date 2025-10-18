@@ -3,13 +3,9 @@ using ScreenProducerAPI.Services.BankServices;
 
 namespace ScreenProducerAPI.IntegrationTests.Mocks;
 
-/// <summary>
-/// Mock implementation of IBankService for integration testing.
-/// Simulates bank operations without making real HTTP calls.
-/// </summary>
 public class MockBankService : IBankService
 {
-    private bool _accountInitialized = true; // Initialize as true for tests
+    private bool _accountInitialized = true; 
     private int _currentBalance = 100000;
     private string _accountNumber = "TEST-ACC-12345";
     private readonly List<Loan> _loans = new();

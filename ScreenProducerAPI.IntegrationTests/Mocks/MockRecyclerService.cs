@@ -3,10 +3,6 @@ using ScreenProducerAPI.Services.SupplierService.Recycler.Models;
 
 namespace ScreenProducerAPI.IntegrationTests.Mocks;
 
-/// <summary>
-/// Mock implementation of IRecyclerService for integration testing.
-/// Returns predictable test data instead of making real HTTP calls.
-/// </summary>
 public class MockRecyclerService : IRecyclerService
 {
     private readonly List<RecyclerOrderDetailResponse> _orders = new();

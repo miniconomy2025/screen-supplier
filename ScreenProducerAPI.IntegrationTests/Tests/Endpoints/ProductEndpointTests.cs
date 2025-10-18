@@ -10,11 +10,7 @@ using ScreenProducerAPI.Models;
 
 namespace ScreenProducerAPI.IntegrationTests.Tests.Endpoints;
 
-/// <summary>
-/// Integration tests for Product endpoints.
-/// Tests the complete request/response pipeline including routing, model binding,
-/// business logic, and HTTP response formatting.
-/// </summary>
+
 [TestFixture]
 public class ProductEndpointTests
 {
@@ -62,7 +58,6 @@ public class ProductEndpointTests
     [Test]
     public async Task GET_Screens_Returns_Zero_When_No_Products_In_Stock()
     {
-        // Arrange - Database starts empty by default
 
         // Act
         var response = await _client.GetAsync("/screens");

@@ -3,10 +3,6 @@ using ScreenProducerAPI.Services.SupplierService.Hand.Models;
 
 namespace ScreenProducerAPI.IntegrationTests.Mocks;
 
-/// <summary>
-/// Mock implementation of IHandService for integration testing.
-/// Returns predictable test data instead of making real HTTP calls.
-/// </summary>
 public class MockHandService : IHandService
 {
     public Task<MachinesForSaleResponse> GetMachinesForSaleAsync()

@@ -12,10 +12,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ScreenProducerAPI.IntegrationTests.Tests.Endpoints;
 
-/// <summary>
 /// Integration tests for Order endpoints.
 /// Tests the complete order creation and retrieval workflow.
-/// </summary>
 [TestFixture]
 public class OrderEndpointTests
 {
@@ -166,7 +164,7 @@ public class OrderEndpointTests
 
         // Assert
         response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
-        // NotFound is acceptable if no orders match the date criteria
+
     }
 
     [Test]
@@ -235,7 +233,6 @@ public class OrderEndpointTests
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ScreenContext>();
 
-        // Seed order statuses if not present (required for order creation)
         if (!await context.OrderStatuses.AnyAsync())
         {
             context.OrderStatuses.AddRange(
