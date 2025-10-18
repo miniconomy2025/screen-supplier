@@ -10,14 +10,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="ScreenProducerAPI.Test\**" />
+    <Content Remove="ScreenProducerAPI.Test\**" />
+    <EmbeddedResource Remove="ScreenProducerAPI.Test\**" />
+    <None Remove="ScreenProducerAPI.Test\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.6" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1-Preview.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
 	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="ScreenProducerAPI.Test\Features\" />
   </ItemGroup>
 
 </Project>

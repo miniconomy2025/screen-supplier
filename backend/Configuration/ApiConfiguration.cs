@@ -52,6 +52,7 @@ public static class ApiConfiguration
         {
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
+            client.DefaultRequestHeaders.Add("Client-Id", "screen-supplier");
         }).ConfigurePrimaryHttpMessageHandler(() =>
             new HttpClientHandler
             {
@@ -64,6 +65,7 @@ public static class ApiConfiguration
         {
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
+            client.DefaultRequestHeaders.Add("Client-Id", "screen-supplier");
         }).ConfigurePrimaryHttpMessageHandler(() =>
             new HttpClientHandler
             {
@@ -82,6 +84,7 @@ public static class ApiConfiguration
 
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
+            client.DefaultRequestHeaders.Add("Client-Id", "screen-supplier");
         }).ConfigurePrimaryHttpMessageHandler(() =>
             new HttpClientHandler
             {
@@ -94,6 +97,7 @@ public static class ApiConfiguration
         {
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
+            client.DefaultRequestHeaders.Add("Client-Id", "screen-supplier");
         })
         .ConfigurePrimaryHttpMessageHandler(() =>
             new HttpClientHandler
