@@ -15,7 +15,31 @@ jobs:
       - name: Setup .NET 9 SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x' 
+          dotnet-version: '9.0.x'
+
+      - name: Run Unit Tests
+        run: |
+          dotnet test ScreenProducerAPI.Test/ScreenProducerAPI.Test.csproj \
+            --configuration Release \
+            --logger "console;verbosity=detailed" \
+            --logger "trx;LogFileName=unit-test-results.trx" \
+            -- NUnit.DisplayName=FullName
+
+      - name: Run Integration Tests
+        run: |
+          dotnet test ScreenProducerAPI.IntegrationTests/ScreenProducerAPI.IntegrationTests.csproj \
+            --configuration Release \
+            --logger "console;verbosity=detailed" \
+            --logger "trx;LogFileName=integration-test-results.trx" \
+            -- NUnit.DisplayName=FullName
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: |
+            **/TestResults/*.trx
 
       - name: Get EC2 public DNS from repository variable
         id: tf_output
