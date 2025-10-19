@@ -20,7 +20,7 @@ export ConnectionStrings__DefaultConnection="Host=$DB_HOST;Port=5432;Database=Sc
 
 # External service URLs - these can be hardcoded since they're public
 export ExternalServices__CommercialBank__BaseUrl="https://commercial-bank-api.subspace.site"
-export ExternalServices__BulkLogistics__BaseUrl="https://bulk-logistics-api.projects.bbdgrad.com"
+export ExternalServices__BulkLogistics__BaseUrl="https://team7-todo.xyz"
 export ExternalServices__Hand__BaseUrl="https://thoh-api.projects.bbdgrad.com"
 export ExternalServices__Recycler__BaseUrl="https://recycler-api.projects.bbdgrad.com"
 export ExternalServices__Suppliers__HandBaseUrl="https://thoh-api.projects.bbdgrad.com"
