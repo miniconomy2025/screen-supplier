@@ -22,9 +22,9 @@ export ConnectionStrings__DefaultConnection="Host=$DB_HOST;Port=5432;Database=Sc
 export ExternalServices__CommercialBank__BaseUrl="https://commercial-bank-api.subspace.site"
 export ExternalServices__BulkLogistics__BaseUrl="https://team7-todo.xyz"
 export ExternalServices__Hand__BaseUrl="https://thoh-api.projects.bbdgrad.com"
-export ExternalServices__Recycler__BaseUrl="https://recycler-api.projects.bbdgrad.com"
+export ExternalServices__Recycler__BaseUrl="https://api.recycler.susnet.co.za"
 export ExternalServices__Suppliers__HandBaseUrl="https://thoh-api.projects.bbdgrad.com"
-export ExternalServices__Suppliers__RecyclerBaseUrl="https://recycler-api.projects.bbdgrad.com"
+export ExternalServices__Suppliers__RecyclerBaseUrl="https://api.recycler.susnet.co.za"
 export BankSettings__NotificationUrl="https://todosecuritylevelup.com/payment"
 
 # Kill any existing process
