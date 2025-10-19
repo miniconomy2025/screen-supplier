@@ -21,7 +21,8 @@ public static class ApiConfiguration
             .AddOrderEndpoints()
             .AddTargetQuantityEndpoints()
             .AddQueueEndpoints()
-            .AddReportingEndpoints();
+            .AddReportingEndpoints()
+            .AddStockEndpoints();
     }
 
     public static void ConfigureApp(this WebApplication app)
@@ -170,7 +171,7 @@ public static class ApiConfiguration
         services.AddScoped<EquipmentService>();
         services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
         services.AddScoped<PurchaseOrderService>();
-        services.AddScoped<ScreenOrderService>();
+        services.AddScoped<IScreenOrderService, ScreenOrderService>();
         services.AddSingleton<ISimulationTimeService, SimulationTimeService>();
         services.AddSingleton<SimulationTimeService>();
         services.AddScoped<StockStatisticsService>();
