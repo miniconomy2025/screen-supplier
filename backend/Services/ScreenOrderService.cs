@@ -8,7 +8,7 @@ using ScreenProducerAPI.Util;
 
 namespace ScreenProducerAPI.Services;
 
-public class ScreenOrderService
+public class ScreenOrderService : IScreenOrderService
 {
     private readonly ScreenContext _context;
     private readonly ProductService _productService;
@@ -37,7 +37,7 @@ public class ScreenOrderService
             }
 
             var localAccount = await _context.BankDetails.FirstAsync();
-            localAccount.EstimatedBalance +=(int)Math.Ceiling(notification.Amount);
+            localAccount.EstimatedBalance += (int)Math.Ceiling(notification.Amount);
 
             var screenOrder = await _context.ScreenOrders
                 .Include(so => so.OrderStatus)
@@ -105,41 +105,41 @@ public class ScreenOrderService
     }
 
 
-            public async Task<ScreenOrder> CreateOrderAsync(int quantity, string? customerInfo = null)
-            {
-                if (quantity <= 0)
-                    throw new InvalidRequestException("Quantity must be positive");
+    public async Task<ScreenOrder> CreateOrderAsync(int quantity, string? customerInfo = null)
+    {
+        if (quantity <= 0)
+            throw new InvalidRequestException("Quantity must be positive");
 
-                var product = await _productService.GetProductAsync();
-                if (product == null)
-                    throw new SystemConfigurationException("No product available");
+        var product = await _productService.GetProductAsync();
+        if (product == null)
+            throw new SystemConfigurationException("No product available");
 
-                var availableStock = await _productService.GetAvailableStockAsync();
-                if (availableStock < quantity)
-                    throw new InsufficientStockException("screens", quantity, availableStock);
+        var availableStock = await _productService.GetAvailableStockAsync();
+        if (availableStock < quantity)
+            throw new InsufficientStockException("screens", quantity, availableStock);
 
-                var waitingPaymentStatus = await _context.OrderStatuses
-                    .FirstOrDefaultAsync(os => os.Status == Status.WaitingForPayment);
+        var waitingPaymentStatus = await _context.OrderStatuses
+            .FirstOrDefaultAsync(os => os.Status == Status.WaitingForPayment);
 
-                if (waitingPaymentStatus == null)
-                    throw new SystemConfigurationException("Order status not properly configured");
+        if (waitingPaymentStatus == null)
+            throw new SystemConfigurationException("Order status not properly configured");
 
-                var screenOrder = new ScreenOrder
-                {
-                    Quantity = quantity,
-                    OrderDate = _simulationTimeProvider.Now,
-                    UnitPrice = product.Price,
-                    OrderStatusId = waitingPaymentStatus.Id,
-                    ProductId = product.Id,
-                    QuantityCollected = 0,
-                    AmountPaid = 0
-                };
+        var screenOrder = new ScreenOrder
+        {
+            Quantity = quantity,
+            OrderDate = _simulationTimeProvider.Now,
+            UnitPrice = product.Price,
+            OrderStatusId = waitingPaymentStatus.Id,
+            ProductId = product.Id,
+            QuantityCollected = 0,
+            AmountPaid = 0
+        };
 
-                _context.ScreenOrders.Add(screenOrder);
-                await _context.SaveChangesAsync();
+        _context.ScreenOrders.Add(screenOrder);
+        await _context.SaveChangesAsync();
 
-                return screenOrder;
-            }
+        return screenOrder;
+    }
 
     public async Task<ScreenOrder> FindScreenOrderByIdAsync(int orderId)
     {

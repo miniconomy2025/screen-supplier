@@ -6,7 +6,7 @@ public class ReportingService(ILogger<ReportingService> logger,
     ProductionHistoryService productionHistoryService,
     PurchaseOrderService purchaseOrderService,
     EquipmentService equipmentService,
-    ScreenOrderService screenOrderService) : IReportingService
+    IScreenOrderService screenOrderService) : IReportingService
 {
     public async Task<DailyReport?> GetDailyReportAsync(DateTime date)
     {

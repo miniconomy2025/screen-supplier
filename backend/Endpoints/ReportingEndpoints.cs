@@ -43,7 +43,7 @@ public static class ReportingEndpoints
 
     public static async Task<IResult> GetDailyReportHandler(
     [FromQuery] DateTime? date,
-    [FromServices] ReportingService reportingService,
+    [FromServices] IReportingService reportingService,
     [FromServices] SimulationTimeProvider simulationTimeProvider)
     {
         var dailyReport = await reportingService.GetDailyReportAsync(date ?? simulationTimeProvider.Now.Date);
@@ -56,7 +56,7 @@ public static class ReportingEndpoints
 
     public static async Task<IResult> GetLastPeriodReportsHandler(
         [FromQuery] int pastDaysToInclude,
-        [FromServices] ReportingService reportingService,
+        [FromServices] IReportingService reportingService,
         [FromServices] SimulationTimeProvider simulationTimeProvider)
     {
         if (pastDaysToInclude <= 0 || pastDaysToInclude > 90)

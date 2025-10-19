@@ -22,7 +22,7 @@ public static class PaymentEndpoints
 
     private static async Task<IResult> PaymentNotificationHandler(
         TransactionNotification notification,
-        [FromServices] ScreenOrderService screenOrderService)
+        [FromServices] IScreenOrderService screenOrderService)
     {
         if (notification == null ||
             string.IsNullOrWhiteSpace(notification.Description) ||
