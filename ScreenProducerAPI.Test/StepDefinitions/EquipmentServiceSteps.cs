@@ -35,5 +35,25 @@ public class EquipmentServiceSteps
         _equipmentService = new EquipmentService(_context, _mockMaterialService.Object, _mockProductService.Object);
     }
 
+    [Given(@"there are no existing equipment parameters")]
+    public async Task GivenThereAreNoExistingEquipmentParameters()
+    {
+        _context.EquipmentParameters.RemoveRange(_context.EquipmentParameters);
+        await _context.SaveChangesAsync();
+    }
 
+    [When(@"I initialize the equipment parameters with input sand (.*), copper (.*), output screens (.*), and weight (.*)")]
+    public async Task WhenIInitializeTheEquipmentParameters(int sand, int copper, int screens, int weight)
+    {
+        _boolResult = await _equipmentService.InitializeEquipmentParametersAsync(sand, copper, screens, weight);
+    }
+
+    [Then(@"the initialization should be successful")]
+    public void ThenTheInitializationShouldBeSuccessful()
+    {
+        Assert.That(_boolResult, Is.True);
+        Assert.That(_context.EquipmentParameters.Any(), Is.True);
+    }
+
+    
 }
