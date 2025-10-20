@@ -95,5 +95,29 @@ public class EquipmentServiceSteps
         await _context.SaveChangesAsync();
     }
 
+    [Given(@"sufficient materials are available")]
+    public void GivenSufficientMaterialsAreAvailable()
+    {
+        _mockMaterialService
+            .Setup(m => m.HasSufficientMaterialsAsync(It.IsAny<string>(), It.IsAny<int>()))
+            .ReturnsAsync(true);
+        _mockMaterialService
+            .Setup(m => m.ConsumeMaterialAsync(It.IsAny<string>(), It.IsAny<int>()))
+            .ReturnsAsync(true);
+    }
+
+    [When(@"I start production")]
+    public async Task WhenIStartProduction()
+    {
+        _intResult = await _equipmentService.StartProductionAsync();
+    }
+
+    [Then(@"some machines should start producing")]
+    public void ThenSomeMachinesShouldStartProducing()
+    {
+        Assert.That(_intResult, Is.GreaterThan(0));
+        Assert.That(_context.Equipment.Any(e => e.IsProducing), Is.True);
+    }
+
     
 }
