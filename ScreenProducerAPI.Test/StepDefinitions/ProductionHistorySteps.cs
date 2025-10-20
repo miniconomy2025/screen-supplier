@@ -125,5 +125,55 @@ public class ProductionHistorySteps
             });
     }
 
+    [When(@"I get the production history for ""(.*)""")]
+    public async Task WhenIGetTheProductionHistoryFor(string date)
+    {
+        _testDate = DateTime.Parse(date);
+        _result = await _service.GetProductionHistoryByDateAsync(_testDate);
+    }
 
+    [Then(@"the result should not be null")]
+    public void ThenTheResultShouldNotBeNull()
+    {
+        Assert.That(_result, Is.Not.Null);
+    }
+
+    [Then(@"the record date should be ""(.*)""")]
+    public void ThenTheRecordDateShouldBe(string date)
+    {
+        Assert.That(_result.RecordDate, Is.EqualTo(DateTime.Parse(date)));
+    }
+
+    [Then(@"the result should be null")]
+    public void ThenTheResultShouldBeNull()
+    {
+        Assert.That(_result, Is.Null);
+    }
+
+    [When(@"I store daily production history for ""(.*)"" with (.*) screens produced")]
+    public async Task WhenIStoreDailyProductionHistoryFor(string date, int screens)
+    {
+        _testDate = DateTime.Parse(date);
+        _result = await _service.StoreDailyProductionHistory(screens, _testDate);
+    }
+
+    [Then(@"a new production history record should be created")]
+    public void ThenANewProductionHistoryRecordShouldBeCreated()
+    {
+        Assert.That(_context.ProductionHistory.Any(p => p.RecordDate == _testDate), Is.True);
+    }
+
+    [Then(@"it should record (.*) screens produced")]
+    public void ThenItShouldRecordScreensProduced(int screens)
+    {
+        var record = _context.ProductionHistory.First(p => p.RecordDate == _testDate);
+        Assert.That(record.ScreensProduced, Is.EqualTo(screens));
+    }
+
+    [Then(@"the existing production history should be updated")]
+    public void ThenTheExistingProductionHistoryShouldBeUpdated()
+    {
+        var record = _context.ProductionHistory.First(p => p.RecordDate == _testDate);
+        Assert.That(record, Is.Not.Null);
+    }
 }
