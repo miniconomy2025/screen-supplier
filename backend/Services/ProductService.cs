@@ -8,9 +8,9 @@ namespace ScreenProducerAPI.Services;
 public class ProductService : IProductService
 {
     private readonly ScreenContext _context;
-    private readonly MaterialService _materialService;
+    private readonly IMaterialService _materialService;
 
-    public ProductService(ScreenContext context, MaterialService materialService)
+    public ProductService(ScreenContext context, IMaterialService materialService)
     {
         _context = context;
         _materialService = materialService;
@@ -93,7 +93,7 @@ public class ProductService : IProductService
         }
     }
 
-    public async Task<bool> UpdateUnitPriceAsync()
+    public virtual async Task<bool> UpdateUnitPriceAsync()
     {
         try
         {
@@ -154,7 +154,7 @@ public class ProductService : IProductService
         return await _context.Products.ToListAsync();
     }
 
-    public async Task<(int totalProduced, int reserved, int available)> GetStockSummaryAsync()
+    public virtual async Task<(int totalProduced, int reserved, int available)> GetStockSummaryAsync()
     {
         try
         {

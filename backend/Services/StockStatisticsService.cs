@@ -9,7 +9,7 @@ public class StockStatisticsService(
     ScreenContext context,
     IOptionsMonitor<TargetQuantitiesConfig> targetConfig,
     IOptionsMonitor<StockManagementOptions> stockConfig,
-    EquipmentService equipmentService) : IStockStatisticsService
+    IEquipmentService equipmentService) : IStockStatisticsService
 {
     public async Task<AllMaterialStatistics> GetMaterialStatisticsAsync()
     {
@@ -31,7 +31,7 @@ public class StockStatisticsService(
                 Copper = new MaterialStatistics()
                 {
                     DailyConsumption = 0,
-                    ReorderPoint = targetConfig.CurrentValue.Sand.Target,
+                    ReorderPoint = targetConfig.CurrentValue.Copper.Target,
                 }
             };
         }
@@ -46,7 +46,7 @@ public class StockStatisticsService(
             Copper = new MaterialStatistics()
             {
                 DailyConsumption = equipmentParameters.InputCopperKg * machineCount,
-                ReorderPoint = (equipmentParameters.InputCopperKg * machineCount * stockConfig.CurrentValue.LogisticsLeadTimeDays) + targetConfig.CurrentValue.Sand.Target,
+                ReorderPoint = (equipmentParameters.InputCopperKg * machineCount * stockConfig.CurrentValue.LogisticsLeadTimeDays) + targetConfig.CurrentValue.Copper.Target,
             }
         };
     }

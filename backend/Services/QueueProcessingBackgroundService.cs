@@ -20,7 +20,7 @@ public class QueueProcessingBackgroundService : BackgroundService
     {
         using (var scope = _serviceProvider.CreateScope())
         {
-            var queueService = scope.ServiceProvider.GetRequiredService<PurchaseOrderQueueService>();
+            var queueService = scope.ServiceProvider.GetRequiredService<IPurchaseOrderQueueService>();
             await queueService.PopulateQueueFromDatabaseAsync();
         }
 
@@ -32,7 +32,7 @@ public class QueueProcessingBackgroundService : BackgroundService
                 await Task.Delay(TimeSpan.FromSeconds(intervalSeconds), stoppingToken);
 
                 using var scope = _serviceProvider.CreateScope();
-                var queueService = scope.ServiceProvider.GetRequiredService<PurchaseOrderQueueService>();
+                var queueService = scope.ServiceProvider.GetRequiredService<IPurchaseOrderQueueService>();
 
                 await queueService.ProcessQueueAsync();
             }
