@@ -185,6 +185,9 @@ public static class ApiConfiguration
         // Register interfaces for supplier services
         services.AddScoped<IHandService, HandService>();
         services.AddScoped<IRecyclerService, RecyclerService>();
+        
+        // Register LogisticsService interface
+        services.AddScoped<ILogisticsService, LogisticsService>();
 
         // Update queue service registration
         services.AddSingleton<IPurchaseOrderQueueService, PurchaseOrderQueueService>();

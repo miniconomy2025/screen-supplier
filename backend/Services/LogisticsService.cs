@@ -9,7 +9,7 @@ using System.Text.Json;
 
 namespace ScreenProducerAPI.Services;
 
-public class LogisticsService
+public class LogisticsService : ILogisticsService
 {
     private readonly IConfiguration _configuration;
     private readonly HttpClient _httpClient;

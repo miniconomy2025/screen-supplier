@@ -3,6 +3,7 @@ using ScreenProducerAPI.Exceptions;
 using ScreenProducerAPI.Models.Requests;
 using ScreenProducerAPI.Models.Responses;
 using ScreenProducerAPI.Services;
+using System.Linq;
 
 namespace ScreenProducerAPI.Endpoints;
 
@@ -24,10 +25,23 @@ public static class LogisticsEndpoints
 
     private static async Task<IResult> HandleLogistics(
     LogisticsRequest request,
-    [FromServices] LogisticsService logisticsService)
+    [FromServices] ILogisticsService logisticsService)
     {
-        if (request?.Id <= 0 || request.Items?.FirstOrDefault()?.Quantity <= 0 || string.IsNullOrWhiteSpace(request.Type))
-            throw new InvalidRequestException("Invalid logistics request. Id, Quantity must be positive and Type must be specified.");
+        // Validate request structure
+        if (request == null)
+            throw new InvalidRequestException("Request cannot be null.");
+
+        if (request.Id <= 0)
+            throw new InvalidRequestException("Id must be positive.");
+
+        if (string.IsNullOrWhiteSpace(request.Type))
+            throw new InvalidRequestException("Type must be specified.");
+
+        if (request.Items == null || !request.Items.Any())
+            throw new InvalidRequestException("Items must be provided and cannot be empty.");
+
+        if (request.Items[0].Quantity <= 0)
+            throw new InvalidRequestException("Quantity must be positive.");
 
         switch (request.Type.ToUpper())
         {

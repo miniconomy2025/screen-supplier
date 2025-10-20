@@ -1,13 +1,11 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using ScreenProducerAPI.IntegrationTests.Mocks;
 using ScreenProducerAPI.ScreenDbContext;
 using ScreenProducerAPI.Services;
 using ScreenProducerAPI.Services.BankServices;
-using ScreenProducerAPI.Services.SupplierService;
-using ScreenProducerAPI.IntegrationTests.Mocks;
 
 namespace ScreenProducerAPI.IntegrationTests.Fixtures;
 
@@ -57,6 +55,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
         services.RemoveAll<RecyclerService>();
         services.RemoveAll<IBankService>();
         services.RemoveAll<BankService>();
+        services.RemoveAll<ILogisticsService>();
+        services.RemoveAll<LogisticsService>();
 
         var mockHandService = new MockHandService();
         services.AddScoped<IHandService>(sp => mockHandService);
@@ -64,6 +64,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
         services.AddScoped<IRecyclerService, MockRecyclerService>();
         services.AddScoped<IBankService, MockBankService>();
+        services.AddScoped<ILogisticsService, MockLogisticsService>();
     }
 
     private class FakeHandService : HandService
