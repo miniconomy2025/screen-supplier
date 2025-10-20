@@ -22,4 +22,9 @@
     Then a new production history record should be created
     And it should record 100 screens produced
 
-
+  Scenario: Update existing production history record
+    Given a production history record exists for "2025-10-18"
+    And materials, products, and equipment exist in the system
+    When I store daily production history for "2025-10-18" with 150 screens produced
+    Then the existing production history should be updated
+    And it should record 150 screens produced
