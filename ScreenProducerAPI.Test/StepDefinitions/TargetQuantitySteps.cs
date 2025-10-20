@@ -104,7 +104,68 @@ public class TargetQuantitySteps
     }
 
 
-    
+    [When(@"I check the inventory status")]
+    public async Task WhenICheckTheInventoryStatus()
+    {
+        _result = await _service.GetInventoryStatusAsync();
+    }
+
+    [Then(@"no item should need reordering")]
+    public void ThenNoItemShouldNeedReordering()
+    {
+        Assert.That(_result.Sand.NeedsReorder, Is.False);
+        Assert.That(_result.Copper.NeedsReorder, Is.False);
+        Assert.That(_result.Equipment.NeedsReorder, Is.False);
+    }
+
+    [Then(@"sand should need reordering")]
+    public void ThenSandShouldNeedReordering()
+    {
+        Assert.That(_result.Sand.NeedsReorder, Is.True);
+    }
+
+    [Then(@"copper should not need reordering")]
+    public void ThenCopperShouldNotNeedReordering()
+    {
+        Assert.That(_result.Copper.NeedsReorder, Is.False);
+    }
+
+    [Then(@"equipment should not need reordering")]
+    public void ThenEquipmentShouldNotNeedReordering()
+    {
+        Assert.That(_result.Equipment.NeedsReorder, Is.False);
+    }
+
+    [Then(@"only those items should need reordering")]
+    public void ThenOnlyThoseItemsShouldNeedReordering()
+    {
+        Assert.That(_result.Sand.NeedsReorder, Is.True);      // Below reorder
+        Assert.That(_result.Copper.NeedsReorder, Is.False);   // Above reorder
+        Assert.That(_result.Equipment.NeedsReorder, Is.False);
+    }
+
+    [Given(@"copper and equipment are above reorder points")]
+    public async Task GivenCopperAndEquipmentAreAboveReorderPoints()
+    {
+        // Copper above reorder point
+        _context.Materials.Add(new Material { Name = "copper", Quantity = 200 });
+
+        // Equipment above reorder point
+        for (int i = 0; i < 120; i++)
+        {
+            _context.Equipment.Add(new Equipment { IsAvailable = true });
+        }
+
+        await _context.SaveChangesAsync();
+
+        SetupMocks(reorderPoint: 100, target: 200);
+
+        _service = new TargetQuantityService(
+            _context,
+            Mock.Of<ILogger<TargetQuantityService>>(),
+            _mockTargetConfig.Object,
+            _mockStockStatistics.Object);
+    }
 
     private void SetupMocks(int reorderPoint, int target)
     {
