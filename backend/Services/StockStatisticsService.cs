@@ -9,7 +9,7 @@ public class StockStatisticsService(
     ScreenContext context,
     IOptionsMonitor<TargetQuantitiesConfig> targetConfig,
     IOptionsMonitor<StockManagementOptions> stockConfig,
-    EquipmentService equipmentService)
+    EquipmentService equipmentService) : IStockStatisticsService
 {
     public async Task<AllMaterialStatistics> GetMaterialStatisticsAsync()
     {
