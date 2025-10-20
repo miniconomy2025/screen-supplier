@@ -6,7 +6,7 @@ public class ReportingService(ILogger<ReportingService> logger,
     ProductionHistoryService productionHistoryService,
     PurchaseOrderService purchaseOrderService,
     EquipmentService equipmentService,
-    ScreenOrderService screenOrderService)
+    IScreenOrderService screenOrderService) : IReportingService
 {
     public async Task<DailyReport?> GetDailyReportAsync(DateTime date)
     {
@@ -84,7 +84,7 @@ public class ReportingService(ILogger<ReportingService> logger,
         }
     }
 
-    internal async Task<List<DailyReport>> GetLastPeriodReportsAsync(int pastDaysToInclude, DateTime date)
+    public async Task<List<DailyReport>> GetLastPeriodReportsAsync(int pastDaysToInclude, DateTime date)
     {
         var reports = new List<DailyReport>();
 

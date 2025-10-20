@@ -56,7 +56,7 @@ public class SimulationTimeService : ISimulationTimeService, IDisposable
         return true;
     }
 
-    public int GetCurrentSimulationDay()
+    public virtual int GetCurrentSimulationDay()
     {
         if (!_simulationRunning) return 0;
 
@@ -67,13 +67,13 @@ public class SimulationTimeService : ISimulationTimeService, IDisposable
         return Math.Max(0, elapsedSimDays);
     }
 
-    public DateTime GetSimulationDateTime()
+    public virtual DateTime GetSimulationDateTime()
     {
         var simDay = GetCurrentSimulationDay();
         return new DateTime(2050, 1, 1).AddDays(simDay);
     }
 
-    public bool IsSimulationRunning() => _simulationRunning;
+    public virtual bool IsSimulationRunning() => _simulationRunning;
 
     public TimeSpan GetTimeUntilNextDay()
     {

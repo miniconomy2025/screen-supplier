@@ -21,7 +21,8 @@ public static class ApiConfiguration
             .AddOrderEndpoints()
             .AddTargetQuantityEndpoints()
             .AddQueueEndpoints()
-            .AddReportingEndpoints();
+            .AddReportingEndpoints()
+            .AddStockEndpoints();
     }
 
     public static void ConfigureApp(this WebApplication app)
@@ -52,6 +53,7 @@ public static class ApiConfiguration
         {
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
+            client.DefaultRequestHeaders.Add("Client-Id", "screen-supplier");
         }).ConfigurePrimaryHttpMessageHandler(() =>
             new HttpClientHandler
             {
@@ -64,6 +66,7 @@ public static class ApiConfiguration
         {
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
+            client.DefaultRequestHeaders.Add("Client-Id", "screen-supplier");
         }).ConfigurePrimaryHttpMessageHandler(() =>
             new HttpClientHandler
             {
@@ -82,6 +85,7 @@ public static class ApiConfiguration
 
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
+            client.DefaultRequestHeaders.Add("Client-Id", "screen-supplier");
         }).ConfigurePrimaryHttpMessageHandler(() =>
             new HttpClientHandler
             {
@@ -94,6 +98,7 @@ public static class ApiConfiguration
         {
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
+            client.DefaultRequestHeaders.Add("Client-Id", "screen-supplier");
         })
         .ConfigurePrimaryHttpMessageHandler(() =>
             new HttpClientHandler
@@ -151,26 +156,41 @@ public static class ApiConfiguration
         services.AddHostedService<QueueProcessingBackgroundService>();
 
         // Core Services
+        services.AddScoped<ITargetQuantityService, TargetQuantityService>();
         services.AddScoped<TargetQuantityService>();
+        services.AddScoped<IReorderService, ReorderService>();
         services.AddScoped<ReorderService>();
 
 
         // Business Logic Services
+        services.AddScoped<IMaterialService, MaterialService>();
         services.AddScoped<MaterialService>();
+        services.AddScoped<IProductService, ProductService>();
         services.AddScoped<ProductService>();
+        services.AddScoped<IEquipmentService, EquipmentService>();
         services.AddScoped<EquipmentService>();
+        services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
         services.AddScoped<PurchaseOrderService>();
-        services.AddScoped<ScreenOrderService>();
+        services.AddScoped<IScreenOrderService, ScreenOrderService>();
         services.AddSingleton<ISimulationTimeService, SimulationTimeService>();
         services.AddSingleton<SimulationTimeService>();
         services.AddScoped<IStockStatisticsService, StockStatisticsService>();
+        services.AddScoped<IProductionHistoryService, ProductionHistoryService>();
         services.AddScoped<ProductionHistoryService>();
-        services.AddScoped<ReportingService>();
+        services.AddScoped<IReportingService, ReportingService>();
+        services.AddScoped<SimulationTimeProvider>();
 
         services.AddScoped<IQueueCommandFactory, QueueCommandFactory>();
 
-        // Time provider service
-        services.AddScoped<SimulationTimeProvider>();
+        // Register interfaces for supplier services
+        services.AddScoped<IHandService, HandService>();
+        services.AddScoped<IRecyclerService, RecyclerService>();
+        
+        // Register LogisticsService interface
+        services.AddScoped<ILogisticsService, LogisticsService>();
+
+        // Update queue service registration
+        services.AddSingleton<IPurchaseOrderQueueService, PurchaseOrderQueueService>();
     }
 
     private static bool ValidateServerCertificate(HttpRequestMessage message, X509Certificate2? certificate, X509Chain? chain, SslPolicyErrors errors)

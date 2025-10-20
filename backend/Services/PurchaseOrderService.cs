@@ -5,7 +5,7 @@ using ScreenProducerAPI.Util;
 
 namespace ScreenProducerAPI.Services;
 
-public class PurchaseOrderService
+public class PurchaseOrderService : IPurchaseOrderService
 {
     private readonly ScreenContext _context;
     private readonly SimulationTimeProvider _simulationTimeProvider;

@@ -24,7 +24,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("https://screen-supplier.projects.bbdgrad.com")
+        policy.WithOrigins("https://todosecuritylevelup.com", "https://d3r12293fg8bh4.cloudfront.net")
         .AllowAnyHeader()
         .AllowAnyMethod();
     });
@@ -40,27 +40,37 @@ app.UseCors("AllowFrontend");
 
 app.ConfigureApp();
 
-var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
-lifetime.ApplicationStarted.Register(async () =>
+// Only initialize simulation if not in test environment
+if (!app.Environment.IsEnvironment("Testing"))
 {
-    var simulationService = app.Services.GetRequiredService<SimulationTimeService>();
-    var handService = app.Services.GetRequiredService<HandService>();
-
-    var simulationStatus = await handService.GetSimulationStatusAsync();
-
-    if (simulationStatus != null && simulationStatus.IsRunning)
+    var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+    lifetime.ApplicationStarted.Register(async () =>
     {
-        await simulationService.StartSimulationAsync(simulationStatus.EpochStartTime, isResuming: true);
-    }
-});
-lifetime.ApplicationStopping.Register(() =>
+        var simulationService = app.Services.GetRequiredService<SimulationTimeService>();
+        var handService = app.Services.GetRequiredService<HandService>();
+
+        var simulationStatus = await handService.GetSimulationStatusAsync();
+
+        if (simulationStatus != null && simulationStatus.IsRunning)
+        {
+            await simulationService.StartSimulationAsync(simulationStatus.EpochStartTime, isResuming: true);
+        }
+    });
+}
+if (!app.Environment.IsEnvironment("Testing"))
 {
-    var simulationService = app.Services.GetRequiredService<SimulationTimeService>();
-    if (simulationService.IsSimulationRunning())
+    var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+    lifetime.ApplicationStopping.Register(() =>
     {
-        simulationService.StopSimulation();
-    }
-});
+        var simulationService = app.Services.GetRequiredService<SimulationTimeService>();
+        if (simulationService.IsSimulationRunning())
+        {
+            simulationService.StopSimulation();
+        }
+    });
+}
 
 app.Run();
 
+// Make the implicit Program class public for integration tests
+public partial class Program { }

@@ -38,8 +38,8 @@ public static class OrderEndpoints
 
     private static async Task<IResult> CreateOrderHandler(
         CreateOrderRequest request,
-        [FromServices] ScreenOrderService screenOrderService,
-        [FromServices] BankService bankService)
+        [FromServices] IScreenOrderService screenOrderService,
+        [FromServices] IBankService bankService)
     {
         if (request?.Quantity <= 0)
             throw new InvalidRequestException("Invalid order request. Quantity must be positive.");
@@ -65,7 +65,7 @@ public static class OrderEndpoints
 
     private static async Task<IResult> GetOrderStatusHandler(
          int id,
-         [FromServices] ScreenOrderService screenOrderService)
+         [FromServices] IScreenOrderService screenOrderService)
     {
         var screenOrder = await screenOrderService.FindScreenOrderByIdAsync(id);
 
@@ -92,7 +92,7 @@ public static class OrderEndpoints
 
     public static async Task<IResult> GetLastPeriodOrdersHandler(
         [FromQuery] int pastDaysToInclude,
-        [FromServices] ScreenOrderService screenOrderService, [FromServices] SimulationTimeProvider simulationTimeProvider)
+        [FromServices] IScreenOrderService screenOrderService, [FromServices] SimulationTimeProvider simulationTimeProvider)
     {
         if (pastDaysToInclude <= 0 || pastDaysToInclude > 90)
         {

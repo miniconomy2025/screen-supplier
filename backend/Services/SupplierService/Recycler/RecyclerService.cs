@@ -1,10 +1,11 @@
 ﻿using Microsoft.Extensions.Options;
 using ScreenProducerAPI.Exceptions;
+using ScreenProducerAPI.Services;
 using ScreenProducerAPI.Services.SupplierService;
 using ScreenProducerAPI.Services.SupplierService.Recycler.Models;
 using System.Text.Json;
 
-public class RecyclerService
+public class RecyclerService : IRecyclerService
 {
     private readonly HttpClient _httpClient;
     private readonly IOptions<SupplierServiceOptions> _options;

@@ -10,9 +10,9 @@ public class SimulationTimeProvider : ISimulationTimeProvider
         _simulationTimeService = simulationTimeService;
     }
 
-    public DateTime Now => _simulationTimeService.IsSimulationRunning()
+    public virtual DateTime Now => _simulationTimeService.IsSimulationRunning()
         ? DateTime.SpecifyKind(_simulationTimeService.GetSimulationDateTime(), DateTimeKind.Utc)
         : DateTime.UtcNow;
 
-    public bool IsSimulationRunning => _simulationTimeService.IsSimulationRunning();
+    public virtual bool IsSimulationRunning => _simulationTimeService.IsSimulationRunning();
 }

@@ -9,12 +9,12 @@ using System.Text.Json;
 
 namespace ScreenProducerAPI.Services;
 
-public class LogisticsService
+public class LogisticsService : ILogisticsService
 {
     private readonly IConfiguration _configuration;
     private readonly HttpClient _httpClient;
     private readonly PurchaseOrderService _purchaseOrderService;
-    private readonly ScreenOrderService _screenOrderService;
+    private readonly IScreenOrderService _screenOrderService;
     private readonly MaterialService _materialService;
     private readonly EquipmentService _equipmentService;
     private readonly ProductService _productService;
@@ -25,7 +25,7 @@ public class LogisticsService
         IConfiguration configuration,
         HttpClient httpClient,
         PurchaseOrderService purchaseOrderService,
-        ScreenOrderService screenOrderService,
+        IScreenOrderService screenOrderService,
         MaterialService materialService,
         EquipmentService equipmentService,
         ProductService productService,

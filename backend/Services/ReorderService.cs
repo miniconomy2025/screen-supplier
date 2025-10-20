@@ -8,31 +8,31 @@ using ScreenProducerAPI.Services.SupplierService.Recycler.Models;
 
 namespace ScreenProducerAPI.Services;
 
-public class ReorderService
+public class ReorderService : IReorderService
 {
-    private readonly TargetQuantityService _targetQuantityService;
-    private readonly PurchaseOrderService _purchaseOrderService;
-    private readonly PurchaseOrderQueueService _queueService;
-    private readonly ProductService _productService;
-    private readonly MaterialService _materialService;
-    private readonly EquipmentService _equipmentService;
-    private readonly BankService _bankService;
-    private readonly HandService _handService;
-    private readonly RecyclerService _recyclerService;
+    private readonly ITargetQuantityService _targetQuantityService;
+    private readonly IPurchaseOrderService _purchaseOrderService;
+    private readonly IPurchaseOrderQueueService _queueService;
+    private readonly IProductService _productService;
+    private readonly IMaterialService _materialService;
+    private readonly IEquipmentService _equipmentService;
+    private readonly IBankService _bankService;
+    private readonly IHandService _handService;
+    private readonly IRecyclerService _recyclerService;
     private readonly IOptionsMonitor<TargetQuantitiesConfig> _targetConfig;
     private readonly IOptionsMonitor<ReorderSettingsConfig> _reorderConfig;
     private readonly ILogger<ReorderService> _logger;
 
     public ReorderService(
-        TargetQuantityService targetQuantityService,
-        PurchaseOrderService purchaseOrderService,
-        PurchaseOrderQueueService queueService,
-        ProductService productService,
-        MaterialService materialService,
-        EquipmentService equipmentService,
-        BankService bankService,
-        HandService handService,
-        RecyclerService recyclerService,
+        ITargetQuantityService targetQuantityService,
+        IPurchaseOrderService purchaseOrderService,
+        IPurchaseOrderQueueService queueService,
+        IProductService productService,
+        IMaterialService materialService,
+        IEquipmentService equipmentService,
+        IBankService bankService,
+        IHandService handService,
+        IRecyclerService recyclerService,
         ILogger<ReorderService> logger,
         IOptionsMonitor<TargetQuantitiesConfig> targetConfig,
         IOptionsMonitor<ReorderSettingsConfig> reorderConfig)

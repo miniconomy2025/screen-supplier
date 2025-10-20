@@ -10,7 +10,7 @@ using System.Collections.Concurrent;
 
 namespace ScreenProducerAPI.Services;
 
-public class PurchaseOrderQueueService
+public class PurchaseOrderQueueService : IPurchaseOrderQueueService
 {
     private readonly ConcurrentQueue<QueueItem> _queue = new();
     private readonly IServiceProvider _serviceProvider;

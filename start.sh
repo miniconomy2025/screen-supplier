@@ -19,13 +19,13 @@ export ASPNETCORE_URLS=http://localhost:5000
 export ConnectionStrings__DefaultConnection="Host=$DB_HOST;Port=5432;Database=ScreenProducerDb;User Id=$DB_USERNAME;Password=$DB_PASSWORD;"
 
 # External service URLs - these can be hardcoded since they're public
-export ExternalServices__CommercialBank__BaseUrl="https://commercial-bank-api.projects.bbdgrad.com/api"
-export ExternalServices__BulkLogistics__BaseUrl="https://bulk-logistics-api.projects.bbdgrad.com"
-export ExternalServices__Hand__BaseUrl="https://thoh-api.projects.bbdgrad.com"
-export ExternalServices__Recycler__BaseUrl="https://recycler-api.projects.bbdgrad.com"
-export ExternalServices__Suppliers__HandBaseUrl="https://thoh-api.projects.bbdgrad.com"
-export ExternalServices__Suppliers__RecyclerBaseUrl="https://recycler-api.projects.bbdgrad.com"
-export BankSettings__NotificationUrl="https://screen-supplier-api.projects.bbdgrad.com/payment"
+export ExternalServices__CommercialBank__BaseUrl="https://commercial-bank-api.subspace.site/api"
+export ExternalServices__BulkLogistics__BaseUrl="https://team7-todo.xyz/api"
+export ExternalServices__Hand__BaseUrl="https://ec2-13-244-65-62.af-south-1.compute.amazonaws.com"
+export ExternalServices__Recycler__BaseUrl="https://api.recycler.susnet.co.za"
+export ExternalServices__Suppliers__HandBaseUrl="https://ec2-13-244-65-62.af-south-1.compute.amazonaws.com"
+export ExternalServices__Suppliers__RecyclerBaseUrl="https://api.recycler.susnet.co.za"
+export BankSettings__NotificationUrl="https://todosecuritylevelup.com/payment"
 
 # Kill any existing process
 pkill -f ScreenProducerAPI || true
