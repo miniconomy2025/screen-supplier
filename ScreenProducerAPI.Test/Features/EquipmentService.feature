@@ -10,3 +10,11 @@
     Given valid equipment parameters exist
     When I add equipment for purchase order 1
     Then the equipment should be added successfully
+
+  Scenario: Start production when materials are sufficient
+    Given valid equipment parameters exist
+    And there are available machines
+    And sufficient materials are available
+    When I start production
+    Then some machines should start producing
+
