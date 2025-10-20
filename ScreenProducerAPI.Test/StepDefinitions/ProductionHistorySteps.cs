@@ -64,5 +64,66 @@ public class ProductionHistorySteps
         );
     }
 
-    
+    [Given(@"a fresh in-memory database")]
+    public void GivenAFreshDatabase()
+    {
+        _context.Database.EnsureDeleted();
+        _context.Database.EnsureCreated();
+    }
+
+    [Given(@"a production history record exists for ""(.*)""")]
+    public async Task GivenAProductionHistoryRecordExistsFor(string date)
+    {
+        _testDate = DateTime.Parse(date);
+        _context.ProductionHistory.Add(new ProductionHistory
+        {
+            RecordDate = _testDate,
+            ScreensProduced = 50,
+            SandStock = 100,
+            CopperStock = 200,
+            ScreenStock = 300,
+            ScreenPrice = 400,
+            WorkingEquipment = 5
+        });
+        await _context.SaveChangesAsync();
+    }
+
+    [Given(@"no production history exists for ""(.*)""")]
+    public async Task GivenNoProductionHistoryExistsFor(string date)
+    {
+        _testDate = DateTime.Parse(date);
+        var existing = _context.ProductionHistory.Where(p => p.RecordDate == _testDate);
+        _context.ProductionHistory.RemoveRange(existing);
+        await _context.SaveChangesAsync();
+    }
+
+    [Given(@"materials, products, and equipment exist in the system")]
+    public void GivenMaterialsProductsAndEquipmentExist()
+    {
+        _mockMaterialService.Setup(m => m.GetAllMaterialsAsync())
+            .ReturnsAsync(new List<Material>
+            {
+                new Material { Name = "sand", Quantity = 1000 },
+                new Material { Name = "copper", Quantity = 500 }
+            });
+
+        _mockProductService.Setup(p => p.GetProductsAsync())
+            .ReturnsAsync(new List<Product>
+            {
+                new Product { Id = 1, Quantity = 500, Price = 10 }
+            });
+
+        _mockEquipmentService.Setup(e => e.GetActiveEquipmentAsync())
+            .ReturnsAsync(new List<Equipment>
+            {
+                new Equipment
+                {
+                    IsAvailable = true,
+                    IsProducing = true,
+                    EquipmentParameters = new EquipmentParameters { OutputScreens = 100 }
+                }
+            });
+    }
+
+
 }
