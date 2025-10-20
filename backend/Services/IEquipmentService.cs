@@ -5,6 +5,7 @@ namespace ScreenProducerAPI.Services;
 
 public interface IEquipmentService
 {
+    Task<List<Equipment>> GetActiveEquipmentAsync();
     Task<List<Equipment>> GetAllEquipmentAsync();
     Task<int> StartProductionAsync();
     Task<int> StopProductionAsync();
