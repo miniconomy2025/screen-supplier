@@ -119,5 +119,45 @@ public class EquipmentServiceSteps
         Assert.That(_context.Equipment.Any(e => e.IsProducing), Is.True);
     }
 
-    
+    [Given(@"machines are currently producing")]
+    public async Task GivenMachinesAreCurrentlyProducing()
+    {
+        await GivenValidEquipmentParametersExist();
+        await GivenThereAreAvailableMachines();
+
+        var equipmentList = _context.Equipment.ToList();
+        equipmentList.ForEach(e => e.IsProducing = true);
+        _context.UpdateRange(equipmentList);
+        await _context.SaveChangesAsync();
+    }
+
+    [When(@"I stop production")]
+    public async Task WhenIStopProduction()
+    {
+        _mockProductService.Setup(p => p.AddScreensAsync(It.IsAny<int>())).ReturnsAsync(true);
+        _mockProductService.Setup(p => p.UpdateUnitPriceAsync()).ReturnsAsync(true);
+
+        _intResult = await _equipmentService.StopProductionAsync();
+    }
+
+    [Then(@"produced screens should be added to the product inventory")]
+    public void ThenProducedScreensShouldBeAddedToTheProductInventory()
+    {
+        Assert.That(_intResult, Is.GreaterThan(0));
+        _mockProductService.Verify(p => p.AddScreensAsync(It.IsAny<int>()), Times.Once);
+    }
+
+    [When(@"I process machine failure for (.*) machines")]
+    public async Task WhenIProcessMachineFailureForMachines(int failureQty)
+    {
+        _failureResponse = await _equipmentService.ProcessMachineFailureAsync(failureQty);
+    }
+
+    [Then(@"(.*) machines should be marked as failed")]
+    public void ThenMachinesShouldBeMarkedAsFailed(int expectedFailures)
+    {
+        Assert.That(_failureResponse.Success, Is.True);
+        Assert.That(_failureResponse.FailedCount, Is.EqualTo(expectedFailures));
+        Assert.That(_context.Equipment.Count(e => !e.IsAvailable), Is.EqualTo(expectedFailures));
+    }
 }
