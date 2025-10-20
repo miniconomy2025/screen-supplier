@@ -10,12 +10,12 @@ public class TargetQuantityService : ITargetQuantityService
 {
     private readonly ScreenContext _context;
     private readonly IOptionsMonitor<TargetQuantitiesConfig> _targetConfig;
-    private readonly StockStatisticsService _stockStatisticsService;
+    private readonly IStockStatisticsService _stockStatisticsService;
 
     public TargetQuantityService(
         ScreenContext context,
         ILogger<TargetQuantityService> logger,
-        IOptionsMonitor<TargetQuantitiesConfig> targetConfig, StockStatisticsService stockStatisticsService)
+        IOptionsMonitor<TargetQuantitiesConfig> targetConfig, IStockStatisticsService stockStatisticsService)
     {
         _context = context;
         _targetConfig = targetConfig;

@@ -174,7 +174,7 @@ public static class ApiConfiguration
         services.AddScoped<IScreenOrderService, ScreenOrderService>();
         services.AddSingleton<ISimulationTimeService, SimulationTimeService>();
         services.AddSingleton<SimulationTimeService>();
-        services.AddScoped<StockStatisticsService>();
+        services.AddScoped<IStockStatisticsService, StockStatisticsService>();
         services.AddScoped<IProductionHistoryService, ProductionHistoryService>();
         services.AddScoped<ProductionHistoryService>();
         services.AddScoped<IReportingService, ReportingService>();

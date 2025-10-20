@@ -7,11 +7,11 @@ using ScreenProducerAPI.Models.Responses;
 public class EquipmentService : IEquipmentService
 {
     private readonly ScreenContext _context;
-    private readonly MaterialService _materialService;
-    private readonly ProductService _productService;
+    private readonly IMaterialService _materialService;
+    private readonly IProductService _productService;
 
     public EquipmentService(ScreenContext context,
-        MaterialService materialService, ProductService productService)
+        IMaterialService materialService, IProductService productService)
     {
         _context = context;
         _materialService = materialService;

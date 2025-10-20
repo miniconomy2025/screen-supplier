@@ -1,7 +1,7 @@
 ﻿namespace ScreenProducerAPI.Services;
 
 
-public class SimulationTimeProvider
+public class SimulationTimeProvider : ISimulationTimeProvider
 {
     private readonly SimulationTimeService _simulationTimeService;
 

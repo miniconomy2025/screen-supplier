@@ -8,4 +8,6 @@ public interface IProductService
     Task<(int totalProduced, int reserved, int available)> GetStockSummaryAsync();
     Task<int> GetAvailableStockAsync();
     Task<bool> UpdateUnitPriceAsync();
+    Task<bool> AddScreensAsync(int totalScreensProduced);
+    Task<IEnumerable<Product>> GetProductsAsync();
 }
