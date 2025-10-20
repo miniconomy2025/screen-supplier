@@ -82,7 +82,7 @@ public class TargetQuantitySteps
         _context = new ScreenContext(options);
 
         // Sand below reorder point
-        _context.Materials.Add(new Material { Name = "sand", Quantity = 50 });   // below reorder (100)
+        _context.Materials.Add(new Material { Name = "sand", Quantity = 50 });
                                                                                  // Copper above reorder point
         _context.Materials.Add(new Material { Name = "copper", Quantity = 200 }); // above reorder
 
