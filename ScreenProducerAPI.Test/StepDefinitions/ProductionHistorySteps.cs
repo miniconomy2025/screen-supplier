@@ -144,12 +144,6 @@ public class ProductionHistorySteps
         Assert.That(_result.RecordDate, Is.EqualTo(DateTime.Parse(date)));
     }
 
-    [Then(@"the result should be null")]
-    public void ThenTheResultShouldBeNull()
-    {
-        Assert.That(_result, Is.Null);
-    }
-
     [When(@"I store daily production history for ""(.*)"" with (.*) screens produced")]
     public async Task WhenIStoreDailyProductionHistoryFor(string date, int screens)
     {
