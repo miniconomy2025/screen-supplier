@@ -4,7 +4,7 @@ using ScreenProducerAPI.ScreenDbContext;
 
 namespace ScreenProducerAPI.Services;
 
-public class ProductionHistoryService(ScreenContext context, ILogger<ProductionHistoryService> logger, MaterialService materialService, ProductService productService, EquipmentService equipmentService, SimulationTimeProvider simulationTimeProvider)
+public class ProductionHistoryService(ScreenContext context, ILogger<ProductionHistoryService> logger, IMaterialService materialService, IProductService productService, IEquipmentService equipmentService, ISimulationTimeProvider simulationTimeProvider)
 {
     public async Task<ProductionHistory?> GetProductionHistoryByDateAsync(DateTime date)
     {
