@@ -55,5 +55,24 @@ public class EquipmentServiceSteps
         Assert.That(_context.EquipmentParameters.Any(), Is.True);
     }
 
+    [Given(@"valid equipment parameters exist")]
+    public async Task GivenValidEquipmentParametersExist()
+    {
+        await _equipmentService.InitializeEquipmentParametersAsync(5, 10, 20, 100);
+    }
+
+    [When(@"I add equipment for purchase order (.*)")]
+    public async Task WhenIAddEquipmentForPurchaseOrder(int purchaseOrderId)
+    {
+        _boolResult = await _equipmentService.AddEquipmentAsync(purchaseOrderId);
+    }
+
+    [Then(@"the equipment should be added successfully")]
+    public void ThenTheEquipmentShouldBeAddedSuccessfully()
+    {
+        Assert.That(_boolResult, Is.True);
+        Assert.That(_context.Equipment.Count(), Is.GreaterThan(0));
+    }
+
     
 }
