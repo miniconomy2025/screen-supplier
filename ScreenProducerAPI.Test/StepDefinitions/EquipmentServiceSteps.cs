@@ -74,5 +74,26 @@ public class EquipmentServiceSteps
         Assert.That(_context.Equipment.Count(), Is.GreaterThan(0));
     }
 
+    [Given(@"there are available machines")]
+    public async Task GivenThereAreAvailableMachines()
+    {
+        if (!await _context.EquipmentParameters.AnyAsync())
+        {
+            await _equipmentService.InitializeEquipmentParametersAsync(5, 10, 20, 100);
+        }
+
+        var param = await _context.EquipmentParameters.FirstAsync();
+        for (int i = 0; i < 3; i++)
+        {
+            _context.Equipment.Add(new Equipment
+            {
+                ParametersID = param.Id,
+                IsAvailable = true,
+                IsProducing = false
+            });
+        }
+        await _context.SaveChangesAsync();
+    }
+
     
 }
