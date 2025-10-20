@@ -5,7 +5,7 @@ using ScreenProducerAPI.Util;
 
 namespace ScreenProducerAPI.Services;
 
-public class ProductService
+public class ProductService : IProductService
 {
     private readonly ScreenContext _context;
     private readonly MaterialService _materialService;
