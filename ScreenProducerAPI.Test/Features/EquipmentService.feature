@@ -18,3 +18,12 @@
     When I start production
     Then some machines should start producing
 
+  Scenario: Stop production and update product inventory
+    Given machines are currently producing
+    When I stop production
+    Then produced screens should be added to the product inventory
+
+  Scenario: Process machine failure
+    Given there are available machines
+    When I process machine failure for 2 machines
+    Then 2 machines should be marked as failed
