@@ -78,9 +78,9 @@ public static class ApiConfiguration
         {
             var handler = new HttpClientHandler
             {
-                ClientCertificateOptions = ClientCertificateOption.Manual,
-                ServerCertificateCustomValidationCallback = ValidateServerCertificate,
-                ClientCertificates = { clientCertificate }
+                // ClientCertificateOptions = ClientCertificateOption.Manual,
+                // ServerCertificateCustomValidationCallback = ValidateServerCertificate,
+                // ClientCertificates = { clientCertificate }
             };
 
             client.Timeout = TimeSpan.FromSeconds(30);
