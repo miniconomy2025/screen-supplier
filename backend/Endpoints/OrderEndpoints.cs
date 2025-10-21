@@ -92,7 +92,7 @@ public static class OrderEndpoints
 
     public static async Task<IResult> GetLastPeriodOrdersHandler(
         [FromQuery] int pastDaysToInclude,
-        [FromServices] IScreenOrderService screenOrderService, [FromServices] SimulationTimeProvider simulationTimeProvider)
+        [FromServices] IScreenOrderService screenOrderService, [FromServices] ISimulationTimeProvider simulationTimeProvider)
     {
         if (pastDaysToInclude <= 0 || pastDaysToInclude > 90)
         {
