@@ -19,7 +19,7 @@ public class LogisticsService : ILogisticsService
     private readonly EquipmentService _equipmentService;
     private readonly ProductService _productService;
     private readonly ScreenContext _context;
-    private readonly SimulationTimeProvider _simulationTimeProvider;
+    private readonly ISimulationTimeProvider _simulationTimeProvider;
 
     public LogisticsService(
         IConfiguration configuration,
@@ -29,7 +29,7 @@ public class LogisticsService : ILogisticsService
         MaterialService materialService,
         EquipmentService equipmentService,
         ProductService productService,
-        SimulationTimeProvider simulationTimeProvider,
+        ISimulationTimeProvider simulationTimeProvider,
         ScreenContext context)
     {
         _configuration = configuration;

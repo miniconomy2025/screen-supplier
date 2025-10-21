@@ -1,23 +1,22 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using ScreenProducerAPI.Commands;
 using ScreenProducerAPI.Models;
-using ScreenProducerAPI.ScreenDbContext;
-using ScreenProducerAPI.Services.BankServices;
 using ScreenProducerAPI.Services;
+using ScreenProducerAPI.Services.BankServices;
 using ScreenProducerAPI.Util;
 
-namespace ScreenProducerAPI.Commands.Queue;
+namespace ScreenProducerAPI.Command.Queue;
 
 public class ProcessSupplierPaymentCommand : ICommand<CommandResult>
 {
     private readonly PurchaseOrder _purchaseOrder;
-    private readonly BankService _bankService;
-    private readonly PurchaseOrderService _purchaseOrderService;
+    private readonly IBankService _bankService;
+    private readonly IPurchaseOrderService _purchaseOrderService;
     private readonly ILogger<ProcessSupplierPaymentCommand> _logger;
 
     public ProcessSupplierPaymentCommand(
         PurchaseOrder purchaseOrder,
-        BankService bankService,
-        PurchaseOrderService purchaseOrderService,
+        IBankService bankService,
+        IPurchaseOrderService purchaseOrderService,
         ILogger<ProcessSupplierPaymentCommand> logger)
     {
         _purchaseOrder = purchaseOrder;

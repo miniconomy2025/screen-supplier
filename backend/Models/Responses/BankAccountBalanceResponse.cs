@@ -5,7 +5,7 @@ namespace ScreenProducerAPI.Models.Responses;
 public class BankAccountBalanceResponse
 {
     [JsonPropertyName("balance")]
-    public String Balance { get; set; }
+    public int Balance { get; set; }
     [JsonPropertyName("account_number")]
     public string AccountNumber { get; set; }
 }

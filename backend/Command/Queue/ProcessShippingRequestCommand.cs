@@ -1,26 +1,27 @@
 ﻿using Microsoft.Extensions.Options;
+using ScreenProducerAPI.Commands;
 using ScreenProducerAPI.Models;
 using ScreenProducerAPI.Models.Configuration;
 using ScreenProducerAPI.Models.Requests;
 using ScreenProducerAPI.Services;
 using ScreenProducerAPI.Util;
 
-namespace ScreenProducerAPI.Commands.Queue;
+namespace ScreenProducerAPI.Command.Queue;
 
 public class ProcessShippingRequestCommand : ICommand<CommandResult>
 {
     private readonly PurchaseOrder _purchaseOrder;
-    private readonly LogisticsService _logisticsService;
-    private readonly PurchaseOrderService _purchaseOrderService;
-    private readonly EquipmentService _equipmentService;
+    private readonly ILogisticsService _logisticsService;
+    private readonly IPurchaseOrderService _purchaseOrderService;
+    private readonly IEquipmentService _equipmentService;
     private readonly CompanyInfoConfig _companyInfo;
     private readonly ILogger<ProcessShippingRequestCommand> _logger;
 
     public ProcessShippingRequestCommand(
         PurchaseOrder purchaseOrder,
-        LogisticsService logisticsService,
-        PurchaseOrderService purchaseOrderService,
-        EquipmentService equipmentService,
+        ILogisticsService logisticsService,
+        IPurchaseOrderService purchaseOrderService,
+        IEquipmentService equipmentService,
         IOptionsMonitor<CompanyInfoConfig> companyConfig,
         ILogger<ProcessShippingRequestCommand> logger)
     {
