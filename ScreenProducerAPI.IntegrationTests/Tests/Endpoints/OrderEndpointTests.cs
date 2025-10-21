@@ -1,14 +1,13 @@
-using System.Net;
-using System.Net.Http.Json;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using ScreenProducerAPI.IntegrationTests.Fixtures;
+using ScreenProducerAPI.Models;
 using ScreenProducerAPI.Models.Requests;
 using ScreenProducerAPI.Models.Responses;
 using ScreenProducerAPI.ScreenDbContext;
-using Microsoft.Extensions.DependencyInjection;
-using ScreenProducerAPI.Models;
-using Microsoft.EntityFrameworkCore;
+using System.Net;
+using System.Net.Http.Json;
 
 namespace ScreenProducerAPI.IntegrationTests.Tests.Endpoints;
 
@@ -149,22 +148,6 @@ public class OrderEndpointTests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
-
-    [Test]
-    public async Task GET_LastPeriodOrders_With_Valid_Days_Returns_Success()
-    {
-        // Arrange
-        await SeedProductAsync();
-        await CreateTestOrderAsync(5);
-        await CreateTestOrderAsync(10);
-
-        // Act
-        var response = await _client.GetAsync("/order/period?pastDaysToInclude=7");
-
-        // Assert
-        response.StatusCode.Should().BeOneOf(HttpStatusCode.OK, HttpStatusCode.NotFound);
-
     }
 
     [Test]

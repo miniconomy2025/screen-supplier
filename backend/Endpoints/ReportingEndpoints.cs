@@ -44,7 +44,7 @@ public static class ReportingEndpoints
     public static async Task<IResult> GetDailyReportHandler(
     [FromQuery] DateTime? date,
     [FromServices] IReportingService reportingService,
-    [FromServices] SimulationTimeProvider simulationTimeProvider)
+    [FromServices] ISimulationTimeProvider simulationTimeProvider)
     {
         var dailyReport = await reportingService.GetDailyReportAsync(date ?? simulationTimeProvider.Now.Date);
 
@@ -57,7 +57,7 @@ public static class ReportingEndpoints
     public static async Task<IResult> GetLastPeriodReportsHandler(
         [FromQuery] int pastDaysToInclude,
         [FromServices] IReportingService reportingService,
-        [FromServices] SimulationTimeProvider simulationTimeProvider)
+        [FromServices] ISimulationTimeProvider simulationTimeProvider)
     {
         if (pastDaysToInclude <= 0 || pastDaysToInclude > 90)
             throw new InvalidRequestException("Invalid number of days specified. Please provide a value between 1 and 90.");
@@ -70,7 +70,7 @@ public static class ReportingEndpoints
     public static async Task<IResult> GetPurchaseOrdersHandler(
         [FromQuery] DateTime? date,
         [FromServices] PurchaseOrderService purchaseOrderService,
-        [FromServices] SimulationTimeProvider simulationTimeProvider)
+        [FromServices] ISimulationTimeProvider simulationTimeProvider)
     {
         var purchaseOrders = await purchaseOrderService.GetPastOrdersAsync(date ?? simulationTimeProvider.Now.Date);
 
@@ -78,7 +78,7 @@ public static class ReportingEndpoints
     }
 
     public static async Task<IResult> GetHandSimulationStatusHandler(
-        [FromServices] HandService handService)
+        [FromServices] IHandService handService)
     {
         var status = await handService.GetSimulationStatusAsync();
 

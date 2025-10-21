@@ -117,7 +117,7 @@ public class SimulationTimeService : ISimulationTimeService, IDisposable
             var equipmentService = scope.ServiceProvider.GetRequiredService<EquipmentService>();
             var reorderService = scope.ServiceProvider.GetRequiredService<ReorderService>();
             var bankIntegrationService = scope.ServiceProvider.GetRequiredService<BankIntegrationService>();
-            var handService = scope.ServiceProvider.GetRequiredService<HandService>();
+            var handService = scope.ServiceProvider.GetRequiredService<IHandService>();
 
             var simDate = new DateTime(2050, 1, 1).AddDays(day);
             _logger.LogInformation("START OF DAY {Day} ({SimDate:yyyy-MM-dd})", day, simDate);
