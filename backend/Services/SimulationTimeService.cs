@@ -114,9 +114,9 @@ public class SimulationTimeService : ISimulationTimeService, IDisposable
         try
         {
             using var scope = _serviceProvider.CreateScope();
-            var equipmentService = scope.ServiceProvider.GetRequiredService<EquipmentService>();
-            var reorderService = scope.ServiceProvider.GetRequiredService<ReorderService>();
-            var bankIntegrationService = scope.ServiceProvider.GetRequiredService<BankIntegrationService>();
+            var equipmentService = scope.ServiceProvider.GetRequiredService<IEquipmentService>();
+            var reorderService = scope.ServiceProvider.GetRequiredService<IReorderService>();
+            var bankIntegrationService = scope.ServiceProvider.GetRequiredService<IBankIntegrationService>();
             var handService = scope.ServiceProvider.GetRequiredService<IHandService>();
 
             var simDate = new DateTime(2050, 1, 1).AddDays(day);
@@ -159,9 +159,9 @@ public class SimulationTimeService : ISimulationTimeService, IDisposable
         try
         {
             using var scope = _serviceProvider.CreateScope();
-            var equipmentService = scope.ServiceProvider.GetRequiredService<EquipmentService>();
-            var productService = scope.ServiceProvider.GetRequiredService<ProductService>();
-            var productionHistoryService = scope.ServiceProvider.GetRequiredService<ProductionHistoryService>();
+            var equipmentService = scope.ServiceProvider.GetRequiredService<IEquipmentService>();
+            var productService = scope.ServiceProvider.GetRequiredService<IProductService>();
+            var productionHistoryService = scope.ServiceProvider.GetRequiredService<IProductionHistoryService>();
 
             var simDate = new DateTime(2050, 1, 1).AddDays(day);
             _logger.LogInformation("END OF DAY {Day} ({SimDate:yyyy-MM-dd})", day, simDate);
@@ -196,9 +196,9 @@ public class SimulationTimeService : ISimulationTimeService, IDisposable
     {
         try
         {
-            var materialService = serviceProvider.GetRequiredService<MaterialService>();
-            var productService = serviceProvider.GetRequiredService<ProductService>();
-            var equipmentService = serviceProvider.GetRequiredService<EquipmentService>();
+            var materialService = serviceProvider.GetRequiredService<IMaterialService>();
+            var productService = serviceProvider.GetRequiredService<IProductService>();
+            var equipmentService = serviceProvider.GetRequiredService<IEquipmentService>();
 
             var materials = await materialService.GetAllMaterialsAsync();
             var (totalScreens, reservedScreens, availableScreens) = await productService.GetStockSummaryAsync();
@@ -229,8 +229,8 @@ public class SimulationTimeService : ISimulationTimeService, IDisposable
     {
         try
         {
-            var bankService = serviceProvider.GetRequiredService<BankService>();
-            var productService = serviceProvider.GetRequiredService<ProductService>();
+            var bankService = serviceProvider.GetRequiredService<IBankService>();
+            var productService = serviceProvider.GetRequiredService<IProductService>();
 
             try
             {
@@ -273,12 +273,18 @@ public class SimulationTimeService : ISimulationTimeService, IDisposable
     private async Task CleanUpDatabase(ScreenContext context)
     {
         // Clear Tables
-        context.Equipment.ExecuteDelete();
-        context.EquipmentParameters.ExecuteDelete();
-        context.BankDetails.ExecuteDelete();
-        context.PurchaseOrders.ExecuteDelete();
-        context.ScreenOrders.ExecuteDelete();
-        context.ProductionHistory.ExecuteDelete();
+        await context.Equipment.ExecuteDeleteAsync();
+        _logger.LogInformation("Deleted all Equipment records");
+        await context.EquipmentParameters.ExecuteDeleteAsync();
+        _logger.LogInformation("Deleted all EquipmentParameters records");
+        await context.BankDetails.ExecuteDeleteAsync();
+        _logger.LogInformation("Deleted all BankDetails records");
+        await context.PurchaseOrders.ExecuteDeleteAsync();
+        _logger.LogInformation("Deleted all PurchaseOrders records");
+        await context.ScreenOrders.ExecuteDeleteAsync();
+        _logger.LogInformation("Deleted all ScreenOrders records");
+        await context.ProductionHistory.ExecuteDeleteAsync();
+        _logger.LogInformation("Deleted all ProductionHistory records");
 
         // Reset others
         await context.Products.ForEachAsync(p =>
@@ -304,6 +310,8 @@ public class SimulationTimeService : ISimulationTimeService, IDisposable
     {
         using var scope = _serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ScreenContext>();
+
+        _logger.LogInformation("Destroying simulation and cleaning up database");
 
         StopSimulation();
         await CleanUpDatabase(context);
