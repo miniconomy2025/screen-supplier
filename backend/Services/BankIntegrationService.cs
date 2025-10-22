@@ -2,7 +2,7 @@
 
 namespace ScreenProducerAPI.Services;
 
-public class BankIntegrationService
+public class BankIntegrationService : IBankIntegrationService
 {
     private readonly IBankService _bankService;
 
@@ -12,7 +12,7 @@ public class BankIntegrationService
         _bankService = bankService;
     }
 
-    public async Task<(bool,bool,bool)> InitializeAsync(bool hasAccount, bool hasLoan, bool hasNotificationUrl)
+    public async Task<(bool, bool, bool)> InitializeAsync(bool hasAccount, bool hasLoan, bool hasNotificationUrl)
     {
         bool loanTaken = hasLoan;
         bool accountCreated = hasAccount;

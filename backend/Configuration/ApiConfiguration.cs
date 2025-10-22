@@ -88,7 +88,7 @@ public static class ApiConfiguration
             .BindConfiguration($"ExternalServices:{BankServiceOptions.Section}")
             .ValidateDataAnnotations();
 
-        services.AddScoped<BankIntegrationService>();
+        services.AddScoped<IBankIntegrationService, BankIntegrationService>();
 
         // Bank Settings
         services.AddOptions<BankSettingsConfig>()
