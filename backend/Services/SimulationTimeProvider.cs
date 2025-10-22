@@ -3,9 +3,9 @@
 
 public class SimulationTimeProvider : ISimulationTimeProvider
 {
-    private readonly SimulationTimeService _simulationTimeService;
+    private readonly ISimulationTimeService _simulationTimeService;
 
-    public SimulationTimeProvider(SimulationTimeService simulationTimeService)
+    public SimulationTimeProvider(ISimulationTimeService simulationTimeService)
     {
         _simulationTimeService = simulationTimeService;
     }
