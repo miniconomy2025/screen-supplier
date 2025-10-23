@@ -510,6 +510,18 @@ public class BankService : IBankService
             throw new BankServiceException("Bank service timeout during loans check", ex);
         }
     }
+
+    public async Task<BankDetails> AddBankAccountAsync()
+    {
+        var bankDetails = new BankDetails
+        {
+            AccountNumber = "1000000000",
+            EstimatedBalance = 10000
+        };
+        _context.BankDetails.Add(bankDetails);
+        await _context.SaveChangesAsync();
+        return bankDetails;
+    }
 }
 
 public class LoanCreationResponse

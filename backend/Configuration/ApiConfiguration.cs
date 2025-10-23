@@ -23,7 +23,7 @@ public static class ApiConfiguration
             .AddTargetQuantityEndpoints()
             .AddQueueEndpoints()
             .AddReportingEndpoints()
-            .AddStockEndpoints();
+            .AddTestingEndpoints();
     }
 
     public static void ConfigureApp(this WebApplication app)
