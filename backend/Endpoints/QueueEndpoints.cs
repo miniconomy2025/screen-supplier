@@ -23,7 +23,7 @@ public static class QueueEndpoints
     }
 
     private static IResult GetQueueStatusHandler(
-    [FromServices] PurchaseOrderQueueService queueService)
+    [FromServices] IPurchaseOrderQueueService queueService)
     {
         var queueCount = queueService.GetQueueCount();
 
@@ -37,7 +37,7 @@ public static class QueueEndpoints
     }
 
     private static async Task<IResult> ProcessQueueHandler(
-        [FromServices] PurchaseOrderQueueService queueService)
+        [FromServices] IPurchaseOrderQueueService queueService)
     {
         var queueCountBefore = queueService.GetQueueCount();
         await queueService.ProcessQueueAsync();
