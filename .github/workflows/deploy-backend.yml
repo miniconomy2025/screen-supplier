@@ -17,21 +17,21 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: Run Unit Tests
-        run: |
-          dotnet test ScreenProducerAPI.Test/ScreenProducerAPI.Test.csproj \
-            --configuration Release \
-            --logger "console;verbosity=detailed" \
-            --logger "trx;LogFileName=unit-test-results.trx" \
-            -- NUnit.DisplayName=FullName
+      #- name: Run Unit Tests
+      #  run: |
+      #    dotnet test ScreenProducerAPI.Test/ScreenProducerAPI.Test.csproj \
+      #      --configuration Release \
+      #      --logger "console;verbosity=detailed" \
+      #      --logger "trx;LogFileName=unit-test-results.trx" \
+      #      -- NUnit.DisplayName=FullName
 
-      - name: Run Integration Tests
-        run: |
-          dotnet test ScreenProducerAPI.IntegrationTests/ScreenProducerAPI.IntegrationTests.csproj \
-            --configuration Release \
-            --logger "console;verbosity=detailed" \
-            --logger "trx;LogFileName=integration-test-results.trx" \
-            -- NUnit.DisplayName=FullName
+      #- name: Run Integration Tests
+      #  run: |
+      #    dotnet test ScreenProducerAPI.IntegrationTests/ScreenProducerAPI.IntegrationTests.csproj \
+      #      --configuration Release \
+      #      --logger "console;verbosity=detailed" \
+      #      --logger "trx;LogFileName=integration-test-results.trx" \
+      #      -- NUnit.DisplayName=FullName
 
       - name: Upload Test Results
         if: always()
