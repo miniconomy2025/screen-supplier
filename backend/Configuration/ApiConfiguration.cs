@@ -1,4 +1,5 @@
-﻿using ScreenProducerAPI.Commands.Queue;
+﻿using ScreenProducerAPI.Command.Queue;
+using ScreenProducerAPI.Commands.Queue;
 using ScreenProducerAPI.Endpoints;
 using ScreenProducerAPI.Middleware;
 using ScreenProducerAPI.Models.Configuration;
@@ -22,7 +23,7 @@ public static class ApiConfiguration
             .AddTargetQuantityEndpoints()
             .AddQueueEndpoints()
             .AddReportingEndpoints()
-            .AddStockEndpoints();
+            .AddTestingEndpoints();
     }
 
     public static void ConfigureApp(this WebApplication app)
@@ -49,73 +50,45 @@ public static class ApiConfiguration
         X509Certificate2 clientCertificate = CreatePfx();
 
         // HTTP Clients
-        services.AddHttpClient<LogisticsService>(client =>
+        services.AddHttpClient<ILogisticsService, LogisticsService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
+            client.DefaultRequestHeaders.Add("Client-Id", "screen-supplier");
+        });
+
+        services.AddHttpClient<IRecyclerService, RecyclerService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
+            client.DefaultRequestHeaders.Add("Client-Id", "screen-supplier");
+        });
+
+        services.AddHttpClient<IHandService, HandService>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
             client.DefaultRequestHeaders.Add("Client-Id", "screen-supplier");
         }).ConfigurePrimaryHttpMessageHandler(() =>
-            new HttpClientHandler
-            {
-                ClientCertificateOptions = ClientCertificateOption.Manual,
-                ServerCertificateCustomValidationCallback = ValidateServerCertificate,
-                ClientCertificates = { clientCertificate }
-            });
+        {
+            var handler = new HttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = ValidateServerCertificate;
+            return handler;
+        });
 
-        services.AddHttpClient<RecyclerService>(client =>
+        services.AddHttpClient<IBankService, BankService>(client =>
         {
             client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
             client.DefaultRequestHeaders.Add("Client-Id", "screen-supplier");
-        }).ConfigurePrimaryHttpMessageHandler(() =>
-            new HttpClientHandler
-            {
-                ClientCertificateOptions = ClientCertificateOption.Manual,
-                ServerCertificateCustomValidationCallback = ValidateServerCertificate,
-                ClientCertificates = { clientCertificate }
-            });
-        services.AddHttpClient<HandService>(client =>
-        {
-            var handler = new HttpClientHandler
-            {
-                ClientCertificateOptions = ClientCertificateOption.Manual,
-                ServerCertificateCustomValidationCallback = ValidateServerCertificate,
-                ClientCertificates = { clientCertificate }
-            };
-
-            client.Timeout = TimeSpan.FromSeconds(30);
-            client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
-            client.DefaultRequestHeaders.Add("Client-Id", "screen-supplier");
-        }).ConfigurePrimaryHttpMessageHandler(() =>
-            new HttpClientHandler
-            {
-                ClientCertificateOptions = ClientCertificateOption.Manual,
-                ServerCertificateCustomValidationCallback = ValidateServerCertificate,
-                ClientCertificates = { clientCertificate }
-            });
-
-        services.AddHttpClient<BankService>(client =>
-        {
-            client.Timeout = TimeSpan.FromSeconds(30);
-            client.DefaultRequestHeaders.Add("User-Agent", "ScreenSupplier/1.0");
-            client.DefaultRequestHeaders.Add("Client-Id", "screen-supplier");
-        })
-        .ConfigurePrimaryHttpMessageHandler(() =>
-            new HttpClientHandler
-            {
-                ClientCertificateOptions = ClientCertificateOption.Manual,
-                ServerCertificateCustomValidationCallback = ValidateServerCertificate,
-                ClientCertificates = { clientCertificate }
-            });
+        });
 
         // Bank Services
         services.AddOptions<BankServiceOptions>()
             .BindConfiguration($"ExternalServices:{BankServiceOptions.Section}")
             .ValidateDataAnnotations();
 
-        // Register IBankService interface
-        services.AddScoped<IBankService, BankService>();
-        services.AddScoped<BankIntegrationService>();
+        services.AddScoped<IBankIntegrationService, BankIntegrationService>();
 
         // Bank Settings
         services.AddOptions<BankSettingsConfig>()
@@ -152,45 +125,28 @@ public static class ApiConfiguration
             .ValidateDataAnnotations();
 
         // Queue Service and Background Processing
-        services.AddSingleton<PurchaseOrderQueueService>();
+        services.AddSingleton<IPurchaseOrderQueueService, PurchaseOrderQueueService>();
         services.AddHostedService<QueueProcessingBackgroundService>();
 
         // Core Services
         services.AddScoped<ITargetQuantityService, TargetQuantityService>();
         services.AddScoped<TargetQuantityService>();
         services.AddScoped<IReorderService, ReorderService>();
-        services.AddScoped<ReorderService>();
 
 
         // Business Logic Services
         services.AddScoped<IMaterialService, MaterialService>();
-        services.AddScoped<MaterialService>();
         services.AddScoped<IProductService, ProductService>();
-        services.AddScoped<ProductService>();
         services.AddScoped<IEquipmentService, EquipmentService>();
-        services.AddScoped<EquipmentService>();
         services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
-        services.AddScoped<PurchaseOrderService>();
         services.AddScoped<IScreenOrderService, ScreenOrderService>();
         services.AddSingleton<ISimulationTimeService, SimulationTimeService>();
-        services.AddSingleton<SimulationTimeService>();
         services.AddScoped<IStockStatisticsService, StockStatisticsService>();
         services.AddScoped<IProductionHistoryService, ProductionHistoryService>();
-        services.AddScoped<ProductionHistoryService>();
         services.AddScoped<IReportingService, ReportingService>();
-        services.AddScoped<SimulationTimeProvider>();
+        services.AddScoped<ISimulationTimeProvider, SimulationTimeProvider>();
 
         services.AddScoped<IQueueCommandFactory, QueueCommandFactory>();
-
-        // Register interfaces for supplier services
-        services.AddScoped<IHandService, HandService>();
-        services.AddScoped<IRecyclerService, RecyclerService>();
-        
-        // Register LogisticsService interface
-        services.AddScoped<ILogisticsService, LogisticsService>();
-
-        // Update queue service registration
-        services.AddSingleton<IPurchaseOrderQueueService, PurchaseOrderQueueService>();
     }
 
     private static bool ValidateServerCertificate(HttpRequestMessage message, X509Certificate2? certificate, X509Chain? chain, SslPolicyErrors errors)

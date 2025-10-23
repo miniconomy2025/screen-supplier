@@ -1,21 +1,22 @@
-﻿using ScreenProducerAPI.Models;
+﻿using ScreenProducerAPI.Commands;
+using ScreenProducerAPI.Models;
 using ScreenProducerAPI.Services;
 using ScreenProducerAPI.Services.BankServices;
 using ScreenProducerAPI.Util;
 
-namespace ScreenProducerAPI.Commands.Queue;
+namespace ScreenProducerAPI.Command.Queue;
 
 public class ProcessLogisticsPaymentCommand : ICommand<CommandResult>
 {
     private readonly PurchaseOrder _purchaseOrder;
-    private readonly BankService _bankService;
-    private readonly PurchaseOrderService _purchaseOrderService;
+    private readonly IBankService _bankService;
+    private readonly IPurchaseOrderService _purchaseOrderService;
     private readonly ILogger<ProcessLogisticsPaymentCommand> _logger;
 
     public ProcessLogisticsPaymentCommand(
         PurchaseOrder purchaseOrder,
-        BankService bankService,
-        PurchaseOrderService purchaseOrderService,
+        IBankService bankService,
+        IPurchaseOrderService purchaseOrderService,
         ILogger<ProcessLogisticsPaymentCommand> logger)
     {
         _purchaseOrder = purchaseOrder;

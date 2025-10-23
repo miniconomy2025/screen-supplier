@@ -21,7 +21,7 @@ public class ReorderService : IReorderService
     private readonly IRecyclerService _recyclerService;
     private readonly IOptionsMonitor<TargetQuantitiesConfig> _targetConfig;
     private readonly IOptionsMonitor<ReorderSettingsConfig> _reorderConfig;
-    private readonly ILogger<ReorderService> _logger;
+    private readonly ILogger<IReorderService> _logger;
 
     public ReorderService(
         ITargetQuantityService targetQuantityService,
@@ -33,7 +33,7 @@ public class ReorderService : IReorderService
         IBankService bankService,
         IHandService handService,
         IRecyclerService recyclerService,
-        ILogger<ReorderService> logger,
+        ILogger<IReorderService> logger,
         IOptionsMonitor<TargetQuantitiesConfig> targetConfig,
         IOptionsMonitor<ReorderSettingsConfig> reorderConfig)
     {
@@ -179,7 +179,12 @@ public class ReorderService : IReorderService
 
             if (purchaseOrder != null)
             {
+                _logger.LogInformation("Created {MaterialName} reorder: {PurchaseOrderId}", materialName, purchaseOrder.Id);
                 _queueService.EnqueuePurchaseOrder(purchaseOrder.Id);
+            }
+            else
+            {
+                _logger.LogError("Failed to create purchase order record for {MaterialName} reorder", materialName);
             }
 
             return purchaseOrder;
@@ -220,7 +225,7 @@ public class ReorderService : IReorderService
             var bothAvailable = handMaterial != null && recyclerMaterial != null;
 
 
-            if (handMaterial != null && (bothAvailable ? handMaterial.PricePerKg <= (decimal)recyclerMaterial.PricePerKg : true) || recyclerMaterial?.PricePerKg == 0 || recyclerMaterial?.PricePerKg == null || recyclerMaterial?.AvailableQuantityInKg <= 1000)
+            if (handMaterial != null && (recyclerMaterial == null || handMaterial.PricePerKg <= (decimal)recyclerMaterial?.PricePerKg || recyclerMaterial?.PricePerKg == 0 || recyclerMaterial?.PricePerKg == null || recyclerMaterial?.AvailableQuantityInKg <= 1000))
             {
                 var totalCost = (int)(handMaterial.PricePerKg * quantity);
 

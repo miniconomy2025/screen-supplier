@@ -46,8 +46,8 @@ if (!app.Environment.IsEnvironment("Testing"))
     var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
     lifetime.ApplicationStarted.Register(async () =>
     {
-        var simulationService = app.Services.GetRequiredService<SimulationTimeService>();
-        var handService = app.Services.GetRequiredService<HandService>();
+        var simulationService = app.Services.GetRequiredService<ISimulationTimeService>();
+        var handService = app.Services.GetRequiredService<IHandService>();
 
         var simulationStatus = await handService.GetSimulationStatusAsync();
 

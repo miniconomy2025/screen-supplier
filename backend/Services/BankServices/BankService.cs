@@ -15,8 +15,8 @@ public class BankService : IBankService
     private readonly ScreenContext _context;
     private readonly IOptions<BankServiceOptions> _options;
     private readonly IConfiguration _configuration;
-    private readonly ILogger<BankService> _logger;
-    private readonly HandService _handService;
+    private readonly ILogger<IBankService> _logger;
+    private readonly IHandService _handService;
 
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
@@ -29,8 +29,8 @@ public class BankService : IBankService
         ScreenContext context,
         IOptions<BankServiceOptions> options,
         IConfiguration configuration,
-        ILogger<BankService> logger,
-        HandService handService)
+        ILogger<IBankService> logger,
+        IHandService handService)
     {
         _httpClient = httpClient;
         _context = context;
@@ -56,16 +56,9 @@ public class BankService : IBankService
                 var details = new BankDetails
                 {
                     AccountNumber = liveAccount.AccountNumber,
+                    EstimatedBalance = liveAccount.Balance
                 };
 
-                if (decimal.TryParse(liveAccount.Balance, out decimal res))
-                {
-                    details.EstimatedBalance = (int)res;
-                }
-                else
-                {
-                    details.EstimatedBalance = 0;
-                }
 
                 _context.BankDetails.Add(details);
                 await _context.SaveChangesAsync();
@@ -107,7 +100,7 @@ public class BankService : IBankService
             var existingLoans = await GetLoansOutstanding();
             if (existingLoans != null &&
             existingLoans.loans
-                .Select(x => decimal.TryParse(x.InitialAmount, out var val) ? val : 0)
+                .Select(x => x.InitialAmount)
                 .Sum() > 0)
             {
                 return true;
@@ -168,7 +161,7 @@ public class BankService : IBankService
             if (existingLoans?.loans != null)
             {
                 decimal amountLoaned = existingLoans.loans
-                    .Select(x => decimal.TryParse(x.InitialAmount, out var val) ? val : 0)
+                    .Select(x => x.InitialAmount)
                     .Sum();
 
                 if (amountLoaned > 0)
@@ -303,7 +296,7 @@ public class BankService : IBankService
             }
 
             var balanceResponse = await response.Content.ReadFromJsonAsync<BankAccountBalanceResponse>(_jsonOptions);
-            return (int)Math.Floor(decimal.Parse(balanceResponse?.Balance ?? "0"));
+            return balanceResponse?.Balance ?? 0;
         }
         catch (HttpRequestException ex)
         {
@@ -335,7 +328,7 @@ public class BankService : IBankService
 
             var balance = await GetAccountBalanceAsync();
 
-            balanceResponse.Balance = balance.ToString();
+            balanceResponse.Balance = balance;
 
             return balanceResponse;
         }
@@ -516,6 +509,18 @@ public class BankService : IBankService
         {
             throw new BankServiceException("Bank service timeout during loans check", ex);
         }
+    }
+
+    public async Task<BankDetails> AddBankAccountAsync()
+    {
+        var bankDetails = new BankDetails
+        {
+            AccountNumber = "1000000000",
+            EstimatedBalance = 10000
+        };
+        _context.BankDetails.Add(bankDetails);
+        await _context.SaveChangesAsync();
+        return bankDetails;
     }
 }
 

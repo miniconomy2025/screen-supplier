@@ -1,3 +1,4 @@
+using ScreenProducerAPI.Models;
 using ScreenProducerAPI.Models.Responses;
 using ScreenProducerAPI.Services.BankServices;
 
@@ -5,7 +6,7 @@ namespace ScreenProducerAPI.IntegrationTests.Mocks;
 
 public class MockBankService : IBankService
 {
-    private bool _accountInitialized = true; 
+    private bool _accountInitialized = true;
     private int _currentBalance = 100000;
     private string _accountNumber = "TEST-ACC-12345";
     private readonly List<Loan> _loans = new();
@@ -23,9 +24,9 @@ public class MockBankService : IBankService
         _loans.Add(new Loan
         {
             LoanNumber = "LOAN-" + Guid.NewGuid().ToString()[..8],
-            InitialAmount = initialLoanAmount.ToString(),
-            InterestRate = "5.0",
-            OutstandingAmount = initialLoanAmount.ToString(),
+            InitialAmount = initialLoanAmount,
+            InterestRate = 5.0,
+            OutstandingAmount = initialLoanAmount,
             WriteOff = false
         });
 
@@ -67,7 +68,7 @@ public class MockBankService : IBankService
         var response = new BankAccountBalanceResponse
         {
             AccountNumber = _accountNumber,
-            Balance = _currentBalance.ToString()
+            Balance = _currentBalance
         };
 
         return Task.FromResult<BankAccountBalanceResponse?>(response);
@@ -102,10 +103,19 @@ public class MockBankService : IBankService
         var response = new BankAccountLoanResponse
         {
             Success = true,
-            TotalOutstandingAmount = _loans.Sum(l => int.Parse(l.OutstandingAmount)).ToString(),
+            TotalOutstandingAmount = _loans.Sum(l => l.OutstandingAmount),
             loans = _loans
         };
 
         return Task.FromResult<BankAccountLoanResponse?>(response);
+    }
+
+    public Task<BankDetails> AddBankAccountAsync()
+    {
+        return new Task<BankDetails>(() => new BankDetails
+        {
+            AccountNumber = _accountNumber,
+            EstimatedBalance = 0
+        });
     }
 }

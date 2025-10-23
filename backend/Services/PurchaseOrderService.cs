@@ -8,9 +8,9 @@ namespace ScreenProducerAPI.Services;
 public class PurchaseOrderService : IPurchaseOrderService
 {
     private readonly ScreenContext _context;
-    private readonly SimulationTimeProvider _simulationTimeProvider;
+    private readonly ISimulationTimeProvider _simulationTimeProvider;
 
-    public PurchaseOrderService(ScreenContext context, SimulationTimeProvider simulationTimeProvider)
+    public PurchaseOrderService(ScreenContext context, ISimulationTimeProvider simulationTimeProvider)
     {
         _context = context;
         _simulationTimeProvider = simulationTimeProvider;

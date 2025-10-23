@@ -14,12 +14,12 @@ public class PurchaseOrderQueueService : IPurchaseOrderQueueService
 {
     private readonly ConcurrentQueue<QueueItem> _queue = new();
     private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<PurchaseOrderQueueService> _logger;
+    private readonly ILogger<IPurchaseOrderQueueService> _logger;
     private readonly IOptionsMonitor<QueueSettingsConfig> _queueConfig;
 
     public PurchaseOrderQueueService(
         IServiceProvider serviceProvider,
-        ILogger<PurchaseOrderQueueService> logger,
+        ILogger<IPurchaseOrderQueueService> logger,
         IOptionsMonitor<QueueSettingsConfig> queueConfig)
     {
         _serviceProvider = serviceProvider;
@@ -163,7 +163,7 @@ public class PurchaseOrderQueueService : IPurchaseOrderQueueService
         try
         {
             using var scope = _serviceProvider.CreateScope();
-            var purchaseOrderService = scope.ServiceProvider.GetRequiredService<PurchaseOrderService>();
+            var purchaseOrderService = scope.ServiceProvider.GetRequiredService<IPurchaseOrderService>();
             await purchaseOrderService.UpdateStatusAsync(purchaseOrderId, Status.Abandoned);
             _logger.LogWarning("Purchase order {PurchaseOrderId} has been abandoned", purchaseOrderId);
         }
@@ -175,6 +175,7 @@ public class PurchaseOrderQueueService : IPurchaseOrderQueueService
 
     public async Task PopulateQueueFromDatabaseAsync()
     {
+        _logger.LogInformation("Populating purchase order queue from database");
         try
         {
             using var scope = _serviceProvider.CreateScope();

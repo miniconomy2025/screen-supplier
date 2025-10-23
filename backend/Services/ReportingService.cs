@@ -3,9 +3,9 @@
 namespace ScreenProducerAPI.Services;
 
 public class ReportingService(ILogger<ReportingService> logger,
-    ProductionHistoryService productionHistoryService,
-    PurchaseOrderService purchaseOrderService,
-    EquipmentService equipmentService,
+    IProductionHistoryService productionHistoryService,
+    IPurchaseOrderService purchaseOrderService,
+    IEquipmentService equipmentService,
     IScreenOrderService screenOrderService) : IReportingService
 {
     public async Task<DailyReport?> GetDailyReportAsync(DateTime date)

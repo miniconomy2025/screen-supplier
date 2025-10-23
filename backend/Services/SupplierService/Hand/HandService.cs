@@ -10,13 +10,13 @@ public class HandService : IHandService
 {
     private readonly HttpClient _httpClient;
     private readonly IOptions<SupplierServiceOptions> _options;
-    private readonly ILogger<HandService> _logger;
+    private readonly ILogger<IHandService> _logger;
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
     };
 
-    public HandService(HttpClient httpClient, IOptions<SupplierServiceOptions> options, ILogger<HandService> logger)
+    public HandService(HttpClient httpClient, IOptions<SupplierServiceOptions> options, ILogger<IHandService> logger)
     {
         _httpClient = httpClient;
         _options = options;
@@ -213,6 +213,18 @@ public class HandService : IHandService
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Failed to retrieve simulation status: {StatusCode} - {ErrorContent}", response.StatusCode, errorContent);
+
+                if (errorContent.Contains("Simulation is not running", StringComparison.OrdinalIgnoreCase))
+                {
+                    return new HandSimulationStatus
+                    {
+                        isOnline = true,
+                        IsRunning = false,
+                        EpochStartTime = 0
+                    };
+                }
+
                 return null;
             }
 
@@ -227,6 +239,7 @@ public class HandService : IHandService
             {
                 return new HandSimulationStatus
                 {
+                    isOnline = true,
                     IsRunning = true,
                     EpochStartTime = timeResponse.EpochStartTime
                 };
@@ -234,6 +247,7 @@ public class HandService : IHandService
 
             return new HandSimulationStatus
             {
+                isOnline = true,
                 IsRunning = false,
                 EpochStartTime = 0
             };
@@ -243,6 +257,7 @@ public class HandService : IHandService
             _logger.LogWarning("Hand not returning response on /time.");
             return new HandSimulationStatus
             {
+                isOnline = false,
                 IsRunning = false,
                 EpochStartTime = 0
             };

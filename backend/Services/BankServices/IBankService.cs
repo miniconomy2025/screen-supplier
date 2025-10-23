@@ -1,3 +1,4 @@
+using ScreenProducerAPI.Models;
 using ScreenProducerAPI.Models.Responses;
 
 namespace ScreenProducerAPI.Services.BankServices;
@@ -17,4 +18,5 @@ public interface IBankService
     Task<bool> TryTakeInitialLoanAsync();
     Task<bool> TrySetupNotificationUrlAsync();
     Task<BankAccountLoanResponse?> GetLoansOutstanding();
+    Task<BankDetails> AddBankAccountAsync();
 }

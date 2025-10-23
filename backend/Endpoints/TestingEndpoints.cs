@@ -2,22 +2,27 @@
 using ScreenProducerAPI.Models.Requests;
 using ScreenProducerAPI.Models.Responses;
 using ScreenProducerAPI.Services;
+using ScreenProducerAPI.Services.BankServices;
 
 namespace ScreenProducerAPI.Endpoints;
 
-public static class StockEndpoints
+public static class TestingEndpoints
 {
-    public static IEndpointRouteBuilder AddStockEndpoints(this IEndpointRouteBuilder endpoints)
+    public static IEndpointRouteBuilder AddTestingEndpoints(this IEndpointRouteBuilder endpoints)
     {
         endpoints.MapPost("/stock", AddStockHandler)
             .Produces<ProductResponse>(StatusCodes.Status200OK)
-            .WithTags("Stock")
+            .WithTags("Testing")
             .WithName("AddStock");
+        endpoints.MapPost("/bank-account", AddBankAccountHandler)
+            .Produces<ProductResponse>(StatusCodes.Status200OK)
+            .WithTags("Testing")
+            .WithName("AddBankAccountTesting");
 
         return endpoints;
     }
 
-    private static async Task<IResult> AddStockHandler(HttpContext context, [FromServices] ProductService productService, [FromServices] StockStatisticsService stockStatisticsService, [FromBody] AddStockRequest addStockRequest)
+    private static async Task<IResult> AddStockHandler(HttpContext context, [FromServices] IProductService productService, [FromServices] IStockStatisticsService stockStatisticsService, [FromBody] AddStockRequest addStockRequest)
     {
         try
         {
@@ -66,6 +71,24 @@ public static class StockEndpoints
         catch (Exception ex)
         {
             return Results.Problem("An error occurred while adding stock");
+        }
+    }
+
+    private static async Task<IResult> AddBankAccountHandler(HttpContext context, [FromServices] IBankService bankService)
+    {
+        try
+        {
+            var success = await bankService.AddBankAccountAsync();
+
+            if (bankService == null)
+            {
+                return Results.BadRequest("Failed to update bank account information");
+            }
+            return Results.Ok();
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem("An error occurred while updating bank account information");
         }
     }
 }

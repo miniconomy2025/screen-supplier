@@ -10,4 +10,5 @@ public interface IProductService
     Task<bool> UpdateUnitPriceAsync();
     Task<bool> AddScreensAsync(int totalScreensProduced);
     Task<IEnumerable<Product>> GetProductsAsync();
+    Task<bool> ConsumeScreensAsync(int quantity);
 }
