@@ -1,3 +1,4 @@
+using ScreenProducerAPI.Models;
 using ScreenProducerAPI.Models.Responses;
 using ScreenProducerAPI.Services.BankServices;
 
@@ -107,5 +108,14 @@ public class MockBankService : IBankService
         };
 
         return Task.FromResult<BankAccountLoanResponse?>(response);
+    }
+
+    public Task<BankDetails> AddBankAccountAsync()
+    {
+        return new Task<BankDetails>(() => new BankDetails
+        {
+            AccountNumber = _accountNumber,
+            EstimatedBalance = 0
+        });
     }
 }
