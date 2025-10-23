@@ -11,10 +11,10 @@ namespace ScreenProducerAPI.Services;
 public class ScreenOrderService : IScreenOrderService
 {
     private readonly ScreenContext _context;
-    private readonly ProductService _productService;
+    private readonly IProductService _productService;
     private readonly ISimulationTimeProvider _simulationTimeProvider;
 
-    public ScreenOrderService(ScreenContext context, ILogger<ScreenOrderService> logger, ProductService productService, ISimulationTimeProvider simulationTimeProvider)
+    public ScreenOrderService(ScreenContext context, ILogger<ScreenOrderService> logger, IProductService productService, ISimulationTimeProvider simulationTimeProvider)
     {
         _context = context;
         _productService = productService;

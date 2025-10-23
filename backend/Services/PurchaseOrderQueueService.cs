@@ -175,6 +175,7 @@ public class PurchaseOrderQueueService : IPurchaseOrderQueueService
 
     public async Task PopulateQueueFromDatabaseAsync()
     {
+        _logger.LogInformation("Populating purchase order queue from database");
         try
         {
             using var scope = _serviceProvider.CreateScope();
