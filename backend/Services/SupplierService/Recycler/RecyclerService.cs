@@ -9,13 +9,13 @@ public class RecyclerService : IRecyclerService
 {
     private readonly HttpClient _httpClient;
     private readonly IOptions<SupplierServiceOptions> _options;
-    private readonly ILogger<RecyclerService> _logger;
+    private readonly ILogger<IRecyclerService> _logger;
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
     };
 
-    public RecyclerService(HttpClient httpClient, IOptions<SupplierServiceOptions> options, ILogger<RecyclerService> logger)
+    public RecyclerService(HttpClient httpClient, IOptions<SupplierServiceOptions> options, ILogger<IRecyclerService> logger)
     {
         _httpClient = httpClient;
         _options = options;

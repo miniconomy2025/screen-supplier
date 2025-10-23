@@ -10,13 +10,13 @@ public class HandService : IHandService
 {
     private readonly HttpClient _httpClient;
     private readonly IOptions<SupplierServiceOptions> _options;
-    private readonly ILogger<HandService> _logger;
+    private readonly ILogger<IHandService> _logger;
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
     };
 
-    public HandService(HttpClient httpClient, IOptions<SupplierServiceOptions> options, ILogger<HandService> logger)
+    public HandService(HttpClient httpClient, IOptions<SupplierServiceOptions> options, ILogger<IHandService> logger)
     {
         _httpClient = httpClient;
         _options = options;

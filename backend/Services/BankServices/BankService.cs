@@ -29,7 +29,7 @@ public class BankService : IBankService
         ScreenContext context,
         IOptions<BankServiceOptions> options,
         IConfiguration configuration,
-        ILogger<BankService> logger,
+        ILogger<IBankService> logger,
         IHandService handService)
     {
         _httpClient = httpClient;

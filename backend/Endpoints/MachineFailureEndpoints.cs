@@ -22,7 +22,7 @@ public static class MachineFailureEndpoints
 
     private static async Task<IResult> HandleMachineFailure(
         MachineFailureRequest request,
-        [FromServices] EquipmentService equipmentService)
+        [FromServices] IEquipmentService equipmentService)
     {
         try
         {
