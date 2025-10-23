@@ -23,7 +23,7 @@ export ExternalServices__CommercialBank__BaseUrl="https://commercial-bank-api.su
 export ExternalServices__BulkLogistics__BaseUrl="https://team7-todo.xyz/api"
 export ExternalServices__Hand__BaseUrl="https://ec2-13-244-65-62.af-south-1.compute.amazonaws.com"
 export ExternalServices__Recycler__BaseUrl="https://api.recycler.susnet.co.za"
-export ExternalServices__Suppliers__HandBaseUrl="https://ec2-13-244-65-62.af-south-1.compute.amazonaws.com"
+export ExternalServices__Suppliers__HandBaseUrl="https://ec2-13-244-65-62.af-south-1.compute.amazonaws.com/api"
 export ExternalServices__Suppliers__RecyclerBaseUrl="https://api.recycler.susnet.co.za"
 export BankSettings__NotificationUrl="https://todosecuritylevelup.com/payment"
 
