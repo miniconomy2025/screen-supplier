@@ -35,7 +35,6 @@ public class PaymentEndpointsTests
 
         builder.ConfigureServices(services =>
         {
-            // Remove the real IScreenOrderService and replace with mock
             var descriptor = services.SingleOrDefault(
                 d => d.ServiceType == typeof(IScreenOrderService));
             if (descriptor != null)
@@ -46,14 +45,12 @@ public class PaymentEndpointsTests
             var simTimeMock = new Mock<ISimulationTimeProvider>();
             services.AddSingleton(simTimeMock.Object);
 
-            // 🧩 Remove background services that hit DB
             var hostedServiceDescriptors = services
                 .Where(d => typeof(IHostedService).IsAssignableFrom(d.ServiceType))
                 .ToList();
             foreach (var hosted in hostedServiceDescriptors)
                 services.Remove(hosted);
 
-            // Optionally also remove the DbContext to ensure no accidental connection
             var dbContextDescriptor = services.SingleOrDefault(
                 d => d.ServiceType == typeof(ScreenProducerAPI.ScreenDbContext.ScreenContext));
             if (dbContextDescriptor != null)
@@ -72,5 +69,60 @@ public class PaymentEndpointsTests
         _factory.Dispose();
     }
 
-    
+    [Test]
+    public async Task POST_Payment_Returns200_WhenValidNotification()
+    {
+        // Arrange
+        var notification = new TransactionNotification
+        {
+            TransactionNumber = "TXN123",
+            Status = "SUCCESS",
+            Amount = 1500,
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+            Description = "42",
+            To = "ScreenProducer",
+            From = "CommercialBank"
+        };
+
+        _mockOrderService
+            .Setup(s => s.ProcessPaymentConfirmationAsync(It.IsAny<TransactionNotification>(), "42"))
+            .ReturnsAsync(new PaymentConfirmationResponse
+            {
+                Success = true,
+                Message = "Payment processed successfully",
+                OrderId = "42",
+                AmountReceived = 1500,
+                TotalPaid = 1500,
+                OrderTotal = 1500,
+                RemainingBalance = 0,
+                IsFullyPaid = true,
+                Status = "Completed",
+                ProcessedAt = DateTime.UtcNow
+            });
+
+        // Act
+        var response = await _client.PostAsJsonAsync("/payment", notification);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var content = await response.Content.ReadFromJsonAsync<JsonElement>();
+        content.GetProperty("success").GetBoolean().Should().BeTrue();
+    }
+
+    [Test]
+    public async Task POST_Payment_Returns400_WhenNotificationIsInvalid()
+    {
+        var invalidNotification = new TransactionNotification
+        {
+            Description = "INVALID",
+            Amount = 0
+        };
+
+        // Act
+        var response = await _client.PostAsJsonAsync("/payment", invalidNotification);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
 }
