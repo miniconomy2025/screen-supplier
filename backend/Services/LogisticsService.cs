@@ -13,22 +13,22 @@ public class LogisticsService : ILogisticsService
 {
     private readonly IConfiguration _configuration;
     private readonly HttpClient _httpClient;
-    private readonly PurchaseOrderService _purchaseOrderService;
+    private readonly IPurchaseOrderService _purchaseOrderService;
     private readonly IScreenOrderService _screenOrderService;
-    private readonly MaterialService _materialService;
-    private readonly EquipmentService _equipmentService;
-    private readonly ProductService _productService;
+    private readonly IMaterialService _materialService;
+    private readonly IEquipmentService _equipmentService;
+    private readonly IProductService _productService;
     private readonly ScreenContext _context;
     private readonly ISimulationTimeProvider _simulationTimeProvider;
 
     public LogisticsService(
         IConfiguration configuration,
         HttpClient httpClient,
-        PurchaseOrderService purchaseOrderService,
+        IPurchaseOrderService purchaseOrderService,
         IScreenOrderService screenOrderService,
-        MaterialService materialService,
-        EquipmentService equipmentService,
-        ProductService productService,
+        IMaterialService materialService,
+        IEquipmentService equipmentService,
+        IProductService productService,
         ISimulationTimeProvider simulationTimeProvider,
         ScreenContext context)
     {

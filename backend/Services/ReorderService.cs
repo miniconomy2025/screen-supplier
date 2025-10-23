@@ -21,7 +21,7 @@ public class ReorderService : IReorderService
     private readonly IRecyclerService _recyclerService;
     private readonly IOptionsMonitor<TargetQuantitiesConfig> _targetConfig;
     private readonly IOptionsMonitor<ReorderSettingsConfig> _reorderConfig;
-    private readonly ILogger<ReorderService> _logger;
+    private readonly ILogger<IReorderService> _logger;
 
     public ReorderService(
         ITargetQuantityService targetQuantityService,
@@ -33,7 +33,7 @@ public class ReorderService : IReorderService
         IBankService bankService,
         IHandService handService,
         IRecyclerService recyclerService,
-        ILogger<ReorderService> logger,
+        ILogger<IReorderService> logger,
         IOptionsMonitor<TargetQuantitiesConfig> targetConfig,
         IOptionsMonitor<ReorderSettingsConfig> reorderConfig)
     {

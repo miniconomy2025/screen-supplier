@@ -14,7 +14,7 @@ public class TargetQuantityService : ITargetQuantityService
 
     public TargetQuantityService(
         ScreenContext context,
-        ILogger<TargetQuantityService> logger,
+        ILogger<ITargetQuantityService> logger,
         IOptionsMonitor<TargetQuantitiesConfig> targetConfig, IStockStatisticsService stockStatisticsService)
     {
         _context = context;
