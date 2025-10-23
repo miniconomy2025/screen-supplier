@@ -33,6 +33,7 @@ public sealed class QueueProcessingBackgroundServiceStepDefinitions
         _mockScopeFactory = new Mock<IServiceScopeFactory>();
         _mockServiceProvider = new Mock<IServiceProvider>();
         _mockConfig = new Mock<IOptionsMonitor<QueueSettingsConfig>>();
+        _mockLogger = new Mock<ILogger<QueueProcessingBackgroundService>>(); // Add this line
 
         // Default interval
         _mockConfig.Setup(c => c.CurrentValue)
@@ -52,6 +53,7 @@ public sealed class QueueProcessingBackgroundServiceStepDefinitions
         _mockScope.Setup(s => s.ServiceProvider)
             .Returns(_mockServiceProvider.Object);
 
+        // Pass the logger to the constructor
         _backgroundService = new QueueProcessingBackgroundService(_mockServiceProvider.Object, _mockConfig.Object, _mockLogger.Object);
         _cts = new CancellationTokenSource();
     }

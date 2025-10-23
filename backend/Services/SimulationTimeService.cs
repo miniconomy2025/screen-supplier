@@ -6,7 +6,7 @@ namespace ScreenProducerAPI.Services;
 
 public class SimulationTimeService : ISimulationTimeService, IDisposable
 {
-    private readonly ILogger<SimulationTimeService> _logger;
+    private readonly ILogger<ISimulationTimeService> _logger;
     private readonly IServiceProvider _serviceProvider;
 
     private long _simulationStartUnixEpoch;
@@ -20,7 +20,7 @@ public class SimulationTimeService : ISimulationTimeService, IDisposable
     // 2 minutes real time = 1 simulation day (120 seconds)
     private const int RealTimeToSimDayMs = 2 * 60 * 1000;
 
-    public SimulationTimeService(ILogger<SimulationTimeService> logger, IServiceProvider serviceProvider)
+    public SimulationTimeService(ILogger<ISimulationTimeService> logger, IServiceProvider serviceProvider)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;

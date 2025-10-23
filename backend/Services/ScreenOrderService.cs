@@ -14,7 +14,7 @@ public class ScreenOrderService : IScreenOrderService
     private readonly IProductService _productService;
     private readonly ISimulationTimeProvider _simulationTimeProvider;
 
-    public ScreenOrderService(ScreenContext context, ILogger<ScreenOrderService> logger, IProductService productService, ISimulationTimeProvider simulationTimeProvider)
+    public ScreenOrderService(ScreenContext context, ILogger<IScreenOrderService> logger, IProductService productService, ISimulationTimeProvider simulationTimeProvider)
     {
         _context = context;
         _productService = productService;

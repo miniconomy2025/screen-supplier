@@ -2,7 +2,7 @@
 
 namespace ScreenProducerAPI.Services;
 
-public class ReportingService(ILogger<IReportingService> logger,
+public class ReportingService(ILogger<ReportingService> logger,
     IProductionHistoryService productionHistoryService,
     IPurchaseOrderService purchaseOrderService,
     IEquipmentService equipmentService,
