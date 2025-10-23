@@ -125,38 +125,28 @@ public static class ApiConfiguration
             .ValidateDataAnnotations();
 
         // Queue Service and Background Processing
-        services.AddSingleton<PurchaseOrderQueueService>();
+        services.AddSingleton<IPurchaseOrderQueueService, PurchaseOrderQueueService>();
         services.AddHostedService<QueueProcessingBackgroundService>();
 
         // Core Services
         services.AddScoped<ITargetQuantityService, TargetQuantityService>();
         services.AddScoped<TargetQuantityService>();
         services.AddScoped<IReorderService, ReorderService>();
-        services.AddScoped<ReorderService>();
 
 
         // Business Logic Services
         services.AddScoped<IMaterialService, MaterialService>();
-        services.AddScoped<MaterialService>();
         services.AddScoped<IProductService, ProductService>();
-        services.AddScoped<ProductService>();
         services.AddScoped<IEquipmentService, EquipmentService>();
-        services.AddScoped<EquipmentService>();
         services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
-        services.AddScoped<PurchaseOrderService>();
         services.AddScoped<IScreenOrderService, ScreenOrderService>();
         services.AddSingleton<ISimulationTimeService, SimulationTimeService>();
-        services.AddSingleton<SimulationTimeService>();
         services.AddScoped<IStockStatisticsService, StockStatisticsService>();
         services.AddScoped<IProductionHistoryService, ProductionHistoryService>();
-        services.AddScoped<ProductionHistoryService>();
         services.AddScoped<IReportingService, ReportingService>();
         services.AddScoped<ISimulationTimeProvider, SimulationTimeProvider>();
 
         services.AddScoped<IQueueCommandFactory, QueueCommandFactory>();
-
-        // Update queue service registration
-        services.AddSingleton<IPurchaseOrderQueueService, PurchaseOrderQueueService>();
     }
 
     private static bool ValidateServerCertificate(HttpRequestMessage message, X509Certificate2? certificate, X509Chain? chain, SslPolicyErrors errors)

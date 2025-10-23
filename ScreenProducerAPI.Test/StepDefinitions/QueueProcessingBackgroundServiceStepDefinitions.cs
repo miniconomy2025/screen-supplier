@@ -1,5 +1,5 @@
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using Reqnroll;
@@ -19,6 +19,7 @@ public sealed class QueueProcessingBackgroundServiceStepDefinitions
     private Mock<IServiceProvider> _mockServiceProvider = null!;
     private Mock<IPurchaseOrderQueueService> _mockQueueService = null!;
     private Mock<IOptionsMonitor<QueueSettingsConfig>> _mockConfig = null!;
+    private Mock<ILogger<QueueProcessingBackgroundService>> _mockLogger = null!;
     private QueueProcessingBackgroundService _backgroundService = null!;
     private CancellationTokenSource _cts = null!;
     private TimeSpan _testDelay;
@@ -51,7 +52,7 @@ public sealed class QueueProcessingBackgroundServiceStepDefinitions
         _mockScope.Setup(s => s.ServiceProvider)
             .Returns(_mockServiceProvider.Object);
 
-        _backgroundService = new QueueProcessingBackgroundService(_mockServiceProvider.Object, _mockConfig.Object);
+        _backgroundService = new QueueProcessingBackgroundService(_mockServiceProvider.Object, _mockConfig.Object, _mockLogger.Object);
         _cts = new CancellationTokenSource();
     }
 

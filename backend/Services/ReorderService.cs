@@ -179,7 +179,12 @@ public class ReorderService : IReorderService
 
             if (purchaseOrder != null)
             {
+                _logger.LogInformation("Created {MaterialName} reorder: {PurchaseOrderId}", materialName, purchaseOrder.Id);
                 _queueService.EnqueuePurchaseOrder(purchaseOrder.Id);
+            }
+            else
+            {
+                _logger.LogError("Failed to create purchase order record for {MaterialName} reorder", materialName);
             }
 
             return purchaseOrder;
