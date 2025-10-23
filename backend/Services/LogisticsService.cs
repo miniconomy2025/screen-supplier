@@ -180,7 +180,7 @@ public class LogisticsService : ILogisticsService
             });
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await _httpClient.PostAsync($"{bulkLogisticsUrl}/api/pickup-request", content);
+            var response = await _httpClient.PostAsync($"{bulkLogisticsUrl}/pickup-request", content);
 
             if (!response.IsSuccessStatusCode)
             {

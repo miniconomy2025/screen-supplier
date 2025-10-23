@@ -34,7 +34,7 @@ public static class SimulationEndpoints
 
     private static async Task<IResult> StartSimulationHandler(
         SimulationStartRequest request,
-        [FromServices] SimulationTimeService simulationTimeService)
+        [FromServices] ISimulationTimeService simulationTimeService)
     {
         var requestTime = DateTimeOffset.FromUnixTimeMilliseconds(request.EpochStartTime);
 
@@ -53,7 +53,7 @@ public static class SimulationEndpoints
     }
 
     private static IResult GetSimulationStatusHandler(
-        [FromServices] SimulationTimeService simulationTimeService)
+        [FromServices] ISimulationTimeService simulationTimeService)
     {
         var response = new SimulationStatusResponse
         {
@@ -67,7 +67,7 @@ public static class SimulationEndpoints
     }
 
     private static async Task<IResult> StopSimulationHandler(
-        [FromServices] SimulationTimeService simulationTimeService)
+        [FromServices] ISimulationTimeService simulationTimeService)
     {
         await simulationTimeService.DestroySimulation();
         return Results.Ok();
