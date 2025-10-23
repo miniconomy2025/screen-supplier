@@ -69,7 +69,7 @@ public static class ReportingEndpoints
 
     public static async Task<IResult> GetPurchaseOrdersHandler(
         [FromQuery] DateTime? date,
-        [FromServices] PurchaseOrderService purchaseOrderService,
+        [FromServices] IPurchaseOrderService purchaseOrderService,
         [FromServices] ISimulationTimeProvider simulationTimeProvider)
     {
         var purchaseOrders = await purchaseOrderService.GetPastOrdersAsync(date ?? simulationTimeProvider.Now.Date);

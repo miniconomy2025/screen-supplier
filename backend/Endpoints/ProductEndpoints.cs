@@ -17,9 +17,9 @@ public static class ProductEndpoints
         return endpoints;
     }
 
-    private static async Task<IResult> GetProductsHandler(HttpContext context, [FromServices] ProductService productService)
+    private static async Task<IResult> GetProductsHandler(HttpContext context, [FromServices] IProductService productService)
     {
-        var quantity  = await productService.GetAvailableStockAsync();
+        var quantity = await productService.GetAvailableStockAsync();
 
         var product = await productService.GetProductAsync();
         var productsResponse = new ProductResponse()

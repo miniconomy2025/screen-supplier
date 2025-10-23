@@ -16,7 +16,7 @@ public static class TargetQuantityEndpoints
     }
 
     private static async Task<IResult> GetTargetsHandler(
-    [FromServices] TargetQuantityService targetQuantityService)
+    [FromServices] ITargetQuantityService targetQuantityService)
     {
         var status = await targetQuantityService.GetInventoryStatusAsync();
         return Results.Ok(status);
